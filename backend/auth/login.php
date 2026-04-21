@@ -1,16 +1,36 @@
-﻿<?php
+<?php
 require_once __DIR__ . "/../config/cors.php";
 require_once __DIR__ . "/../config/db.php";
+require_once __DIR__ . "/../config/recaptcha.php";
 
-$data = json_decode(file_get_contents("php://input"), true);
+$data = json_decode(file_get_contents("php://input"), true) ?? [];
 
 $email = trim($data["email"] ?? "");
 $password = trim($data["password"] ?? "");
+$recaptcha_token = trim($data["recaptcha_token"] ?? "");
 
 if ($email === "" || $password === "") {
     echo json_encode([
         "success" => false,
         "message" => "Email and password are required."
+    ]);
+    exit();
+}
+
+if ($recaptcha_token === "") {
+    echo json_encode([
+        "success" => false,
+        "message" => "Please complete the reCAPTCHA challenge."
+    ]);
+    exit();
+}
+
+$recaptchaCheck = verify_recaptcha_token($recaptcha_token, $_SERVER["REMOTE_ADDR"] ?? null);
+
+if (!($recaptchaCheck["success"] ?? false)) {
+    echo json_encode([
+        "success" => false,
+        "message" => $recaptchaCheck["message"] ?? "reCAPTCHA verification failed."
     ]);
     exit();
 }

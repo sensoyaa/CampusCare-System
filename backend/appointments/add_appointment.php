@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . "/../config/cors.php";
 require_once __DIR__ . "/../config/db.php";
 
@@ -27,10 +27,20 @@ if (
 }
 
 $stmt = $conn->prepare("
-    INSERT INTO appointments (user_id, counselor_id, service, counselor, appointment_date, appointment_time)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO appointments 
+    (user_id, counselor_id, service, counselor, appointment_date, appointment_time, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'Pending')
 ");
-$stmt->bind_param("iissss", $user_id, $counselor_id, $service, $counselor, $appointment_date, $appointment_time);
+
+$stmt->bind_param(
+    "iissss",
+    $user_id,
+    $counselor_id,
+    $service,
+    $counselor,
+    $appointment_date,
+    $appointment_time
+);
 
 if ($stmt->execute()) {
     echo json_encode([

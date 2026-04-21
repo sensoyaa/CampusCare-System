@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . "/../config/cors.php";
 require_once __DIR__ . "/../config/db.php";
 
@@ -25,14 +25,26 @@ if (!in_array($status, $allowedStatuses)) {
     exit();
 }
 
-$stmt = $conn->prepare("UPDATE appointments SET status = ? WHERE id = ?");
+$stmt = $conn->prepare("
+    UPDATE appointments 
+    SET status = ? 
+    WHERE id = ?
+");
+
 $stmt->bind_param("si", $status, $id);
 
 if ($stmt->execute()) {
-    echo json_encode([
-        "success" => true,
-        "message" => "Appointment status updated successfully."
-    ]);
+    if ($stmt->affected_rows > 0) {
+        echo json_encode([
+            "success" => true,
+            "message" => "Appointment status updated successfully."
+        ]);
+    } else {
+        echo json_encode([
+            "success" => false,
+            "message" => "No appointment was updated. Check appointment ID."
+        ]);
+    }
 } else {
     echo json_encode([
         "success" => false,

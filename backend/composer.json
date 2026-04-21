@@ -1,0 +1,14 @@
+{
+  "name": "campuscare/backend",
+  "description": "CampusCare PHP backend",
+  "type": "project",
+  "require": {},
+  "config": {
+    "process-timeout": 0
+  },
+  "scripts": {
+    "dev": "\"C:/xampp/php/php.exe\" -S 127.0.0.1:8000 -t ../..",
+    "serve": "\"C:/xampp/php/php.exe\" -S 127.0.0.1:8000 -t ../..",
+    "check-php": "\"C:/xampp/php/php.exe\" -v"
+  }
+}
