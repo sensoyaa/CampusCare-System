@@ -1,1 +1,40 @@
-ErrorDocument 404 /campuscare-api/php-frontend/not_found.php
+RewriteEngine On
+RewriteBase /campuscare-api/php-frontend/
+
+# Auth pages
+RewriteRule ^$ pages/auth/index.php [L]
+RewriteRule ^index\.php$ pages/auth/index.php [L]
+RewriteRule ^register\.php$ pages/auth/register.php [L]
+RewriteRule ^forgot_password\.php$ pages/auth/forgot_password.php [L]
+RewriteRule ^google-login\.php$ pages/auth/google-login.php [L]
+RewriteRule ^google-callback\.php$ pages/auth/google-callback.php [L]
+RewriteRule ^logout\.php$ pages/auth/logout.php [L]
+
+# Dashboard
+RewriteRule ^dashboard\.php$ pages/dashboard/dashboard.php [L]
+
+# Appointments
+RewriteRule ^book_appointment\.php$ pages/appointments/book_appointment.php [L]
+RewriteRule ^confirmation\.php$ pages/appointments/confirmation.php [L]
+RewriteRule ^manage_appointments\.php$ pages/appointments/manage_appointments.php [L]
+RewriteRule ^manage_schedule\.php$ pages/appointments/manage_schedule.php [L]
+RewriteRule ^schedule\.php$ pages/appointments/schedule.php [L]
+
+# Events
+RewriteRule ^events\.php$ pages/events/events.php [L]
+RewriteRule ^view_participants\.php$ pages/events/view_participants.php [L]
+
+# Reports
+RewriteRule ^reports\.php$ pages/reports/reports.php [L]
+RewriteRule ^session_feedback\.php$ pages/reports/session_feedback.php [L]
+
+# Tests
+RewriteRule ^mental_health_test\.php$ pages/tests/mental_health_test.php [L]
+
+# Users
+RewriteRule ^manage_users\.php$ pages/users/manage_users.php [L]
+RewriteRule ^student_status\.php$ pages/users/student_status.php [L]
+
+# System
+RewriteRule ^not_found\.php$ pages/system/not_found.php [L]
+ErrorDocument 404 /campuscare-api/php-frontend/pages/system/not_found.php
