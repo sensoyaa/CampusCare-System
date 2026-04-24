@@ -1,6 +1,7 @@
 <?php
 session_start();
-require_once "includes/db.php";
+require_once __DIR__ . "/../../includes/db.php";
+require_once __DIR__ . "/../../includes/google_oauth.php";
 
 $error = "";
 $success = "";
@@ -8,6 +9,8 @@ $full_name = "";
 $email = "";
 $student_id = "";
 $role = "Student";
+$googleOauthConfig = campuscare_google_oauth_config();
+$googleOauthEnabled = (bool) ($googleOauthConfig["is_configured"] ?? false);
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $full_name = trim($_POST["full_name"] ?? "");
@@ -130,6 +133,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                 <button type="submit" class="btn" style="width:100%;">Register</button>
             </form>
+
+            <div class="oauth-divider"><span>or</span></div>
+
+            <?php if ($googleOauthEnabled): ?>
+                <a href="google-login.php" class="google-login-btn" aria-label="Sign up with Google">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.2-.9 2.3-2 3.1l3.2 2.5c1.9-1.8 3-4.5 3-7.7 0-.7-.1-1.3-.2-1.9H12z"></path>
+                        <path fill="#34A853" d="M12 22c2.7 0 5-0.9 6.7-2.4l-3.2-2.5c-.9.6-2 .9-3.5.9-2.7 0-5-1.8-5.8-4.3l-3.3 2.6C4.7 19.7 8.1 22 12 22z"></path>
+                        <path fill="#4A90E2" d="M6.2 13.7c-.2-.6-.3-1.1-.3-1.7s.1-1.2.3-1.7L2.9 7.7C2.3 8.9 2 10.4 2 12s.3 3.1.9 4.3l3.3-2.6z"></path>
+                        <path fill="#FBBC05" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C17 2.9 14.7 2 12 2 8.1 2 4.7 4.3 2.9 7.7l3.3 2.6c.8-2.5 3.1-4.4 5.8-4.4z"></path>
+                    </svg>
+                    Sign up with Google
+                </a>
+            <?php else: ?>
+                <p class="oauth-help">Google sign-in is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI in backend/.env.</p>
+            <?php endif; ?>
 
             <p style="margin-top:20px;">
                 Already have an account?

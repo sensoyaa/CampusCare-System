@@ -1,7 +1,7 @@
 <?php
-require_once "includes/auth.php";
+require_once __DIR__ . "/../../includes/auth.php";
 requireLogin();
-require_once "includes/db.php";
+require_once __DIR__ . "/../../includes/db.php";
 
 $pageTitle = "Mental Health Test";
 $role = normalizeRole($_SESSION["role"] ?? "Student");
@@ -113,8 +113,8 @@ for ($i = 0; $i < $totalQuestions; $i++) {
 
 $progress = ($answeredCount / $totalQuestions) * 100;
 
-require_once "includes/header.php";
-require_once "includes/sidebar.php";
+require_once __DIR__ . "/../../includes/header.php";
+require_once __DIR__ . "/../../includes/sidebar.php";
 ?>
 
 <main class="main">
@@ -264,3 +264,4 @@ require_once "includes/sidebar.php";
 </div>
 </body>
 </html>
+

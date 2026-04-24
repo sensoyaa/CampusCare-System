@@ -1,5 +1,5 @@
 <?php
-require_once "includes/auth.php";
+require_once __DIR__ . "/../../includes/auth.php";
 requireLogin();
 
 $pageTitle = "Booking Confirmation";
@@ -10,8 +10,8 @@ $dateLabel = trim((string) ($_GET["date"] ?? ""));
 $timeLabel = trim((string) ($_GET["time"] ?? ""));
 $fullName = $_SESSION["full_name"] ?? "User";
 
-require_once "includes/header.php";
-require_once "includes/sidebar.php";
+require_once __DIR__ . "/../../includes/header.php";
+require_once __DIR__ . "/../../includes/sidebar.php";
 ?>
 
 <main class="main">
@@ -75,3 +75,4 @@ require_once "includes/sidebar.php";
 </div>
 </body>
 </html>
+

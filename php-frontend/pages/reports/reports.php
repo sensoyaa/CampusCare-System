@@ -1,7 +1,7 @@
 <?php
-require_once "includes/auth.php";
+require_once __DIR__ . "/../../includes/auth.php";
 requireLogin();
-require_once "includes/db.php";
+require_once __DIR__ . "/../../includes/db.php";
 
 $pageTitle = "System Reports";
 $role = normalizeRole($_SESSION["role"] ?? "Student");
@@ -143,8 +143,8 @@ usort($activity, function ($a, $b) {
 
 $activity = array_slice($activity, 0, 6);
 
-require_once "includes/header.php";
-require_once "includes/sidebar.php";
+require_once __DIR__ . "/../../includes/header.php";
+require_once __DIR__ . "/../../includes/sidebar.php";
 ?>
 
 <main class="main">
@@ -233,3 +233,4 @@ require_once "includes/sidebar.php";
 </div>
 </body>
 </html>
+

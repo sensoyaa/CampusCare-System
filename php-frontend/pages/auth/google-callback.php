@@ -1,7 +1,7 @@
 <?php
 session_start();
-require_once "includes/db.php";
-require_once "includes/google_oauth.php";
+require_once __DIR__ . "/../../includes/db.php";
+require_once __DIR__ . "/../../includes/google_oauth.php";
 
 function google_redirect_with_error(string $message): void
 {
@@ -400,3 +400,4 @@ $_SESSION["role"] = (string) ($user["role"] ?? "Student");
 
 header("Location: dashboard.php");
 exit();
+

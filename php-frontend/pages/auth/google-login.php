@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once "includes/google_oauth.php";
+require_once __DIR__ . "/../../includes/google_oauth.php";
 
 function redirect_with_google_error(string $message): void
 {
@@ -41,3 +41,4 @@ $query = http_build_query(
 
 header("Location: https://accounts.google.com/o/oauth2/v2/auth?" . $query);
 exit();
+

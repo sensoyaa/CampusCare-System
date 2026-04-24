@@ -1,7 +1,7 @@
 <?php
-require_once "includes/auth.php";
+require_once __DIR__ . "/../../includes/auth.php";
 requireLogin();
-require_once "includes/db.php";
+require_once __DIR__ . "/../../includes/db.php";
 
 $pageTitle = "Dashboard";
 $role = normalizeRole($_SESSION["role"] ?? "Student");
@@ -381,8 +381,8 @@ function statusClass($status)
     return "status-pending";
 }
 
-require_once "includes/header.php";
-require_once "includes/sidebar.php";
+require_once __DIR__ . "/../../includes/header.php";
+require_once __DIR__ . "/../../includes/sidebar.php";
 ?>
 
 <main class="main">
