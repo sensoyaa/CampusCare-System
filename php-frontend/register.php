@@ -1,7 +1,6 @@
 <?php
 session_start();
 require_once "includes/db.php";
-require_once "includes/recaptcha.php";
 
 $error = "";
 $success = "";
@@ -16,52 +15,43 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $student_id = trim($_POST["student_id"] ?? "");
     $role = trim($_POST["role"] ?? "Student");
     $password = $_POST["password"] ?? "";
-    $recaptchaToken = trim($_POST["g-recaptcha-response"] ?? "");
 
     if ($full_name === "" || $email === "" || $student_id === "" || $role === "" || $password === "") {
         $error = "All fields are required.";
-    } elseif ($RECAPTCHA_SITE_KEY === "") {
-        $error = "reCAPTCHA is not configured. Please contact the administrator.";
-    } elseif ($recaptchaToken === "") {
-        $error = "Please complete the reCAPTCHA challenge.";
     } else {
-        $recaptchaCheck = verify_recaptcha_token($recaptchaToken, $_SERVER["REMOTE_ADDR"] ?? null);
+        $check = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+        $check->bind_param("s", $email);
+        $check->execute();
+        $checkResult = $check->get_result();
 
-        if (!($recaptchaCheck["success"] ?? false)) {
-            $error = $recaptchaCheck["message"] ?? "reCAPTCHA verification failed.";
+        if ($checkResult->num_rows > 0) {
+            $error = "Email must be unique. Duplicate email is not allowed.";
         } else {
-            $check = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
-            $check->bind_param("s", $email);
-            $check->execute();
-            $checkResult = $check->get_result();
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $status = "Active";
 
-            if ($checkResult->num_rows > 0) {
-                $error = "Email already exists.";
+            $stmt = $conn->prepare("
+                INSERT INTO users (full_name, student_id, email, password, role, status)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->bind_param("ssssss", $full_name, $student_id, $email, $hashedPassword, $role, $status);
+
+            if ($stmt->execute()) {
+                $success = "Account created successfully. You can now login.";
+                $full_name = "";
+                $email = "";
+                $student_id = "";
+                $role = "Student";
             } else {
-                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                $status = "Active";
-
-                $stmt = $conn->prepare("
-                    INSERT INTO users (full_name, student_id, email, password, role, status)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ");
-                $stmt->bind_param("ssssss", $full_name, $student_id, $email, $hashedPassword, $role, $status);
-
-                if ($stmt->execute()) {
-                    $success = "Account created successfully. You can now login.";
-                    $full_name = "";
-                    $email = "";
-                    $student_id = "";
-                    $role = "Student";
-                } else {
-                    $error = "Failed to create account.";
-                }
-
-                $stmt->close();
+                $error = intval($stmt->errno) === 1062
+                    ? "Email must be unique. Duplicate email is not allowed."
+                    : "Failed to create account.";
             }
 
-            $check->close();
+            $stmt->close();
         }
+
+        $check->close();
     }
 }
 ?>
@@ -72,9 +62,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <meta charset="UTF-8">
     <title>Register | CampusCare</title>
     <link rel="stylesheet" href="assets/style.css">
-    <?php if ($RECAPTCHA_SITE_KEY !== ""): ?>
-        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    <?php endif; ?>
 </head>
 <body>
 <div class="form-page">
@@ -128,17 +115,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" name="password" required>
-                </div>
-
-                <div class="form-group">
-                    <?php if ($RECAPTCHA_SITE_KEY !== ""): ?>
-                        <div class="g-recaptcha" data-sitekey="<?php echo htmlspecialchars($RECAPTCHA_SITE_KEY); ?>"></div>
-                    <?php else: ?>
-                        <p class="page-subtitle" style="font-size: 13px; margin-bottom: 0;">
-                            reCAPTCHA is not configured. Set RECAPTCHA_SITE_KEY in backend/.env.
-                        </p>
-                    <?php endif; ?>
+                    <div class="password-field">
+                        <input id="registerPassword" type="password" name="password" required>
+                        <button type="button" class="password-toggle" data-target="registerPassword" aria-label="Show password" aria-pressed="false">
+                            <svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="M12 5c5.8 0 9.4 4.8 10.6 6.7.2.2.2.6 0 .8C21.4 14.2 17.8 19 12 19S2.6 14.2 1.4 12.5a.8.8 0 0 1 0-.8C2.6 9.8 6.2 5 12 5Zm0 2c-4.4 0-7.3 3.4-8.6 5 1.3 1.6 4.2 5 8.6 5s7.3-3.4 8.6-5c-1.3-1.6-4.2-5-8.6-5Zm0 2.2a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6Z"></path>
+                            </svg>
+                            <svg class="icon-eye-off" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path fill="currentColor" d="m3.3 2 18.7 18.7-1.3 1.3-3.2-3.2A11.8 11.8 0 0 1 12 20c-5.8 0-9.4-4.8-10.6-6.7a.8.8 0 0 1 0-.8A19 19 0 0 1 6.4 7L2 2.6 3.3 2Zm4.6 6L6 6.1A16.8 16.8 0 0 0 3.4 12c1.3 1.6 4.2 6 8.6 6 1.5 0 2.8-.4 4-1l-1.8-1.8a4.8 4.8 0 0 1-6.3-6.3Zm4.2-3c5.8 0 9.4 4.8 10.6 6.7.2.2.2.6 0 .8a19 19 0 0 1-3.5 4.2l-1.4-1.4a16.8 16.8 0 0 0 2.8-3.2c-1.3-1.6-4.2-5-8.6-5h-.5L10 5.4c.6-.3 1.3-.4 2-.4Z"></path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn" style="width:100%;">Register</button>
@@ -151,5 +138,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </div>
     </div>
 </div>
+<script>
+(function () {
+    var toggles = document.querySelectorAll(".password-toggle");
+
+    toggles.forEach(function (toggleButton) {
+        var targetId = toggleButton.getAttribute("data-target");
+        var targetInput = targetId ? document.getElementById(targetId) : null;
+
+        if (!targetInput) {
+            return;
+        }
+
+        toggleButton.addEventListener("click", function () {
+            var isVisible = targetInput.getAttribute("type") === "text";
+            targetInput.setAttribute("type", isVisible ? "password" : "text");
+            toggleButton.classList.toggle("is-visible", !isVisible);
+            toggleButton.setAttribute("aria-label", isVisible ? "Show password" : "Hide password");
+            toggleButton.setAttribute("aria-pressed", isVisible ? "false" : "true");
+            targetInput.focus();
+        });
+    });
+})();
+</script>
 </body>
 </html>

@@ -19,6 +19,29 @@ if ($full_name === "" || $student_id === "" || $email === "" || $password === ""
     exit();
 }
 
+$checkStmt = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+
+if (!$checkStmt) {
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to validate email uniqueness."
+    ]);
+    exit();
+}
+
+$checkStmt->bind_param("s", $email);
+$checkStmt->execute();
+$emailExists = $checkStmt->get_result()->num_rows > 0;
+$checkStmt->close();
+
+if ($emailExists) {
+    echo json_encode([
+        "success" => false,
+        "message" => "Email must be unique. Duplicate email is not allowed."
+    ]);
+    exit();
+}
+
 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
 $stmt = $conn->prepare("INSERT INTO users (full_name, student_id, email, password, role, status) VALUES (?, ?, ?, ?, ?, ?)");
@@ -32,7 +55,9 @@ if ($stmt->execute()) {
 } else {
     echo json_encode([
         "success" => false,
-        "message" => "Failed to add user: " . $stmt->error
+        "message" => intval($stmt->errno) === 1062
+            ? "Email must be unique. Duplicate email is not allowed."
+            : "Failed to add user: " . $stmt->error
     ]);
 }
 

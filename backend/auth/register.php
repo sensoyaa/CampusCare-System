@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . "/../config/cors.php";
 require_once __DIR__ . "/../config/db.php";
-require_once __DIR__ . "/../config/recaptcha.php";
 
 $data = json_decode(file_get_contents("php://input"), true) ?? [];
 
@@ -10,7 +9,6 @@ $student_id = trim($data["student_id"] ?? "");
 $email = trim($data["email"] ?? "");
 $password = trim($data["password"] ?? "");
 $role = trim($data["role"] ?? "Student");
-$recaptcha_token = trim($data["recaptcha_token"] ?? "");
 
 if ($full_name === "" || $email === "" || $password === "" || $role === "") {
     echo json_encode([
@@ -20,20 +18,25 @@ if ($full_name === "" || $email === "" || $password === "" || $role === "") {
     exit();
 }
 
-if ($recaptcha_token === "") {
+$checkStmt = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+
+if (!$checkStmt) {
     echo json_encode([
         "success" => false,
-        "message" => "Please complete the reCAPTCHA challenge."
+        "message" => "Unable to validate email uniqueness."
     ]);
     exit();
 }
 
-$recaptchaCheck = verify_recaptcha_token($recaptcha_token, $_SERVER["REMOTE_ADDR"] ?? null);
+$checkStmt->bind_param("s", $email);
+$checkStmt->execute();
+$emailExists = $checkStmt->get_result()->num_rows > 0;
+$checkStmt->close();
 
-if (!($recaptchaCheck["success"] ?? false)) {
+if ($emailExists) {
     echo json_encode([
         "success" => false,
-        "message" => $recaptchaCheck["message"] ?? "reCAPTCHA verification failed."
+        "message" => "Email must be unique. Duplicate email is not allowed."
     ]);
     exit();
 }
@@ -51,7 +54,9 @@ if ($stmt->execute()) {
 } else {
     echo json_encode([
         "success" => false,
-        "message" => "Registration failed: " . $stmt->error
+        "message" => intval($stmt->errno) === 1062
+            ? "Email must be unique. Duplicate email is not allowed."
+            : "Registration failed: " . $stmt->error
     ]);
 }
 

@@ -67,7 +67,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $checkStmt->close();
 
             if ($exists) {
-                $error = "Email already exists.";
+                $error = "Email must be unique. Duplicate email is not allowed.";
             } else {
                 $hashedPassword = password_hash($formState["password"], PASSWORD_DEFAULT);
                 $dbRole = roleToDatabase($formState["role"]);
