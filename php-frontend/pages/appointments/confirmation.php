@@ -8,6 +8,7 @@ $service = trim((string) ($_GET["service"] ?? ""));
 $counselor = trim((string) ($_GET["counselor"] ?? ""));
 $dateLabel = trim((string) ($_GET["date"] ?? ""));
 $timeLabel = trim((string) ($_GET["time"] ?? ""));
+$emailStatus = trim((string) ($_GET["email"] ?? ""));
 $fullName = $_SESSION["full_name"] ?? "User";
 
 require_once __DIR__ . "/../../includes/header.php";
@@ -40,6 +41,16 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
                 <h1 class="page-title" style="font-size: 34px; margin-bottom: 8px;">Booking Confirmed!</h1>
                 <p class="page-subtitle" style="margin-bottom: 18px;">Your appointment has been successfully scheduled.</p>
+
+                <?php if ($emailStatus === "sent"): ?>
+                    <div class="alert alert-success" style="text-align: left; margin-bottom: 20px;">
+                        A confirmation email has been sent to your account.
+                    </div>
+                <?php elseif ($emailStatus === "not-sent"): ?>
+                    <div class="alert alert-error" style="text-align: left; margin-bottom: 20px;">
+                        Your appointment was saved, but the confirmation email could not be sent.
+                    </div>
+                <?php endif; ?>
 
                 <?php if ($service !== "" || $counselor !== "" || $dateLabel !== "" || $timeLabel !== ""): ?>
                     <div class="feedback-note" style="text-align: left; margin-bottom: 20px;">

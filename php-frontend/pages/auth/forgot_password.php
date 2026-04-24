@@ -1,56 +1,198 @@
 <?php
 session_start();
 require_once __DIR__ . "/../../includes/db.php";
+require_once __DIR__ . "/../../../backend/config/mail.php";
 
 $error = "";
 $success = "";
-$email = "";
+$email = trim((string) ($_POST["email"] ?? ($_SESSION["password_reset_email"] ?? "")));
+$step = "request";
+$frontendBaseUrl = "/campuscare-api/php-frontend";
+$projectBaseUrl = "/campuscare-api";
+
+function ensurePasswordResetTable(mysqli $conn): bool
+{
+    $sql = "
+        CREATE TABLE IF NOT EXISTS password_resets (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            token_hash VARCHAR(255) NOT NULL,
+            expires_at DATETIME NOT NULL,
+            used_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_password_resets_email (email),
+            INDEX idx_password_resets_expires_at (expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ";
+
+    return $conn->query($sql) === true;
+}
+
+function clearPasswordResetSession(): void
+{
+    unset(
+        $_SESSION["password_reset_request_id"],
+        $_SESSION["password_reset_user_id"],
+        $_SESSION["password_reset_email"],
+        $_SESSION["password_reset_verified_at"]
+    );
+}
+
+function findActivePasswordResetByEmail(mysqli $conn, string $email): ?array
+{
+    $stmt = $conn->prepare("
+        SELECT id, user_id, email, token_hash, expires_at
+        FROM password_resets
+        WHERE email = ? AND used_at IS NULL AND expires_at >= NOW()
+        ORDER BY created_at DESC
+        LIMIT 1
+    ");
+
+    if (!$stmt) {
+        return null;
+    }
+
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc() ?: null;
+    $stmt->close();
+
+    return $row;
+}
+
+if (isset($_SESSION["password_reset_email"]) && !isset($_SESSION["password_reset_verified_at"])) {
+    $step = "verify";
+}
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $email = trim((string) ($_POST["email"] ?? ""));
-    $newPassword = (string) ($_POST["new_password"] ?? "");
-    $confirmPassword = (string) ($_POST["confirm_password"] ?? "");
+    $action = trim((string) ($_POST["action"] ?? "request_code"));
 
-    if ($email === "" || $newPassword === "" || $confirmPassword === "") {
-        $error = "All fields are required.";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = "Please enter a valid email address.";
-    } elseif (strlen($newPassword) < 8) {
-        $error = "New password must be at least 8 characters.";
-    } elseif ($newPassword !== $confirmPassword) {
-        $error = "Password confirmation does not match.";
-    } else {
-        $lookupStmt = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+    if (!ensurePasswordResetTable($conn)) {
+        $error = "Unable to prepare password reset requests.";
+    } elseif ($action === "request_code") {
+        clearPasswordResetSession();
 
-        if (!$lookupStmt) {
-            $error = "Unable to process password reset request.";
+        if ($email === "") {
+            $error = "Email is required.";
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = "Please enter a valid email address.";
         } else {
-            $lookupStmt->bind_param("s", $email);
-            $lookupStmt->execute();
-            $lookupResult = $lookupStmt->get_result();
-            $user = $lookupResult->fetch_assoc();
-            $lookupStmt->close();
+            $lookupStmt = $conn->prepare("SELECT id, full_name, email FROM users WHERE email = ? LIMIT 1");
 
-            if (!$user) {
-                $error = "No account found for that email.";
+            if (!$lookupStmt) {
+                $error = "Unable to process password reset request.";
             } else {
-                $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-                $updateStmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+                $lookupStmt->bind_param("s", $email);
+                $lookupStmt->execute();
+                $user = $lookupStmt->get_result()->fetch_assoc();
+                $lookupStmt->close();
 
-                if (!$updateStmt) {
-                    $error = "Unable to update password.";
-                } else {
-                    $userId = intval($user["id"] ?? 0);
-                    $updateStmt->bind_param("si", $hashedPassword, $userId);
+                $success = "If that email exists in our system, a verification code has been sent.";
+                $step = "verify";
 
-                    if ($updateStmt->execute()) {
-                        $success = "Password updated successfully. You can now login.";
-                    } else {
-                        $error = "Failed to reset password.";
+                if ($user) {
+                    $deleteStmt = $conn->prepare("DELETE FROM password_resets WHERE email = ?");
+
+                    if ($deleteStmt) {
+                        $deleteStmt->bind_param("s", $email);
+                        $deleteStmt->execute();
+                        $deleteStmt->close();
                     }
 
-                    $updateStmt->close();
+                    $resetCode = str_pad((string) random_int(0, 999999), 6, "0", STR_PAD_LEFT);
+                    $codeHash = password_hash($resetCode, PASSWORD_DEFAULT);
+                    $expiresAt = date("Y-m-d H:i:s", strtotime("+15 minutes"));
+                    $userId = intval($user["id"]);
+
+                    $insertStmt = $conn->prepare("
+                        INSERT INTO password_resets (user_id, email, token_hash, expires_at)
+                        VALUES (?, ?, ?, ?)
+                    ");
+
+                    if (!$insertStmt) {
+                        $error = "Unable to create password reset request.";
+                        $success = "";
+                        $step = "request";
+                    } else {
+                        $insertStmt->bind_param("isss", $userId, $email, $codeHash, $expiresAt);
+
+                        if (!$insertStmt->execute()) {
+                            $error = "Unable to save password reset request.";
+                            $success = "";
+                            $step = "request";
+                        } else {
+                            $recipientName = trim((string) ($user["full_name"] ?? "Student"));
+                            $subject = "CampusCare Password Reset Code";
+                            $htmlBody = campuscare_email_template(
+                                "Password Reset Code",
+                                "Use the verification code below to continue resetting your CampusCare password.",
+                                "
+                                <p style=\"margin:0 0 16px;\">Hello " . htmlspecialchars($recipientName, ENT_QUOTES, "UTF-8") . ",</p>
+                                <p style=\"margin:0 0 24px;\">We received a request to reset your CampusCare password. Enter this code in the app to continue:</p>
+                                <div style=\"margin:0 0 24px; padding:22px; border-radius:20px; background:#f4f9fc; border:1px solid #d5e7f2; text-align:center;\">
+                                    <div style=\"font-size:13px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:#5d7a91; margin-bottom:12px;\">Verification Code</div>
+                                    <div style=\"font-size:34px; font-weight:700; letter-spacing:10px; color:#214d70;\">" . htmlspecialchars($resetCode, ENT_QUOTES, "UTF-8") . "</div>
+                                </div>
+                                <div style=\"margin:0 0 24px; padding:18px 20px; border-radius:18px; background:#fff8eb; border:1px solid #f2dfb2; color:#6b5221;\">
+                                    This code will expire in <strong>15 minutes</strong>.
+                                </div>
+                                <p style=\"margin:0;\">If you did not request this, you can safely ignore this email.</p>
+                                ",
+                                [
+                                    "preview" => "Your CampusCare verification code is {$resetCode}",
+                                    "footer" => "For your security, never share this verification code with anyone."
+                                ]
+                            );
+                            $textBody = "Hello {$recipientName},\n\nWe received a request to reset your CampusCare password.\n\nYour verification code is: {$resetCode}\n\nThis code will expire in 15 minutes.\n\nIf you did not request this, you can safely ignore this email.";
+                            $mailResult = send_smtp_mail($email, $recipientName, $subject, $htmlBody, $textBody);
+
+                            if (!$mailResult["success"]) {
+                                $cleanupStmt = $conn->prepare("DELETE FROM password_resets WHERE email = ?");
+
+                                if ($cleanupStmt) {
+                                    $cleanupStmt->bind_param("s", $email);
+                                    $cleanupStmt->execute();
+                                    $cleanupStmt->close();
+                                }
+
+                                $error = "Password reset code could not be sent. " . $mailResult["message"];
+                                $success = "";
+                                $step = "request";
+                            } else {
+                                $_SESSION["password_reset_email"] = $email;
+                            }
+                        }
+
+                        $insertStmt->close();
+                    }
                 }
+            }
+        }
+    } elseif ($action === "verify_code") {
+        $code = trim((string) ($_POST["reset_code"] ?? ""));
+
+        if ($email === "" || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = "Please enter a valid email address.";
+            $step = "request";
+        } elseif ($code === "") {
+            $error = "Verification code is required.";
+            $step = "verify";
+        } else {
+            $resetRequest = findActivePasswordResetByEmail($conn, $email);
+
+            if (!$resetRequest || !password_verify($code, $resetRequest["token_hash"])) {
+                $error = "The verification code is invalid or has expired.";
+                $step = "verify";
+            } else {
+                $_SESSION["password_reset_request_id"] = intval($resetRequest["id"]);
+                $_SESSION["password_reset_user_id"] = intval($resetRequest["user_id"]);
+                $_SESSION["password_reset_email"] = $email;
+                $_SESSION["password_reset_verified_at"] = time();
+
+                header("Location: reset_password.php");
+                exit();
             }
         }
     }
@@ -62,22 +204,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
     <meta charset="UTF-8">
     <title>Forgot Password | CampusCare</title>
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars($frontendBaseUrl); ?>/assets/style.css">
 </head>
 <body>
 <div class="form-page">
     <div class="form-left">
         <div>
-            <img src="../images/logo.png" alt="CampusCare">
+            <img src="<?php echo htmlspecialchars($projectBaseUrl); ?>/images/logo.png" alt="CampusCare">
             <h1>CampusCare</h1>
-            <p>Reset your password and get back to your account</p>
+            <p>Your university mental health and wellness companion</p>
         </div>
     </div>
 
     <div class="form-right">
         <div class="form-box">
             <h2>Forgot Password</h2>
-            <p>Enter your email and create a new password</p>
+            <p>
+                <?php echo $step === "verify" ? "Enter the 6-digit code we sent to your email" : "Enter your email to receive a reset code"; ?>
+            </p>
 
             <?php if ($error !== ""): ?>
                 <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
@@ -87,44 +231,40 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
             <?php endif; ?>
 
-            <form method="POST">
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
-                </div>
+            <?php if ($step === "verify"): ?>
+                <form method="POST">
+                    <input type="hidden" name="action" value="verify_code">
 
-                <div class="form-group">
-                    <label>New Password</label>
-                    <div class="password-field">
-                        <input id="newPassword" type="password" name="new_password" minlength="8" required>
-                        <button type="button" class="password-toggle" data-target="newPassword" aria-label="Show password" aria-pressed="false">
-                            <svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                <path fill="currentColor" d="M12 5c5.8 0 9.4 4.8 10.6 6.7.2.2.2.6 0 .8C21.4 14.2 17.8 19 12 19S2.6 14.2 1.4 12.5a.8.8 0 0 1 0-.8C2.6 9.8 6.2 5 12 5Zm0 2c-4.4 0-7.3 3.4-8.6 5 1.3 1.6 4.2 5 8.6 5s7.3-3.4 8.6-5c-1.3-1.6-4.2-5-8.6-5Zm0 2.2a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6Z"></path>
-                            </svg>
-                            <svg class="icon-eye-off" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                <path fill="currentColor" d="m3.3 2 18.7 18.7-1.3 1.3-3.2-3.2A11.8 11.8 0 0 1 12 20c-5.8 0-9.4-4.8-10.6-6.7a.8.8 0 0 1 0-.8A19 19 0 0 1 6.4 7L2 2.6 3.3 2Zm4.6 6L6 6.1A16.8 16.8 0 0 0 3.4 12c1.3 1.6 4.2 6 8.6 6 1.5 0 2.8-.4 4-1l-1.8-1.8a4.8 4.8 0 0 1-6.3-6.3Zm4.2-3c5.8 0 9.4 4.8 10.6 6.7.2.2.2.6 0 .8a19 19 0 0 1-3.5 4.2l-1.4-1.4a16.8 16.8 0 0 0 2.8-3.2c-1.3-1.6-4.2-5-8.6-5h-.5L10 5.4c.6-.3 1.3-.4 2-.4Z"></path>
-                            </svg>
-                        </button>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <label>Confirm Password</label>
-                    <div class="password-field">
-                        <input id="confirmPassword" type="password" name="confirm_password" minlength="8" required>
-                        <button type="button" class="password-toggle" data-target="confirmPassword" aria-label="Show password" aria-pressed="false">
-                            <svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                <path fill="currentColor" d="M12 5c5.8 0 9.4 4.8 10.6 6.7.2.2.2.6 0 .8C21.4 14.2 17.8 19 12 19S2.6 14.2 1.4 12.5a.8.8 0 0 1 0-.8C2.6 9.8 6.2 5 12 5Zm0 2c-4.4 0-7.3 3.4-8.6 5 1.3 1.6 4.2 5 8.6 5s7.3-3.4 8.6-5c-1.3-1.6-4.2-5-8.6-5Zm0 2.2a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6Z"></path>
-                            </svg>
-                            <svg class="icon-eye-off" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                <path fill="currentColor" d="m3.3 2 18.7 18.7-1.3 1.3-3.2-3.2A11.8 11.8 0 0 1 12 20c-5.8 0-9.4-4.8-10.6-6.7a.8.8 0 0 1 0-.8A19 19 0 0 1 6.4 7L2 2.6 3.3 2Zm4.6 6L6 6.1A16.8 16.8 0 0 0 3.4 12c1.3 1.6 4.2 6 8.6 6 1.5 0 2.8-.4 4-1l-1.8-1.8a4.8 4.8 0 0 1-6.3-6.3Zm4.2-3c5.8 0 9.4 4.8 10.6 6.7.2.2.2.6 0 .8a19 19 0 0 1-3.5 4.2l-1.4-1.4a16.8 16.8 0 0 0 2.8-3.2c-1.3-1.6-4.2-5-8.6-5h-.5L10 5.4c.6-.3 1.3-.4 2-.4Z"></path>
-                            </svg>
-                        </button>
+                    <div class="form-group">
+                        <label>Verification Code</label>
+                        <input type="text" name="reset_code" inputmode="numeric" maxlength="6" pattern="\d{6}" placeholder="Enter 6-digit code" required>
                     </div>
-                </div>
 
-                <button type="submit" class="btn" style="width:100%;">Reset Password</button>
-            </form>
+                    <button type="submit" class="btn" style="width:100%;">Verify Code</button>
+                </form>
+
+                <form method="POST" style="margin-top: 12px;">
+                    <input type="hidden" name="action" value="request_code">
+                    <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
+                    <button type="submit" class="btn-outline" style="width:100%;">Resend Code</button>
+                </form>
+            <?php else: ?>
+                <form method="POST">
+                    <input type="hidden" name="action" value="request_code">
+
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
+                    </div>
+
+                    <button type="submit" class="btn" style="width:100%;">Send Code</button>
+                </form>
+            <?php endif; ?>
 
             <p style="margin-top:20px;">
                 Remembered your password?
@@ -133,30 +273,5 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </div>
     </div>
 </div>
-
-<script>
-(function () {
-    var toggles = document.querySelectorAll(".password-toggle");
-
-    toggles.forEach(function (toggleButton) {
-        var targetId = toggleButton.getAttribute("data-target");
-        var targetInput = targetId ? document.getElementById(targetId) : null;
-
-        if (!targetInput) {
-            return;
-        }
-
-        toggleButton.addEventListener("click", function () {
-            var isVisible = targetInput.getAttribute("type") === "text";
-            targetInput.setAttribute("type", isVisible ? "password" : "text");
-            toggleButton.classList.toggle("is-visible", !isVisible);
-            toggleButton.setAttribute("aria-label", isVisible ? "Show password" : "Hide password");
-            toggleButton.setAttribute("aria-pressed", isVisible ? "false" : "true");
-            targetInput.focus();
-        });
-    });
-})();
-</script>
 </body>
 </html>
-

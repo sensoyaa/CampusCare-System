@@ -3,10 +3,15 @@ session_start();
 require_once __DIR__ . "/../../includes/db.php";
 require_once __DIR__ . "/../../includes/google_oauth.php";
 
-function google_redirect_with_error(string $message): void
+function google_auth_redirect_target(string $mode): string
+{
+    return $mode === "signup" ? "register.php" : "index.php";
+}
+
+function google_redirect_with_error(string $message, string $mode = "login"): void
 {
     $_SESSION["oauth_error"] = $message;
-    header("Location: index.php");
+    header("Location: " . google_auth_redirect_target($mode));
     exit();
 }
 
@@ -221,15 +226,20 @@ function google_generate_student_id(mysqli $conn): string
 }
 
 $config = campuscare_google_oauth_config();
+$googleMode = trim((string) ($_SESSION["google_oauth_mode"] ?? "login"));
+
+if ($googleMode !== "signup") {
+    $googleMode = "login";
+}
 
 if (!($config["is_configured"] ?? false)) {
-    google_redirect_with_error("Google sign-in is not configured on the server.");
+    google_redirect_with_error("Google sign-in is not configured on the server.", $googleMode);
 }
 
 if (isset($_GET["error"])) {
     $oauthError = trim((string) $_GET["error"]);
     $oauthError = str_replace("_", " ", $oauthError);
-    google_redirect_with_error("Google sign-in was cancelled or denied: " . $oauthError);
+    google_redirect_with_error("Google sign-in was cancelled or denied: " . $oauthError, $googleMode);
 }
 
 $state = trim((string) ($_GET["state"] ?? ""));
@@ -244,13 +254,13 @@ if (
     !hash_equals($savedState, $state) ||
     $stateExpiresAt < time()
 ) {
-    google_redirect_with_error("Google sign-in state validation failed. Please try again.");
+    google_redirect_with_error("Google sign-in state validation failed. Please try again.", $googleMode);
 }
 
 $code = trim((string) ($_GET["code"] ?? ""));
 
 if ($code === "") {
-    google_redirect_with_error("Google sign-in did not return an authorization code.");
+    google_redirect_with_error("Google sign-in did not return an authorization code.", $googleMode);
 }
 
 $tokenResponse = google_http_post_form(
@@ -265,14 +275,14 @@ $tokenResponse = google_http_post_form(
 );
 
 if (!($tokenResponse["success"] ?? false)) {
-    google_redirect_with_error("Google token exchange failed: " . ($tokenResponse["message"] ?? "Unknown error."));
+    google_redirect_with_error("Google token exchange failed: " . ($tokenResponse["message"] ?? "Unknown error."), $googleMode);
 }
 
 $tokenData = $tokenResponse["json"] ?? [];
 $accessToken = trim((string) ($tokenData["access_token"] ?? ""));
 
 if ($accessToken === "") {
-    google_redirect_with_error("Google sign-in did not return an access token.");
+    google_redirect_with_error("Google sign-in did not return an access token.", $googleMode);
 }
 
 $profileResponse = google_http_get_json(
@@ -281,7 +291,7 @@ $profileResponse = google_http_get_json(
 );
 
 if (!($profileResponse["success"] ?? false)) {
-    google_redirect_with_error("Unable to fetch Google profile: " . ($profileResponse["message"] ?? "Unknown error."));
+    google_redirect_with_error("Unable to fetch Google profile: " . ($profileResponse["message"] ?? "Unknown error."), $googleMode);
 }
 
 $profile = $profileResponse["json"] ?? [];
@@ -290,11 +300,11 @@ $emailVerified = (bool) ($profile["email_verified"] ?? false);
 $fullName = trim((string) ($profile["name"] ?? ""));
 
 if ($email === "") {
-    google_redirect_with_error("Google profile did not include an email address.");
+    google_redirect_with_error("Google profile did not include an email address.", $googleMode);
 }
 
 if (!$emailVerified) {
-    google_redirect_with_error("Your Google email address is not verified.");
+    google_redirect_with_error("Your Google email address is not verified.", $googleMode);
 }
 
 $isStudentDomain = google_email_matches_domain($email, ".student.buksu.edu.ph");
@@ -302,7 +312,7 @@ $isBuksuDomain = google_email_matches_domain($email, ".buksu.edu.ph");
 $isNonStudentDomain = $isBuksuDomain && !$isStudentDomain;
 
 if (!$isStudentDomain && !$isNonStudentDomain) {
-    google_redirect_with_error("Google sign-in is restricted to .student.buksu.edu.ph and .buksu.edu.ph email domains.");
+    google_redirect_with_error("Google sign-in is restricted to .student.buksu.edu.ph and .buksu.edu.ph email domains.", $googleMode);
 }
 
 if ($fullName === "") {
@@ -321,7 +331,7 @@ $lookupStmt = $conn->prepare(
 );
 
 if (!$lookupStmt) {
-    google_redirect_with_error("Unable to prepare account lookup for Google sign-in.");
+    google_redirect_with_error("Unable to prepare account lookup for Google sign-in.", $googleMode);
 }
 
 $lookupStmt->bind_param("s", $email);
@@ -336,60 +346,43 @@ if ($result->num_rows === 1) {
     $userRole = trim((string) ($user["role"] ?? "Student"));
 
     if (strcasecmp($status, "Active") !== 0) {
-        google_redirect_with_error("Your account is not active.");
+        google_redirect_with_error("Your account is not active.", $googleMode);
     }
 
     if (google_is_student_role($userRole) && !$isStudentDomain) {
-        google_redirect_with_error("Student accounts must sign in using an email ending in .student.buksu.edu.ph.");
+        google_redirect_with_error("Student accounts must sign in using an email ending in .student.buksu.edu.ph.", $googleMode);
     }
 
     if (!google_is_student_role($userRole) && !$isNonStudentDomain) {
-        google_redirect_with_error("Non-student roles must sign in using an email ending in .buksu.edu.ph.");
+        google_redirect_with_error("Non-student roles must sign in using an email ending in .buksu.edu.ph.", $googleMode);
+    }
+
+    if ($googleMode === "signup") {
+        unset($_SESSION["google_oauth_mode"]);
+        google_redirect_with_error("An account with this Google email already exists. Please log in instead.", "signup");
     }
 } else {
     $lookupStmt->close();
 
+    if ($googleMode === "login") {
+        unset($_SESSION["google_oauth_mode"]);
+        google_redirect_with_error("No account was found for this Google email. Please create an account first.", "login");
+    }
+
     if (!$isStudentDomain) {
-        google_redirect_with_error("Only student emails ending in .student.buksu.edu.ph can auto-register with Google sign-in. Non-student accounts must be pre-created and use .buksu.edu.ph.");
+        unset($_SESSION["google_oauth_mode"]);
+        google_redirect_with_error("Google sign-up is only available for student emails ending in .student.buksu.edu.ph.", "signup");
     }
 
-    $studentId = google_generate_student_id($conn);
-    $placeholderPassword = password_hash(google_random_token(24), PASSWORD_DEFAULT);
-    $role = "Student";
-    $status = "Active";
-
-    $insertStmt = $conn->prepare(
-        "INSERT INTO users (full_name, student_id, email, password, role, status)
-         VALUES (?, ?, ?, ?, ?, ?)"
-    );
-
-    if (!$insertStmt) {
-        google_redirect_with_error("Unable to create a new CampusCare account from Google sign-in.");
-    }
-
-    $insertStmt->bind_param("ssssss", $fullName, $studentId, $email, $placeholderPassword, $role, $status);
-
-    if (!$insertStmt->execute()) {
-        $insertError = intval($insertStmt->errno);
-        $insertStmt->close();
-        google_redirect_with_error(
-            $insertError === 1062
-                ? "Email must be unique. Duplicate email is not allowed."
-                : "Failed to create your CampusCare account from Google sign-in."
-        );
-    }
-
-    $newUserId = intval($insertStmt->insert_id);
-    $insertStmt->close();
-
-    $user = [
-        "id" => $newUserId,
+    $_SESSION["pending_google_signup"] = [
         "full_name" => $fullName,
-        "student_id" => $studentId,
         "email" => $email,
-        "role" => $role,
-        "status" => $status,
+        "role" => "Student",
+        "status" => "Active"
     ];
+    unset($_SESSION["google_oauth_mode"]);
+    header("Location: register.php");
+    exit();
 }
 
 $_SESSION["user_id"] = intval($user["id"] ?? 0);
@@ -397,6 +390,7 @@ $_SESSION["full_name"] = (string) ($user["full_name"] ?? $fullName);
 $_SESSION["student_id"] = (string) ($user["student_id"] ?? "");
 $_SESSION["email"] = (string) ($user["email"] ?? $email);
 $_SESSION["role"] = (string) ($user["role"] ?? "Student");
+unset($_SESSION["google_oauth_mode"], $_SESSION["pending_google_signup"]);
 
 header("Location: dashboard.php");
 exit();

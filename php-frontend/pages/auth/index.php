@@ -6,6 +6,8 @@ require_once __DIR__ . "/../../includes/google_oauth.php";
 
 $error = "";
 $email = "";
+$frontendBaseUrl = "/campuscare-api/php-frontend";
+$projectBaseUrl = "/campuscare-api";
 $googleOauthConfig = campuscare_google_oauth_config();
 $googleOauthEnabled = (bool) ($googleOauthConfig["is_configured"] ?? false);
 
@@ -68,7 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
     <meta charset="UTF-8">
     <title>Login | CampusCare</title>
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="<?php echo htmlspecialchars($frontendBaseUrl); ?>/assets/style.css">
     <?php if ($RECAPTCHA_SITE_KEY !== ""): ?>
         <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <?php endif; ?>
@@ -77,7 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <div class="form-page">
     <div class="form-left">
         <div>
-            <img src="../images/logo.png" alt="CampusCare">
+            <img src="<?php echo htmlspecialchars($projectBaseUrl); ?>/images/logo.png" alt="CampusCare">
             <h1>CampusCare</h1>
             <p>Your university mental health and wellness companion</p>
         </div>
@@ -133,7 +135,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <div class="oauth-divider"><span>or</span></div>
 
             <?php if ($googleOauthEnabled): ?>
-                <a href="google-login.php" class="google-login-btn" aria-label="Continue with Google">
+                <a href="google-login.php?mode=login" class="google-login-btn" aria-label="Continue with Google">
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                         <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.2-.9 2.3-2 3.1l3.2 2.5c1.9-1.8 3-4.5 3-7.7 0-.7-.1-1.3-.2-1.9H12z"></path>
                         <path fill="#34A853" d="M12 22c2.7 0 5-0.9 6.7-2.4l-3.2-2.5c-.9.6-2 .9-3.5.9-2.7 0-5-1.8-5.8-4.3l-3.3 2.6C4.7 19.7 8.1 22 12 22z"></path>

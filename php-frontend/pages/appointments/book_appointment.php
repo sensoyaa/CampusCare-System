@@ -2,6 +2,7 @@
 require_once __DIR__ . "/../../includes/auth.php";
 requireLogin();
 require_once __DIR__ . "/../../includes/db.php";
+require_once __DIR__ . "/../../../backend/config/mail.php";
 
 $pageTitle = "Book Appointment";
 
@@ -40,7 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($service === "" || $counselor_id <= 0 || $appointment_date === "" || $appointment_time === "") {
         $error = "Please complete all fields.";
     } else {
-        $counselorQuery = $conn->prepare("SELECT full_name FROM users WHERE id = ? LIMIT 1");
+        $counselorQuery = $conn->prepare("SELECT full_name, email FROM users WHERE id = ? LIMIT 1");
         $counselorQuery->bind_param("i", $counselor_id);
         $counselorQuery->execute();
         $counselorResult = $counselorQuery->get_result();
@@ -48,10 +49,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if ($counselorResult->num_rows === 0) {
             $error = "Selected counselor not found.";
         } else {
-            $counselor = $counselorResult->fetch_assoc()["full_name"];
+            $counselorRecord = $counselorResult->fetch_assoc();
+            $counselor = $counselorRecord["full_name"];
+            $counselorEmail = trim((string) ($counselorRecord["email"] ?? ""));
             $finalService = formatService($service);
             $finalTime = formatTimeToMysql($appointment_time);
             $status = "Pending";
+            $studentEmail = trim((string) ($_SESSION["email"] ?? ""));
+            $studentName = trim((string) ($_SESSION["full_name"] ?? "Student"));
+
+            if ($studentEmail === "") {
+                $studentQuery = $conn->prepare("SELECT email FROM users WHERE id = ? LIMIT 1");
+
+                if ($studentQuery) {
+                    $studentQuery->bind_param("i", $userId);
+                    $studentQuery->execute();
+                    $studentRecord = $studentQuery->get_result()->fetch_assoc();
+                    $studentEmail = trim((string) ($studentRecord["email"] ?? ""));
+                    $studentQuery->close();
+                }
+            }
 
             $stmt = $conn->prepare("
                 INSERT INTO appointments 
@@ -72,12 +89,75 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             if ($stmt->execute()) {
                 $formattedDate = date("F j, Y", strtotime($appointment_date));
+                $emailSent = false;
+                $counselorEmailSent = false;
+
+                if ($studentEmail !== "") {
+                    $subject = "CampusCare Appointment Confirmation";
+                    $htmlBody = campuscare_email_template(
+                        "Appointment Confirmation",
+                        "Your appointment request has been received and is now pending review.",
+                        "
+                        <p style=\"margin:0 0 16px;\">Hello " . htmlspecialchars($studentName, ENT_QUOTES, "UTF-8") . ",</p>
+                        <p style=\"margin:0 0 24px;\">Your CampusCare appointment request has been submitted successfully.</p>
+                        <div style=\"margin:0 0 24px; padding:22px; border-radius:20px; background:#f4f9fc; border:1px solid #d5e7f2;\">
+                            <div style=\"font-size:13px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:#5d7a91; margin-bottom:14px;\">Appointment Details</div>
+                            <div style=\"margin-bottom:10px;\"><strong>Service:</strong> " . htmlspecialchars($finalService, ENT_QUOTES, "UTF-8") . "</div>
+                            <div style=\"margin-bottom:10px;\"><strong>Counselor:</strong> " . htmlspecialchars($counselor, ENT_QUOTES, "UTF-8") . "</div>
+                            <div style=\"margin-bottom:10px;\"><strong>Date:</strong> " . htmlspecialchars($formattedDate, ENT_QUOTES, "UTF-8") . "</div>
+                            <div style=\"margin-bottom:10px;\"><strong>Time:</strong> " . htmlspecialchars($appointment_time, ENT_QUOTES, "UTF-8") . "</div>
+                            <div><strong>Status:</strong> Pending</div>
+                        </div>
+                        <div style=\"margin:0 0 24px; padding:18px 20px; border-radius:18px; background:#eef8ef; border:1px solid #cfe4d1; color:#2d5d35;\">
+                            We will notify you once there is an update from the guidance office.
+                        </div>
+                        <p style=\"margin:0;\">Please keep this message for your reference.</p>
+                        ",
+                        [
+                            "preview" => "Your CampusCare appointment request has been received.",
+                            "footer" => "Need to make changes? Please contact the guidance office or use your CampusCare account."
+                        ]
+                    );
+                    $textBody = "Hello {$studentName},\n\nYour appointment request has been received successfully.\n\nService: {$finalService}\nCounselor: {$counselor}\nDate: {$formattedDate}\nTime: {$appointment_time}\nStatus: Pending\n\nPlease wait for further updates from CampusCare.";
+                    $mailResult = send_smtp_mail($studentEmail, $studentName, $subject, $htmlBody, $textBody);
+                    $emailSent = $mailResult["success"];
+                }
+
+                if ($counselorEmail !== "") {
+                    $subject = "New CampusCare Appointment Request";
+                    $htmlBody = campuscare_email_template(
+                        "New Appointment Request",
+                        "A student has booked an appointment with you in CampusCare.",
+                        "
+                        <p style=\"margin:0 0 16px;\">Hello " . htmlspecialchars($counselor, ENT_QUOTES, "UTF-8") . ",</p>
+                        <p style=\"margin:0 0 24px;\">A new appointment request has been assigned to you.</p>
+                        <div style=\"margin:0 0 24px; padding:22px; border-radius:20px; background:#f4f9fc; border:1px solid #d5e7f2;\">
+                            <div style=\"font-size:13px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:#5d7a91; margin-bottom:14px;\">Appointment Details</div>
+                            <div style=\"margin-bottom:10px;\"><strong>Student:</strong> " . htmlspecialchars($studentName, ENT_QUOTES, "UTF-8") . "</div>
+                            <div style=\"margin-bottom:10px;\"><strong>Service:</strong> " . htmlspecialchars($finalService, ENT_QUOTES, "UTF-8") . "</div>
+                            <div style=\"margin-bottom:10px;\"><strong>Date:</strong> " . htmlspecialchars($formattedDate, ENT_QUOTES, "UTF-8") . "</div>
+                            <div style=\"margin-bottom:10px;\"><strong>Time:</strong> " . htmlspecialchars($appointment_time, ENT_QUOTES, "UTF-8") . "</div>
+                            <div><strong>Status:</strong> Pending</div>
+                        </div>
+                        <p style=\"margin:0;\">Please check your CampusCare schedule for the full appointment details.</p>
+                        ",
+                        [
+                            "preview" => "A new appointment request has been assigned to you.",
+                            "footer" => "This notification was sent because you are the assigned counselor for this appointment."
+                        ]
+                    );
+                    $textBody = "Hello {$counselor},\n\nA new appointment request has been assigned to you.\n\nStudent: {$studentName}\nService: {$finalService}\nDate: {$formattedDate}\nTime: {$appointment_time}\nStatus: Pending\n\nPlease check your CampusCare schedule for the full appointment details.";
+                    $counselorMailResult = send_smtp_mail($counselorEmail, $counselor, $subject, $htmlBody, $textBody);
+                    $counselorEmailSent = $counselorMailResult["success"];
+                }
 
                 header("Location: confirmation.php?" . http_build_query([
                     "service" => $finalService,
                     "counselor" => $counselor,
                     "date" => $formattedDate,
                     "time" => $appointment_time,
+                    "email" => $emailSent ? "sent" : "not-sent",
+                    "counselor_email" => $counselorEmailSent ? "sent" : "not-sent",
                 ]));
                 exit();
             } else {

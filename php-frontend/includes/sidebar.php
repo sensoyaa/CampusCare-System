@@ -95,7 +95,7 @@ $items = $navItems[$role] ?? $navItems["Student"];
 
     <div class="sidebar-footer">
         <p>Role: <strong><?php echo htmlspecialchars($role); ?></strong></p>
-        <a href="logout.php" class="logout">
+        <a href="logout.php" class="logout" onclick="return confirm('Are you sure you want to log out?');">
             <span class="nav-icon"><?php echo sidebarIconSvg("logout"); ?></span>
             <span>Log Out</span>
         </a>
