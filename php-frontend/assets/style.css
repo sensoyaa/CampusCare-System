@@ -34,7 +34,7 @@ body {
 }
 
 .sidebar {
-    width: 262px;
+    width: 220px;
     min-height: 100vh;
     background: var(--sidebar-bg);
     color: #fff;
@@ -42,7 +42,7 @@ body {
     top: 0;
     left: 0;
     bottom: 0;
-    padding: 16px 14px;
+    padding: 12px 10px;
     display: flex;
     flex-direction: column;
 }
@@ -50,21 +50,21 @@ body {
 .brand {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 24px;
+    gap: 8px;
+    margin-bottom: 18px;
     padding: 4px 6px;
 }
 
 .brand img {
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     object-fit: contain;
     background: rgba(255, 255, 255, 0.96);
     border-radius: 4px;
 }
 
 .brand h2 {
-    font-size: 19px;
+    font-size: 16px;
     line-height: 1;
     letter-spacing: -0.2px;
     white-space: nowrap;
@@ -72,7 +72,7 @@ body {
 
 .brand p {
     margin-top: 5px;
-    font-size: 10px;
+    font-size: 8px;
     color: rgba(255, 255, 255, 0.72);
     white-space: nowrap;
 }
@@ -86,13 +86,13 @@ body {
 .nav a {
     text-decoration: none;
     color: #fff;
-    border-radius: 14px;
-    padding: 11px 13px;
+    border-radius: 12px;
+    padding: 9px 11px;
     display: flex;
     align-items: center;
-    gap: 11px;
+    gap: 10px;
     font-weight: 600;
-    font-size: 16px;
+    font-size: 13px;
     transition: background-color 0.2s ease;
 }
 
@@ -102,8 +102,8 @@ body {
 }
 
 .nav-icon {
-    width: 19px;
-    height: 19px;
+    width: 17px;
+    height: 17px;
     border-radius: 0;
     display: inline-flex;
     align-items: center;
@@ -112,8 +112,8 @@ body {
 }
 
 .nav-icon svg {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     display: block;
 }
 
@@ -124,7 +124,7 @@ body {
 
 .sidebar-footer p {
     color: rgba(255, 255, 255, 0.68);
-    font-size: 13px;
+    font-size: 11px;
     margin-bottom: 14px;
 }
 
@@ -137,10 +137,11 @@ body {
     text-decoration: none;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     font-weight: 600;
     border-radius: 10px;
-    padding: 8px 10px;
+    padding: 7px 8px;
+    font-size: 13px;
 }
 
 .logout:hover {
@@ -148,21 +149,21 @@ body {
 }
 
 .main {
-    margin-left: 262px;
-    width: calc(100% - 262px);
+    margin-left: 220px;
+    width: calc(100% - 220px);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
 .topbar {
-    height: 72px;
+    height: 58px;
     background: #fff;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 28px;
+    padding: 0 18px;
 }
 
 .menu-toggle {
@@ -187,15 +188,15 @@ body {
 .topbar-user {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     color: var(--text-muted);
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 500;
 }
 
 .avatar {
-    width: 38px;
-    height: 38px;
+    width: 32px;
+    height: 32px;
     border-radius: 999px;
     display: inline-flex;
     align-items: center;
@@ -203,30 +204,30 @@ body {
     background: var(--primary);
     color: #fff;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 11px;
 }
 
 .content {
     width: 100%;
-    padding: 30px 28px 44px;
+    padding: 18px 18px 28px;
 }
 
 .page-shell {
-    max-width: 1320px;
+    max-width: 1160px;
     margin: 0 auto;
 }
 
 .page-title {
-    font-size: 30px;
+    font-size: 23px;
     line-height: 1.2;
     letter-spacing: -0.4px;
-    margin-bottom: 7px;
+    margin-bottom: 5px;
 }
 
 .page-subtitle {
     color: var(--text-muted);
-    font-size: 16px;
-    line-height: 1.55;
+    font-size: 14px;
+    line-height: 1.45;
 }
 
 .role-pill {
@@ -238,21 +239,21 @@ body {
 .date-card {
     background: #fff;
     border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 13px 18px;
-    min-width: 170px;
+    border-radius: 14px;
+    padding: 10px 14px;
+    min-width: 146px;
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
 .date-card .date-icon {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     border-radius: 10px;
     background: #edf4fb;
     color: var(--primary);
-    font-size: 16px;
+    font-size: 14px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -707,9 +708,9 @@ body {
 }
 
 .btn-sm {
-    padding: 8px 12px;
+    padding: 6px 10px;
     border-radius: 10px;
-    font-size: 12px;
+    font-size: 10px;
 }
 
 .btn-danger-outline {
@@ -1412,7 +1413,7 @@ body {
 .book-shell,
 .schedule-shell,
 .test-shell {
-    max-width: 980px;
+    max-width: 900px;
     margin: 0 auto;
 }
 
@@ -1501,8 +1502,8 @@ textarea {
     border: 1px solid #d8e3ed;
     background: #fff;
     border-radius: 12px;
-    padding: 12px 14px;
-    font-size: 15px;
+    padding: 10px 12px;
+    font-size: 13px;
     color: var(--text-main);
 }
 
@@ -1522,7 +1523,7 @@ textarea:focus {
     align-items: center;
     border-radius: 12px;
     border: 1px solid transparent;
-    padding: 12px 16px;
+    padding: 9px 13px;
     font-weight: 700;
     cursor: pointer;
     text-decoration: none;
@@ -1715,8 +1716,44 @@ textarea:focus {
 
 .schedule-list {
     display: grid;
-    gap: 14px;
-    margin-top: 12px;
+    gap: 16px;
+    margin-top: 14px;
+}
+
+.schedule-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.schedule-summary-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 8px 20px rgba(28, 60, 92, 0.045);
+}
+
+.schedule-summary-card strong {
+    display: block;
+    font-size: 24px;
+    line-height: 1.1;
+}
+
+.schedule-summary-label {
+    display: block;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 7px;
+}
+
+.schedule-summary-card-accent {
+    background: linear-gradient(135deg, #edf5fd 0%, #f7fbff 100%);
+    border-color: #cfe0f1;
 }
 
 .schedule-item {
@@ -1769,6 +1806,118 @@ textarea:focus {
     gap: 8px;
 }
 
+.schedule-item-clean {
+    padding: 16px 18px;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(28, 60, 92, 0.045);
+}
+
+.schedule-main {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: start;
+}
+
+.schedule-heading-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.schedule-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.schedule-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: #f4f8fc;
+    border: 1px solid #dce6ef;
+    color: #62788d;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.schedule-actions-clean {
+    min-width: 310px;
+    max-width: 360px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px 12px;
+}
+
+.schedule-action-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.schedule-action-group-primary {
+    justify-content: flex-end;
+}
+
+.schedule-action-group-danger {
+    justify-content: flex-end;
+}
+
+.schedule-actions-clean .btn-sm {
+    min-height: 38px;
+    padding: 8px 14px;
+    font-size: 12px;
+}
+
+.schedule-actions-clean .btn-outline.btn-sm {
+    border-color: #c9d9e8;
+}
+
+.schedule-actions-clean .status-pill {
+    font-size: 12px;
+    padding: 8px 12px;
+}
+
+.schedule-shell .page-title {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+.schedule-shell .page-subtitle {
+    font-size: 13px;
+}
+
+.schedule-shell .schedule-title {
+    font-size: 14px;
+    line-height: 1.35;
+    margin-bottom: 0;
+}
+
+.schedule-shell .schedule-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+}
+
+.schedule-shell .schedule-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.schedule-shell .icon-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+}
+
 .icon-btn {
     width: 26px;
     height: 26px;
@@ -1800,6 +1949,112 @@ textarea:focus {
     background: #e9f8ee;
     border-color: #cfedd8;
     color: #237645;
+}
+
+@media (max-width: 1200px) {
+    .schedule-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .schedule-main {
+        grid-template-columns: 1fr;
+    }
+
+    .schedule-actions-clean {
+        min-width: 0;
+        max-width: none;
+        grid-template-columns: 1fr auto;
+    }
+}
+
+@media (max-width: 760px) {
+    .schedule-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .schedule-heading-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .schedule-actions-clean {
+        grid-template-columns: 1fr;
+    }
+
+    .schedule-action-group-primary,
+    .schedule-action-group-danger {
+        justify-content: flex-start;
+    }
+}
+
+.system-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(24, 42, 59, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 1300;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.system-confirm-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.system-confirm-card {
+    width: 100%;
+    max-width: 440px;
+    background: #fff;
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: 0 28px 60px rgba(22, 46, 69, 0.22);
+}
+
+.system-confirm-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    background: #edf4fb;
+    color: var(--primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 16px;
+}
+
+.system-confirm-copy h3 {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.system-confirm-copy p {
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.system-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.btn-danger-solid {
+    background: #d95e5e;
+    border-color: #d95e5e;
+    color: #fff;
+}
+
+.btn-danger-solid:hover {
+    background: #c44d4d;
+    border-color: #c44d4d;
 }
 
 .small-link {

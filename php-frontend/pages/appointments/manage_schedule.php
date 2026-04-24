@@ -190,7 +190,13 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             </div>
                         </div>
 
-                        <form method="POST" onsubmit="return confirm('Remove this slot?');">
+                        <form
+                            method="POST"
+                            data-confirm-title="Remove schedule slot"
+                            data-confirm-message="Remove this availability slot from your schedule?"
+                            data-confirm-button="Remove Slot"
+                            data-confirm-variant="danger"
+                        >
                             <input type="hidden" name="action" value="delete_slot">
                             <input type="hidden" name="slot_id" value="<?php echo intval($slot["id"]); ?>">
                             <button type="submit" class="delete-icon-btn" aria-label="Delete slot">

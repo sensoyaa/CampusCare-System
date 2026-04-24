@@ -29,6 +29,29 @@ function formatService($service) {
     return $service;
 }
 
+function appointmentSlotIsTaken(mysqli $conn, int $counselorId, string $appointmentDate, string $appointmentTimeSql): bool {
+    $stmt = $conn->prepare("
+        SELECT id
+        FROM appointments
+        WHERE counselor_id = ?
+          AND appointment_date = ?
+          AND appointment_time = ?
+          AND COALESCE(NULLIF(status, ''), 'Pending') NOT IN ('Cancelled', 'Rejected')
+        LIMIT 1
+    ");
+
+    if (!$stmt) {
+        return true;
+    }
+
+    $stmt->bind_param("iss", $counselorId, $appointmentDate, $appointmentTimeSql);
+    $stmt->execute();
+    $isTaken = $stmt->get_result()->fetch_assoc() !== null;
+    $stmt->close();
+
+    return $isTaken;
+}
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $service = trim($_POST["service"] ?? "");
     $counselor_id = intval($_POST["counselor_id"] ?? 0);
@@ -70,24 +93,27 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 }
             }
 
-            $stmt = $conn->prepare("
-                INSERT INTO appointments 
-                (user_id, counselor_id, service, counselor, appointment_date, appointment_time, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ");
+            if (appointmentSlotIsTaken($conn, $counselor_id, $appointment_date, $finalTime)) {
+                $error = "This time slot is already booked. Please choose another available time.";
+            } else {
+                $stmt = $conn->prepare("
+                    INSERT INTO appointments 
+                    (user_id, counselor_id, service, counselor, appointment_date, appointment_time, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ");
 
-            $stmt->bind_param(
-                "iisssss",
-                $userId,
-                $counselor_id,
-                $finalService,
-                $counselor,
-                $appointment_date,
-                $finalTime,
-                $status
-            );
+                $stmt->bind_param(
+                    "iisssss",
+                    $userId,
+                    $counselor_id,
+                    $finalService,
+                    $counselor,
+                    $appointment_date,
+                    $finalTime,
+                    $status
+                );
 
-            if ($stmt->execute()) {
+                if ($stmt->execute()) {
                 $formattedDate = date("F j, Y", strtotime($appointment_date));
                 $emailSent = false;
                 $counselorEmailSent = false;
@@ -160,11 +186,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     "counselor_email" => $counselorEmailSent ? "sent" : "not-sent",
                 ]));
                 exit();
-            } else {
-                $error = "Failed to book appointment.";
-            }
+                } else {
+                    $error = "Failed to book appointment.";
+                }
 
-            $stmt->close();
+                $stmt->close();
+            }
         }
 
         $counselorQuery->close();
@@ -258,6 +285,27 @@ if ($selectedCounselor > 0 && $selectedDate !== "") {
             }
         }
     }
+
+    $bookedSlotStmt = $conn->prepare("
+        SELECT appointment_time
+        FROM appointments
+        WHERE counselor_id = ?
+          AND appointment_date = ?
+          AND COALESCE(NULLIF(status, ''), 'Pending') NOT IN ('Cancelled', 'Rejected')
+    ");
+    $bookedSlotStmt->bind_param("is", $selectedCounselor, $selectedDate);
+    $bookedSlotStmt->execute();
+    $bookedSlotResult = $bookedSlotStmt->get_result();
+    $bookedSlots = [];
+
+    while ($bookedRow = $bookedSlotResult->fetch_assoc()) {
+        $bookedSlots[] = date("g:i A", strtotime((string) $bookedRow["appointment_time"]));
+    }
+
+    $bookedSlotStmt->close();
+    $availableSlots = array_values(array_filter($availableSlots, function ($slot) use ($bookedSlots) {
+        return !in_array($slot, $bookedSlots, true);
+    }));
 
     $availabilityStmt->close();
 }

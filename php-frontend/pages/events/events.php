@@ -225,7 +225,14 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <?php endif; ?>
 
                                 <?php if ($canManage): ?>
-                                    <form method="POST" class="inline-form" onsubmit="return confirm('Delete this event?');">
+                                    <form
+                                        method="POST"
+                                        class="inline-form"
+                                        data-confirm-title="Delete event"
+                                        data-confirm-message="Delete this event permanently?"
+                                        data-confirm-button="Delete Event"
+                                        data-confirm-variant="danger"
+                                    >
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="event_id" value="<?php echo intval($event["id"]); ?>">
                                         <button type="submit" class="row-icon-btn danger" aria-label="Delete event">

@@ -173,21 +173,41 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 </span>
 
                                 <?php if ($status === "Pending"): ?>
-                                    <form method="POST" class="inline-form">
+                                    <form
+                                        method="POST"
+                                        class="inline-form"
+                                        data-confirm-title="Approve appointment"
+                                        data-confirm-message="Approve this appointment request?"
+                                        data-confirm-button="Approve"
+                                    >
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="appointment_id" value="<?php echo intval($appointment["id"]); ?>">
                                         <input type="hidden" name="status" value="Approved">
                                         <button type="submit" class="btn btn-sm">Approve</button>
                                     </form>
 
-                                    <form method="POST" class="inline-form">
+                                    <form
+                                        method="POST"
+                                        class="inline-form"
+                                        data-confirm-title="Decline appointment"
+                                        data-confirm-message="Decline this appointment request?"
+                                        data-confirm-button="Decline"
+                                        data-confirm-variant="danger"
+                                    >
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="appointment_id" value="<?php echo intval($appointment["id"]); ?>">
-                                        <input type="hidden" name="status" value="Cancelled">
+                                        <input type="hidden" name="status" value="Rejected">
                                         <button type="submit" class="btn btn-outline btn-sm">Decline</button>
                                     </form>
                                 <?php elseif ($status === "Approved"): ?>
-                                    <form method="POST" class="inline-form">
+                                    <form
+                                        method="POST"
+                                        class="inline-form"
+                                        data-confirm-title="Cancel appointment"
+                                        data-confirm-message="Cancel this approved appointment?"
+                                        data-confirm-button="Cancel Appointment"
+                                        data-confirm-variant="danger"
+                                    >
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="appointment_id" value="<?php echo intval($appointment["id"]); ?>">
                                         <input type="hidden" name="status" value="Cancelled">

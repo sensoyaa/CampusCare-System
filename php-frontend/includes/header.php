@@ -13,6 +13,109 @@ $userName = $_SESSION["full_name"] ?? "User";
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle); ?> | CampusCare</title>
     <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/compact.css">
 </head>
 <body>
+<div class="system-confirm-overlay" id="systemConfirmOverlay" aria-hidden="true">
+    <div class="system-confirm-card" role="dialog" aria-modal="true" aria-labelledby="systemConfirmTitle">
+        <div class="system-confirm-icon" id="systemConfirmIcon">?</div>
+        <div class="system-confirm-copy">
+            <h3 id="systemConfirmTitle">Please confirm</h3>
+            <p id="systemConfirmMessage">Are you sure you want to continue?</p>
+        </div>
+        <div class="system-confirm-actions">
+            <button type="button" class="btn btn-outline" id="systemConfirmCancel">Cancel</button>
+            <button type="button" class="btn" id="systemConfirmProceed">Continue</button>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    const confirmOverlay = document.getElementById("systemConfirmOverlay");
+    const confirmTitle = document.getElementById("systemConfirmTitle");
+    const confirmMessage = document.getElementById("systemConfirmMessage");
+    const confirmIcon = document.getElementById("systemConfirmIcon");
+    const confirmCancel = document.getElementById("systemConfirmCancel");
+    const confirmProceed = document.getElementById("systemConfirmProceed");
+    let pendingAction = null;
+
+    if (!confirmOverlay || !confirmTitle || !confirmMessage || !confirmIcon || !confirmCancel || !confirmProceed) {
+        return;
+    }
+
+    function closeConfirm() {
+        confirmOverlay.classList.remove("open");
+        confirmOverlay.setAttribute("aria-hidden", "true");
+        pendingAction = null;
+    }
+
+    function openConfirm(config) {
+        confirmTitle.textContent = config.title;
+        confirmMessage.textContent = config.message;
+        confirmProceed.textContent = config.buttonLabel;
+        confirmIcon.textContent = config.variant === "danger" ? "!" : "?";
+        confirmProceed.classList.toggle("btn-danger-solid", config.variant === "danger");
+        confirmOverlay.classList.add("open");
+        confirmOverlay.setAttribute("aria-hidden", "false");
+    }
+
+    document.addEventListener("submit", function (event) {
+        const form = event.target;
+
+        if (!(form instanceof HTMLFormElement) || !form.hasAttribute("data-confirm-message")) {
+            return;
+        }
+
+        if (form.dataset.confirmed === "true") {
+            form.dataset.confirmed = "false";
+            return;
+        }
+
+        event.preventDefault();
+        pendingAction = function () {
+            form.dataset.confirmed = "true";
+            form.submit();
+        };
+        openConfirm({
+            title: form.getAttribute("data-confirm-title") || "Please confirm",
+            message: form.getAttribute("data-confirm-message") || "Are you sure you want to continue?",
+            buttonLabel: form.getAttribute("data-confirm-button") || "Continue",
+            variant: form.getAttribute("data-confirm-variant") || "default"
+        });
+    });
+
+    document.addEventListener("click", function (event) {
+        const link = event.target.closest("a[data-confirm-message]");
+
+        if (!link) {
+            return;
+        }
+
+        event.preventDefault();
+        pendingAction = function () {
+            window.location.href = link.getAttribute("href");
+        };
+        openConfirm({
+            title: link.getAttribute("data-confirm-title") || "Please confirm",
+            message: link.getAttribute("data-confirm-message") || "Are you sure you want to continue?",
+            buttonLabel: link.getAttribute("data-confirm-button") || "Continue",
+            variant: link.getAttribute("data-confirm-variant") || "default"
+        });
+    });
+
+    confirmCancel.addEventListener("click", closeConfirm);
+    confirmOverlay.addEventListener("click", function (event) {
+        if (event.target === confirmOverlay) {
+            closeConfirm();
+        }
+    });
+    confirmProceed.addEventListener("click", function () {
+        const action = pendingAction;
+        closeConfirm();
+        if (action) {
+            action();
+        }
+    });
+})();
+</script>
 <div class="app">

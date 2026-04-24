@@ -1,0 +1,73 @@
+/* Compact sizing overrides for entire system */
+body { font-size: 13px; }
+
+.sidebar { width: 240px; padding: 10px 8px; }
+.brand { gap: 7px; margin-bottom: 14px; padding: 4px 6px; }
+.brand img { width: 32px; height: 32px; }
+.brand h2 { font-size: 15px; }
+.brand p { margin-top: 4px; font-size: 8px; }
+.nav a { border-radius: 10px; padding: 8px 10px; gap: 9px; font-size: 13px; }
+.nav-icon { width: 16px; height: 16px; }
+.nav-icon svg { width: 15px; height: 15px; }
+.sidebar-footer p { font-size: 10px; margin-bottom: 12px; }
+.logout { gap: 7px; border-radius: 9px; padding: 7px 8px; font-size: 12px; }
+
+.main { margin-left: 240px; width: calc(100% - 240px); }
+.topbar { height: 52px; padding: 0 16px; }
+.topbar-user { gap: 7px; font-size: 12px; }
+.avatar { width: 30px; height: 30px; font-size: 11px; }
+.content { padding: 16px 16px 24px; }
+
+.page-shell { max-width: 95%; }
+.page-title { font-size: 22px; letter-spacing: -0.3px; margin-bottom: 4px; }
+.page-subtitle { font-size: 13px; line-height: 1.4; }
+
+.admin-shell { max-width: 95%; }
+.admin-stat-value { font-size: 30px; margin-bottom: 3px; }
+.admin-stat-label { font-size: 13px; }
+.strong { font-size: 15px; }
+.muted { font-size: 13px; }
+.summary-row .big { font-size: 26px; }
+.quick-title, .section-title { font-size: 17px; margin-bottom: 10px; }
+.quick-card h4 { font-size: 15px; }
+.quick-icon { width: 38px; height: 38px; border-radius: 11px; }
+.quick-icon svg { width: 17px; height: 17px; }
+
+.card-title { font-size: 21px; margin-bottom: 12px; }
+input, select, textarea { border-radius: 10px; padding: 9px 11px; font-size: 13px; }
+.btn, .btn-primary, .btn-outline { border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+.btn-sm { padding: 6px 9px; border-radius: 8px; font-size: 12px; }
+
+.counselor-shell { max-width: 95%; }
+.counselor-stat-value { font-size: 34px; margin-bottom: 5px; }
+.facilitator-shell { max-width: 95%; }
+.facilitator-stat-value { font-size: 34px; margin-bottom: 4px; }
+.instructor-shell { max-width: 95%; }
+.instructor-stat-value { font-size: 34px; margin-bottom: 4px; }
+.instructor-status-shell { max-width: 95%; }
+
+.schedule-summary-card strong { font-size: 21px; }
+.book-shell, .schedule-shell, .test-shell { max-width: 90%; }
+.events-shell { max-width: 90%; }
+
+.form-left h1 { font-size: 38px; margin-bottom: 10px; }
+.form-box h2 { font-size: 30px; margin-bottom: 5px; }
+.question-text { font-size: 17px; margin-bottom: 14px; }
+.modal-head h3 { font-size: 26px; }
+.system-confirm-copy h3 { font-size: 22px; margin-bottom: 7px; }
+
+.date-card { padding: 9px 12px; min-width: 140px; }
+.summary-card { padding: 16px 18px; }
+.quick-card { padding: 16px; min-height: 140px; }
+.admin-stat-card { padding: 15px 16px; }
+.admin-quick-card { min-height: 120px; padding: 16px; }
+.admin-appointment-card { padding: 13px 15px; }
+.admin-event-card { padding: 15px 17px; }
+.appointment-card { padding: 15px 17px; }
+.schedule-item { padding: 16px 20px; }
+.card { padding: 20px; }
+
+@media (max-width: 1024px) {
+    .sidebar { width: 240px; }
+    .main { margin-left: 240px; width: calc(100% - 240px); }
+}

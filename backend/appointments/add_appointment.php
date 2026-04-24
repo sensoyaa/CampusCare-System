@@ -73,6 +73,37 @@ if (!$counselorUser) {
     exit();
 }
 
+$slotCheckStmt = $conn->prepare("
+    SELECT id
+    FROM appointments
+    WHERE counselor_id = ?
+      AND appointment_date = ?
+      AND appointment_time = ?
+      AND COALESCE(NULLIF(status, ''), 'Pending') NOT IN ('Cancelled', 'Rejected')
+    LIMIT 1
+");
+
+if (!$slotCheckStmt) {
+    echo json_encode([
+        "success" => false,
+        "message" => "Unable to validate appointment slot."
+    ]);
+    exit();
+}
+
+$slotCheckStmt->bind_param("iss", $counselor_id, $appointment_date, $appointment_time);
+$slotCheckStmt->execute();
+$slotAlreadyBooked = $slotCheckStmt->get_result()->fetch_assoc() !== null;
+$slotCheckStmt->close();
+
+if ($slotAlreadyBooked) {
+    echo json_encode([
+        "success" => false,
+        "message" => "This time slot is already booked. Please choose another available time."
+    ]);
+    exit();
+}
+
 $stmt = $conn->prepare("
     INSERT INTO appointments 
     (user_id, counselor_id, service, counselor, appointment_date, appointment_time, status)

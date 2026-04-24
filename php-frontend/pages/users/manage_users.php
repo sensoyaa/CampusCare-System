@@ -292,7 +292,13 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                     <?php echo sidebarIconSvg("edit"); ?>
                                 </button>
 
-                                <form method="POST" onsubmit="return confirm('Delete this user?');">
+                                <form
+                                    method="POST"
+                                    data-confirm-title="Delete user"
+                                    data-confirm-message="Delete this user account from CampusCare?"
+                                    data-confirm-button="Delete User"
+                                    data-confirm-variant="danger"
+                                >
                                     <input type="hidden" name="action" value="delete_user">
                                     <input type="hidden" name="user_id" value="<?php echo intval($user["id"]); ?>">
                                     <button type="submit" class="row-icon-btn danger" aria-label="Delete user">
