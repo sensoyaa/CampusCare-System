@@ -126,6 +126,17 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         <div class="topbar-user">
             <span>Hi, <?php echo htmlspecialchars($_SESSION["full_name"]); ?>!</span>
             <span class="avatar"><?php echo strtoupper(substr($_SESSION["full_name"], 0, 1)); ?></span>
+            <button class="profile-menu-toggle" aria-label="Profile menu" aria-expanded="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M7 10l5 5 5-5z"></path>
+                </svg>
+            </button>
+            <div class="profile-dropdown">
+                <a href="../users/edit_profile.php" class="profile-dropdown-item">Edit Profile</a>
+                <a href="../users/settings.php" class="profile-dropdown-item">Settings</a>
+
+                <a href="../auth/logout.php" class="profile-dropdown-item logout-item">Logout</a>
+            </div>
         </div>
     </div>
 
@@ -262,6 +273,33 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </main>
 
 </div>
+<script>
+(function () {
+    const profileMenuToggle = document.querySelector(".profile-menu-toggle");
+    const profileDropdown = document.querySelector(".profile-dropdown");
+
+    if (!profileMenuToggle || !profileDropdown) {
+        return;
+    }
+
+    profileMenuToggle.addEventListener("click", function (e) {
+        e.stopPropagation();
+        const parent = profileMenuToggle.closest(".topbar-user");
+        const isOpen = parent.classList.toggle("is-open");
+        profileMenuToggle.setAttribute("aria-expanded", isOpen);
+    });
+
+    document.addEventListener("click", function () {
+        const parent = profileMenuToggle.closest(".topbar-user");
+        if (parent) parent.classList.remove("is-open");
+        profileMenuToggle.setAttribute("aria-expanded", "false");
+    });
+
+    profileDropdown.addEventListener("click", function (e) {
+        e.stopPropagation();
+    });
+})();
+</script>
 </body>
 </html>
 
