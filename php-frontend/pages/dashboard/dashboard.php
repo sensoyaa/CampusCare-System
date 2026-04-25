@@ -391,20 +391,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <span class="menu-lines"></span>
         </button>
 
-        <div class="topbar-user">
-            <span>Hi, <?php echo htmlspecialchars($fullName); ?>!</span>
-            <span class="avatar"><?php echo strtoupper(substr($fullName, 0, 1)); ?></span>
-            <button class="profile-menu-toggle" aria-label="Profile menu" aria-expanded="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path fill="currentColor" d="M7 10l5 5 5-5z"></path>
-                </svg>
-            </button>
-            <div class="profile-dropdown">
-                <a href="pages/users/edit_profile.php" class="profile-dropdown-item">Edit Profile</a>
-                <a href="pages/users/settings.php" class="profile-dropdown-item">Settings</a>
-                <a href="pages/auth/logout.php" class="profile-dropdown-item logout-item">Logout</a>
-            </div>
-        </div>
+        <?php require_once __DIR__ . "/../../includes/topbar_user_dropdown.php"; ?>
     </div>
 
     <div class="content">
@@ -415,7 +402,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <p class="page-subtitle">
                         Logged in as
                         <span class="role-pill"><?php echo htmlspecialchars($role); ?></span>
-                        — Here's what's happening today.
+                        &mdash; Here's what's happening today.
                     </p>
                 </div>
 
@@ -530,7 +517,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                                 <?php echo htmlspecialchars($apt["service"] . " with " . $apt["counselor"]); ?>
                                             </p>
                                             <p class="appointment-meta">
-                                                <?php echo htmlspecialchars($formattedDate); ?> • Guidance Office
+                                                <?php echo htmlspecialchars($formattedDate); ?> &bull; Guidance Office
                                             </p>
                                         </div>
                                     </div>
@@ -670,8 +657,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                         <div>
                                             <p class="counselor-appointment-name"><?php echo htmlspecialchars($studentName); ?></p>
                                             <p class="counselor-appointment-meta">
-                                                ID: <?php echo htmlspecialchars($studentIdLabel); ?> •
-                                                <?php echo htmlspecialchars((string) ($appointment["service"] ?? "Counseling")); ?> •
+                                                ID: <?php echo htmlspecialchars($studentIdLabel); ?> &bull;
+                                                <?php echo htmlspecialchars((string) ($appointment["service"] ?? "Counseling")); ?> &bull;
                                                 <?php echo htmlspecialchars($timeLabel); ?>
                                             </p>
                                         </div>
@@ -879,3 +866,4 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </script>
 </body>
 </html>
+

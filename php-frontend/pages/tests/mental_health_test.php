@@ -123,21 +123,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <span class="menu-lines"></span>
         </button>
 
-        <div class="topbar-user">
-            <span>Hi, <?php echo htmlspecialchars($_SESSION["full_name"]); ?>!</span>
-            <span class="avatar"><?php echo strtoupper(substr($_SESSION["full_name"], 0, 1)); ?></span>
-            <button class="profile-menu-toggle" aria-label="Profile menu" aria-expanded="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path fill="currentColor" d="M7 10l5 5 5-5z"></path>
-                </svg>
-            </button>
-            <div class="profile-dropdown">
-                <a href="../users/edit_profile.php" class="profile-dropdown-item">Edit Profile</a>
-                <a href="../users/settings.php" class="profile-dropdown-item">Settings</a>
-
-                <a href="../auth/logout.php" class="profile-dropdown-item logout-item">Logout</a>
-            </div>
-        </div>
+        <?php require_once __DIR__ . "/../../includes/topbar_user_dropdown.php"; ?>
     </div>
 
     <div class="content">
@@ -302,4 +288,5 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </script>
 </body>
 </html>
+
 

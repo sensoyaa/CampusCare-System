@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . "/../../includes/auth.php";
 requireLogin();
 require_once __DIR__ . "/../../includes/db.php";
@@ -43,21 +43,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         <button class="menu-toggle" type="button" aria-label="Sidebar">
             <span class="menu-lines"></span>
         </button>
-
-        <div class="topbar-user">
-            <span>Hi, <?php echo htmlspecialchars($fullName); ?>!</span>
-            <span class="avatar"><?php echo strtoupper(substr($fullName, 0, 1)); ?></span>
-            <button class="profile-menu-toggle" aria-label="Profile menu" aria-expanded="false">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path fill="currentColor" d="M7 10l5 5 5-5z"></path>
-                </svg>
-            </button>
-            <div class="profile-dropdown">
-                <a href="edit_profile.php" class="profile-dropdown-item">Edit Profile</a>
-                <a href="settings.php" class="profile-dropdown-item">Settings</a>
-                <a href="../auth/logout.php" class="profile-dropdown-item logout-item">Logout</a>
-            </div>
-        </div>
+        <?php require_once __DIR__ . "/../../includes/topbar_user_dropdown.php"; ?>
     </div>
 
     <div class="content">
@@ -141,7 +127,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             </div>
 
             <p style="margin-top: 24px; text-align: center;">
-                <a href="dashboard.php" class="small-link">Back to Dashboard</a>
+                <a href="/campuscare-api/php-frontend/pages/dashboard/dashboard.php" class="small-link">Back to Dashboard</a>
             </p>
         </div>
     </div>
@@ -152,21 +138,20 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 (function () {
     const profileMenuToggle = document.querySelector(".profile-menu-toggle");
     const profileDropdown = document.querySelector(".profile-dropdown");
+    const profilePill = document.querySelector(".profile-pill");
 
-    if (!profileMenuToggle || !profileDropdown) {
+    if (!profileMenuToggle || !profileDropdown || !profilePill) {
         return;
     }
 
     profileMenuToggle.addEventListener("click", function (e) {
         e.stopPropagation();
-        const parent = profileMenuToggle.closest(".topbar-user");
-        const isOpen = parent.classList.toggle("is-open");
+        const isOpen = profilePill.classList.toggle("is-open");
         profileMenuToggle.setAttribute("aria-expanded", isOpen);
     });
 
     document.addEventListener("click", function () {
-        const parent = profileMenuToggle.closest(".topbar-user");
-        if (parent) parent.classList.remove("is-open");
+        profilePill.classList.remove("is-open");
         profileMenuToggle.setAttribute("aria-expanded", "false");
     });
 
@@ -177,3 +162,4 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </script>
 </body>
 </html>
+

@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 http_response_code(404);
 
 $isLoggedIn = isset($_SESSION["user_id"]);
-$returnHref = $isLoggedIn ? "dashboard.php" : "index.php";
+$returnHref = $isLoggedIn ? "/campuscare-api/php-frontend/pages/dashboard/dashboard.php" : "/campuscare-api/php-frontend/index.php";
 $returnLabel = $isLoggedIn ? "Return to Dashboard" : "Return to Home";
 $requestedPath = trim((string) ($_SERVER["REQUEST_URI"] ?? ""));
 ?>
@@ -16,7 +16,7 @@ $requestedPath = trim((string) ($_SERVER["REQUEST_URI"] ?? ""));
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>404 | CampusCare</title>
-    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="/campuscare-api/php-frontend/assets/style.css">
 </head>
 <body>
     <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #eef3f8; padding: 22px;">
