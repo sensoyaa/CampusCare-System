@@ -42,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $user = $result->fetch_assoc();
 
                 if ($user["status"] !== "Active") {
-                    $error = "Your account is not active.";
+                    $error = "Your account is not active. Please verify your email before logging in.";
                 } elseif (password_verify($password, $user["password"])) {
                     $_SESSION["user_id"] = $user["id"];
                     $_SESSION["full_name"] = $user["full_name"];
@@ -116,7 +116,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 </div>
 
                 <p style="margin-top:-4px; margin-bottom:10px; text-align:right;">
-                    <a href="forgot_password.php" class="small-link">Forgot password?</a>
+                    <a href="forgot_password.php" id="forgotPasswordLink" class="small-link">Forgot password?</a>
                 </p>
 
                 <div class="form-group">
@@ -157,7 +157,27 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </div>
 <script>
 (function () {
+    var forgotPasswordLink = document.getElementById("forgotPasswordLink");
+    var emailInput = document.querySelector('input[name="email"]');
     var toggles = document.querySelectorAll(".password-toggle");
+
+    if (forgotPasswordLink && emailInput) {
+        var updateForgotPasswordLink = function () {
+            var emailValue = emailInput.value.trim();
+            var baseHref = "forgot_password.php";
+
+            forgotPasswordLink.href = emailValue
+                ? baseHref + "?email=" + encodeURIComponent(emailValue)
+                : baseHref;
+        };
+
+        emailInput.addEventListener("input", updateForgotPasswordLink);
+        updateForgotPasswordLink();
+
+        forgotPasswordLink.addEventListener("click", function () {
+            updateForgotPasswordLink();
+        });
+    }
 
     toggles.forEach(function (toggleButton) {
         var targetId = toggleButton.getAttribute("data-target");

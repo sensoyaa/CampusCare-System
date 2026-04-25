@@ -2,9 +2,11 @@
 session_start();
 require_once __DIR__ . "/../../includes/db.php";
 require_once __DIR__ . "/../../includes/google_oauth.php";
+require_once __DIR__ . "/../../../backend/config/mail.php";
 
 $error = "";
 $success = "";
+$step = isset($_SESSION["registration_verification_email"]) ? "verify" : "register";
 $frontendBaseUrl = "/campuscare-api/php-frontend";
 $projectBaseUrl = "/campuscare-api";
 $full_name = "";
@@ -14,6 +16,87 @@ $role = "Student";
 $isGoogleSignup = isset($_SESSION["pending_google_signup"]) && is_array($_SESSION["pending_google_signup"]);
 $googleOauthConfig = campuscare_google_oauth_config();
 $googleOauthEnabled = (bool) ($googleOauthConfig["is_configured"] ?? false);
+
+function ensureRegistrationVerificationTable(mysqli $conn): bool
+{
+    $sql = "
+        CREATE TABLE IF NOT EXISTS registration_verifications (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            full_name VARCHAR(255) NOT NULL,
+            student_id VARCHAR(100) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            role VARCHAR(50) NOT NULL,
+            token_hash VARCHAR(255) NOT NULL,
+            expires_at DATETIME NOT NULL,
+            verified_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_registration_verifications_email (email),
+            INDEX idx_registration_verifications_expires_at (expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ";
+
+    return $conn->query($sql) === true;
+}
+
+function clearRegistrationVerificationSession(): void
+{
+    unset(
+        $_SESSION["registration_verification_email"],
+        $_SESSION["registration_verification_requested_at"]
+    );
+}
+
+function findActiveRegistrationVerificationByEmail(mysqli $conn, string $email): ?array
+{
+    $stmt = $conn->prepare("
+        SELECT id, full_name, student_id, email, password_hash, role, token_hash, expires_at
+        FROM registration_verifications
+        WHERE email = ? AND verified_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+    ");
+
+    if (!$stmt) {
+        return null;
+    }
+
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc() ?: null;
+    $stmt->close();
+
+    return $row;
+}
+
+function sendRegistrationVerificationEmail(string $email, string $recipientName, string $verificationCode): array
+{
+    $subject = "CampusCare Email Verification Code";
+    $htmlBody = campuscare_email_template(
+        "Verify Your Email",
+        "Use the verification code below to activate your CampusCare account.",
+        '
+        <p style="margin:0 0 16px;">Hello ' . htmlspecialchars($recipientName, ENT_QUOTES, "UTF-8") . ',</p>
+        <p style="margin:0 0 24px;">Thanks for registering with CampusCare. Enter this verification code to complete your account setup:</p>
+        <div style="margin:0 0 24px; padding:22px; border-radius:20px; background:#f4f9fc; border:1px solid #d5e7f2; text-align:center;">
+            <div style="font-size:13px; font-weight:700; letter-spacing:1.4px; text-transform:uppercase; color:#5d7a91; margin-bottom:12px;">Verification Code</div>
+            <div style="font-size:34px; font-weight:700; letter-spacing:10px; color:#214d70;">' . htmlspecialchars($verificationCode, ENT_QUOTES, "UTF-8") . '</div>
+        </div>
+        <div style="margin:0 0 24px; padding:18px 20px; border-radius:18px; background:#fff8eb; border:1px solid #f2dfb2; color:#6b5221;">
+            This code will expire in <strong>15 minutes</strong>.
+        </div>
+        <p style="margin:0;">If you did not create this account, you can ignore this message.</p>
+        ',
+        [
+            "preview" => "Your CampusCare verification code is {$verificationCode}",
+            "footer" => "For your security, never share this verification code with anyone."
+        ]
+    );
+    $textBody = "Hello {$recipientName},\n\nThanks for registering with CampusCare.\n\nYour verification code is: {$verificationCode}\n\nThis code will expire in 15 minutes.\n\nIf you did not create this account, you can ignore this message.";
+
+    return send_smtp_mail($email, $recipientName, $subject, $htmlBody, $textBody);
+}
 
 if (isset($_SESSION["oauth_error"])) {
     $error = trim((string) $_SESSION["oauth_error"]);
@@ -103,15 +186,145 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 }
             }
         }
+    } elseif ($action === "verify_email") {
+        $verificationEmail = trim((string) ($_POST["email"] ?? ($_SESSION["registration_verification_email"] ?? "")));
+        $verificationCode = trim((string) ($_POST["verification_code"] ?? ""));
+
+        if ($verificationEmail === "" || !filter_var($verificationEmail, FILTER_VALIDATE_EMAIL)) {
+            $error = "Please enter a valid email address.";
+            $step = "register";
+        } elseif ($verificationCode === "") {
+            $error = "Verification code is required.";
+            $step = "verify";
+            $email = $verificationEmail;
+        } else {
+            $verificationRequest = findActiveRegistrationVerificationByEmail($conn, $verificationEmail);
+            $expiresAt = $verificationRequest ? strtotime((string) ($verificationRequest["expires_at"] ?? "")) : false;
+
+            if (!$verificationRequest || $expiresAt === false || $expiresAt < time() || !password_verify($verificationCode, (string) $verificationRequest["token_hash"])) {
+                $error = "The verification code is invalid or has expired.";
+                $step = "verify";
+                $email = $verificationEmail;
+            } else {
+                $insertStmt = $conn->prepare("
+                    INSERT INTO users (full_name, student_id, email, password, role, status)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ");
+
+                if (!$insertStmt) {
+                    $error = "Failed to create account.";
+                    $step = "verify";
+                    $email = $verificationEmail;
+                } else {
+                    $fullName = (string) $verificationRequest["full_name"];
+                    $studentId = (string) $verificationRequest["student_id"];
+                    $storedEmail = (string) $verificationRequest["email"];
+                    $passwordHash = (string) $verificationRequest["password_hash"];
+                    $userRole = (string) $verificationRequest["role"];
+                    $status = "Active";
+
+                    $insertStmt->bind_param("ssssss", $fullName, $studentId, $storedEmail, $passwordHash, $userRole, $status);
+
+                    if ($insertStmt->execute()) {
+                        $verificationId = intval($verificationRequest["id"]);
+                        $markStmt = $conn->prepare("UPDATE registration_verifications SET verified_at = NOW() WHERE id = ?");
+
+                        if ($markStmt) {
+                            $markStmt->bind_param("i", $verificationId);
+                            $markStmt->execute();
+                            $markStmt->close();
+                        }
+
+                        clearRegistrationVerificationSession();
+                        $success = "Email verified successfully. Your account is now active, and you can log in.";
+                        $full_name = "";
+                        $email = "";
+                        $student_id = "";
+                        $role = "Student";
+                        $step = "register";
+                    } else {
+                        $error = intval($insertStmt->errno) === 1062
+                            ? "Email or student ID is already in use."
+                            : "Failed to create account.";
+                        $step = "verify";
+                        $email = $verificationEmail;
+                    }
+
+                    $insertStmt->close();
+                }
+            }
+        }
+    } elseif ($action === "resend_code") {
+        $verificationEmail = trim((string) ($_POST["email"] ?? ($_SESSION["registration_verification_email"] ?? "")));
+
+        if ($verificationEmail === "" || !filter_var($verificationEmail, FILTER_VALIDATE_EMAIL)) {
+            $error = "Please enter a valid email address.";
+            $step = "register";
+        } else {
+            $verificationRequest = findActiveRegistrationVerificationByEmail($conn, $verificationEmail);
+
+            if (!$verificationRequest) {
+                $error = "No pending verification was found for this email. Please register again.";
+                $step = "register";
+            } else {
+                $verificationCode = str_pad((string) random_int(0, 999999), 6, "0", STR_PAD_LEFT);
+                $codeHash = password_hash($verificationCode, PASSWORD_DEFAULT);
+                $expiresAt = date("Y-m-d H:i:s", time() + 900);
+                $verificationId = intval($verificationRequest["id"]);
+
+                $updateStmt = $conn->prepare("
+                    UPDATE registration_verifications
+                    SET token_hash = ?, expires_at = ?, verified_at = NULL
+                    WHERE id = ?
+                ");
+
+                if (!$updateStmt) {
+                    $error = "Unable to resend verification code.";
+                    $step = "verify";
+                    $email = $verificationEmail;
+                } else {
+                    $updateStmt->bind_param("ssi", $codeHash, $expiresAt, $verificationId);
+
+                    if ($updateStmt->execute()) {
+                        $mailResult = sendRegistrationVerificationEmail(
+                            $verificationEmail,
+                            (string) $verificationRequest["full_name"],
+                            $verificationCode
+                        );
+
+                        if ($mailResult["success"]) {
+                            $_SESSION["registration_verification_email"] = $verificationEmail;
+                            $_SESSION["registration_verification_requested_at"] = time();
+                            $success = "A new verification code has been sent to your email.";
+                            $step = "verify";
+                            $email = $verificationEmail;
+                        } else {
+                            $error = "Verification code could not be sent. " . $mailResult["message"];
+                            $step = "verify";
+                            $email = $verificationEmail;
+                        }
+                    } else {
+                        $error = "Unable to resend verification code.";
+                        $step = "verify";
+                        $email = $verificationEmail;
+                    }
+
+                    $updateStmt->close();
+                }
+            }
+        }
     } else {
         $full_name = trim($_POST["full_name"] ?? "");
         $email = trim($_POST["email"] ?? "");
         $student_id = trim($_POST["student_id"] ?? "");
         $role = trim($_POST["role"] ?? "Student");
         $password = $_POST["password"] ?? "";
+        $confirm_password = $_POST["confirm_password"] ?? "";
 
-        if ($full_name === "" || $email === "" || $student_id === "" || $role === "" || $password === "") {
+        if ($full_name === "" || $email === "" || $student_id === "" || $role === "" || $password === "" || $confirm_password === "") {
             $error = "All fields are required.";
+        } elseif ($password !== $confirm_password) {
+            $error = "Password confirmation does not match.";
         } else {
             $check = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
             $check->bind_param("s", $email);
@@ -120,29 +333,60 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             if ($checkResult->num_rows > 0) {
                 $error = "Email must be unique. Duplicate email is not allowed.";
+            } elseif (!ensureRegistrationVerificationTable($conn)) {
+                $error = "Unable to prepare email verification requests.";
             } else {
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                $status = "Active";
+                $verificationCode = str_pad((string) random_int(0, 999999), 6, "0", STR_PAD_LEFT);
+                $codeHash = password_hash($verificationCode, PASSWORD_DEFAULT);
+                $expiresAt = date("Y-m-d H:i:s", time() + 900);
 
-                $stmt = $conn->prepare("
-                    INSERT INTO users (full_name, student_id, email, password, role, status)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ");
-                $stmt->bind_param("ssssss", $full_name, $student_id, $email, $hashedPassword, $role, $status);
+                $deleteStmt = $conn->prepare("DELETE FROM registration_verifications WHERE email = ?");
 
-                if ($stmt->execute()) {
-                    $success = "Account created successfully. You can now login.";
-                    $full_name = "";
-                    $email = "";
-                    $student_id = "";
-                    $role = "Student";
-                } else {
-                    $error = intval($stmt->errno) === 1062
-                        ? "Email must be unique. Duplicate email is not allowed."
-                        : "Failed to create account.";
+                if ($deleteStmt) {
+                    $deleteStmt->bind_param("s", $email);
+                    $deleteStmt->execute();
+                    $deleteStmt->close();
                 }
 
-                $stmt->close();
+                $stmt = $conn->prepare("
+                    INSERT INTO registration_verifications (full_name, student_id, email, password_hash, role, token_hash, expires_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ");
+
+                if (!$stmt) {
+                    $error = "Failed to create verification request.";
+                } else {
+                    $stmt->bind_param("sssssss", $full_name, $student_id, $email, $hashedPassword, $role, $codeHash, $expiresAt);
+
+                    if ($stmt->execute()) {
+                        $mailResult = sendRegistrationVerificationEmail($email, $full_name, $verificationCode);
+
+                        if ($mailResult["success"]) {
+                            clearRegistrationVerificationSession();
+                            $_SESSION["registration_verification_email"] = $email;
+                            $_SESSION["registration_verification_requested_at"] = time();
+                            $success = "A verification code has been sent to your email. Enter it below to activate your account.";
+                            $step = "verify";
+                        } else {
+                            $cleanupStmt = $conn->prepare("DELETE FROM registration_verifications WHERE email = ?");
+
+                            if ($cleanupStmt) {
+                                $cleanupStmt->bind_param("s", $email);
+                                $cleanupStmt->execute();
+                                $cleanupStmt->close();
+                            }
+
+                            $error = "Verification code could not be sent. " . $mailResult["message"];
+                        }
+                    } else {
+                        $error = intval($stmt->errno) === 1062
+                            ? "Email must be unique. Duplicate email is not allowed."
+                            : "Failed to create verification request.";
+                    }
+
+                    $stmt->close();
+                }
             }
 
             $check->close();
@@ -202,8 +446,32 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                     <button type="submit" class="btn" style="width:100%;">Complete Google Sign Up</button>
                 </form>
+            <?php elseif ($step === "verify"): ?>
+                <form method="POST">
+                    <input type="hidden" name="action" value="verify_email">
+
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Verification Code</label>
+                        <input type="text" name="verification_code" inputmode="numeric" maxlength="6" pattern="\d{6}" placeholder="Enter 6-digit code" required>
+                    </div>
+
+                    <button type="submit" class="btn" style="width:100%;">Verify Email</button>
+                </form>
+
+                <form method="POST" style="margin-top: 12px;">
+                    <input type="hidden" name="action" value="resend_code">
+                    <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
+                    <button type="submit" class="btn-outline" style="width:100%;">Resend Code</button>
+                </form>
             <?php else: ?>
                 <form method="POST">
+                    <input type="hidden" name="action" value="register">
+
                     <div class="form-group">
                         <label>Full Name</label>
                         <input type="text" name="full_name" value="<?php echo htmlspecialchars($full_name); ?>" required>
@@ -235,6 +503,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         <div class="password-field">
                             <input id="registerPassword" type="password" name="password" required>
                             <button type="button" class="password-toggle" data-target="registerPassword" aria-label="Show password" aria-pressed="false">
+                                <svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path fill="currentColor" d="M12 5c5.8 0 9.4 4.8 10.6 6.7.2.2.2.6 0 .8C21.4 14.2 17.8 19 12 19S2.6 14.2 1.4 12.5a.8.8 0 0 1 0-.8C2.6 9.8 6.2 5 12 5Zm0 2c-4.4 0-7.3 3.4-8.6 5 1.3 1.6 4.2 5 8.6 5s7.3-3.4 8.6-5c-1.3-1.6-4.2-5-8.6-5Zm0 2.2a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6Z"></path>
+                                </svg>
+                                <svg class="icon-eye-off" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path fill="currentColor" d="m3.3 2 18.7 18.7-1.3 1.3-3.2-3.2A11.8 11.8 0 0 1 12 20c-5.8 0-9.4-4.8-10.6-6.7a.8.8 0 0 1 0-.8A19 19 0 0 1 6.4 7L2 2.6 3.3 2Zm4.6 6L6 6.1A16.8 16.8 0 0 0 3.4 12c1.3 1.6 4.2 6 8.6 6 1.5 0 2.8-.4 4-1l-1.8-1.8a4.8 4.8 0 0 1-6.3-6.3Zm4.2-3c5.8 0 9.4 4.8 10.6 6.7.2.2.2.6 0 .8a19 19 0 0 1-3.5 4.2l-1.4-1.4a16.8 16.8 0 0 0 2.8-3.2c-1.3-1.6-4.2-5-8.6-5h-.5L10 5.4c.6-.3 1.3-.4 2-.4Z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <div class="password-field">
+                            <input id="confirmRegisterPassword" type="password" name="confirm_password" required>
+                            <button type="button" class="password-toggle" data-target="confirmRegisterPassword" aria-label="Show password" aria-pressed="false">
                                 <svg class="icon-eye" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                                     <path fill="currentColor" d="M12 5c5.8 0 9.4 4.8 10.6 6.7.2.2.2.6 0 .8C21.4 14.2 17.8 19 12 19S2.6 14.2 1.4 12.5a.8.8 0 0 1 0-.8C2.6 9.8 6.2 5 12 5Zm0 2c-4.4 0-7.3 3.4-8.6 5 1.3 1.6 4.2 5 8.6 5s7.3-3.4 8.6-5c-1.3-1.6-4.2-5-8.6-5Zm0 2.2a2.8 2.8 0 1 1 0 5.6 2.8 2.8 0 0 1 0-5.6Z"></path>
                                 </svg>

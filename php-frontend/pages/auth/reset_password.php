@@ -29,7 +29,7 @@ function getVerifiedPasswordResetRequest(mysqli $conn, int $requestId, int $user
     $stmt = $conn->prepare("
         SELECT id, user_id, email, expires_at
         FROM password_resets
-        WHERE id = ? AND user_id = ? AND used_at IS NULL AND expires_at >= NOW()
+        WHERE id = ? AND user_id = ? AND used_at IS NULL
         LIMIT 1
     ");
 
@@ -47,8 +47,9 @@ function getVerifiedPasswordResetRequest(mysqli $conn, int $requestId, int $user
 }
 
 $resetRequest = getVerifiedPasswordResetRequest($conn, $resetRequestId, $resetUserId);
+$resetExpiresAt = $resetRequest ? strtotime((string) ($resetRequest["expires_at"] ?? "")) : false;
 
-if ($verifiedAt <= 0 || (time() - $verifiedAt) > 900 || !$resetRequest) {
+if ($verifiedAt <= 0 || (time() - $verifiedAt) > 900 || !$resetRequest || $resetExpiresAt === false || $resetExpiresAt < time()) {
     clearPasswordResetSession();
     $error = "Your password reset session is invalid or has expired.";
 }
