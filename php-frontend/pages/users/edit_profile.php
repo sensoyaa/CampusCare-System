@@ -45,24 +45,18 @@ $studentId = trim((string) ($_SESSION["student_id"] ?? ""));
 $college = "";
 $program = "";
 $avatarPath = trim((string) ($_SESSION["avatar_path"] ?? ""));
+$profileLoaded = false;
 
-$profileColumns = ["id", "full_name", "email", "role"];
-if ($usersHasStudentId) {
-    $profileColumns[] = "student_id";
-} elseif ($usersHasStudentNumber) {
-    $profileColumns[] = "student_number AS student_id";
+$profileStmt = $conn->prepare("SELECT id, full_name, email, role, student_id, college, program, avatar_path FROM users WHERE id = ? LIMIT 1");
+if (!$profileStmt) {
+    $profileStmt = $conn->prepare("SELECT id, full_name, email, role, student_id, college, program FROM users WHERE id = ? LIMIT 1");
 }
-if ($usersHasCollege) {
-    $profileColumns[] = "college";
+if (!$profileStmt) {
+    $profileStmt = $conn->prepare("SELECT id, full_name, email, role, student_id FROM users WHERE id = ? LIMIT 1");
 }
-if ($usersHasProgram) {
-    $profileColumns[] = "program";
+if (!$profileStmt) {
+    $profileStmt = $conn->prepare("SELECT id, full_name, email, role, student_number AS student_id FROM users WHERE id = ? LIMIT 1");
 }
-if ($usersHasAvatarPath) {
-    $profileColumns[] = "avatar_path";
-}
-
-$profileStmt = $conn->prepare("SELECT " . implode(", ", $profileColumns) . " FROM users WHERE id = ? LIMIT 1");
 if ($profileStmt) {
     $profileStmt->bind_param("i", $userId);
     $profileStmt->execute();
@@ -71,17 +65,41 @@ if ($profileStmt) {
     $profileStmt->close();
 
     if (is_array($profileRow)) {
+        $profileLoaded = true;
         $fullName = trim((string) ($profileRow["full_name"] ?? $fullName));
         $email = trim((string) ($profileRow["email"] ?? $email));
         $studentId = trim((string) ($profileRow["student_id"] ?? $studentId));
-        if ($usersHasCollege) {
+        if (array_key_exists("college", $profileRow)) {
             $college = trim((string) ($profileRow["college"] ?? ""));
         }
-        if ($usersHasProgram) {
+        if (array_key_exists("program", $profileRow)) {
             $program = trim((string) ($profileRow["program"] ?? ""));
         }
-        if ($usersHasAvatarPath) {
+        if (array_key_exists("avatar_path", $profileRow)) {
             $avatarPath = trim((string) ($profileRow["avatar_path"] ?? ""));
+        }
+    }
+}
+
+if (!$profileLoaded && $email !== "") {
+    $profileByEmailStmt = $conn->prepare("SELECT id, full_name, email, student_id, college, program, avatar_path FROM users WHERE email = ? LIMIT 1");
+    if ($profileByEmailStmt) {
+        $profileByEmailStmt->bind_param("s", $email);
+        $profileByEmailStmt->execute();
+        $profileByEmailResult = $profileByEmailStmt->get_result();
+        $profileByEmailRow = $profileByEmailResult ? $profileByEmailResult->fetch_assoc() : null;
+        $profileByEmailStmt->close();
+
+        if (is_array($profileByEmailRow)) {
+            $profileLoaded = true;
+            $userId = intval($profileByEmailRow["id"] ?? 0);
+            $_SESSION["user_id"] = $userId;
+            $fullName = trim((string) ($profileByEmailRow["full_name"] ?? $fullName));
+            $email = trim((string) ($profileByEmailRow["email"] ?? $email));
+            $studentId = trim((string) ($profileByEmailRow["student_id"] ?? $studentId));
+            $college = trim((string) ($profileByEmailRow["college"] ?? $college));
+            $program = trim((string) ($profileByEmailRow["program"] ?? $program));
+            $avatarPath = trim((string) ($profileByEmailRow["avatar_path"] ?? $avatarPath));
         }
     }
 }
@@ -163,7 +181,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
         }
 
-        if ($error !== "") {
+        if (!$profileLoaded || $userId <= 0) {
+            $error = "Unable to locate your user record. Please log out then log in again.";
+        } elseif ($error !== "") {
             // Stop here if avatar validation/upload failed.
         } elseif ($newFullName === "") {
             $error = "Full name is required.";
@@ -187,18 +207,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 } else {
                     if ($usersHasCollege && $usersHasProgram && $usersHasAvatarPath) {
                         $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ?, program = ?, avatar_path = ? WHERE id = ?");
+                        $updateMode = "with_avatar";
                     } elseif ($usersHasCollege && $usersHasProgram) {
                         $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ?, program = ? WHERE id = ?");
+                        $updateMode = "with_college_program";
                     } else {
                         $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ? WHERE id = ?");
+                        $updateMode = "basic";
                     }
 
                     if (!$updateStmt) {
-                        $error = "Unable to update profile.";
+                        $error = "Unable to update profile: " . $conn->error;
                     } else {
-                        if ($usersHasCollege && $usersHasProgram && $usersHasAvatarPath) {
+                        if ($updateMode === "with_avatar") {
                             $updateStmt->bind_param("sssssi", $newFullName, $newEmail, $newCollege, $newProgram, $uploadedAvatarPath, $userId);
-                        } elseif ($usersHasCollege && $usersHasProgram) {
+                        } elseif ($updateMode === "with_college_program") {
                             $updateStmt->bind_param("ssssi", $newFullName, $newEmail, $newCollege, $newProgram, $userId);
                         } else {
                             $updateStmt->bind_param("ssi", $newFullName, $newEmail, $userId);
@@ -495,10 +518,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <div class="profile-main-stack">
             <?php if ($error !== ""): ?>
                 <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
-            <?php endif; ?>
-
-            <?php if ($success !== ""): ?>
-                <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
             <?php endif; ?>
 
             <div class="card">
