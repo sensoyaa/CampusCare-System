@@ -88,7 +88,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 }
 
                 clearPasswordResetSession();
-                $success = "Password updated successfully. You can now login.";
+                header("Location: index.php?reset=success");
+                exit();
             } else {
                 $error = "Failed to reset password.";
             }

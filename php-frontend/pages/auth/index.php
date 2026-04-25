@@ -16,6 +16,10 @@ if (isset($_SESSION["oauth_error"])) {
     unset($_SESSION["oauth_error"]);
 }
 
+if (($_GET["reset"] ?? "") === "success") {
+    $success = "Password reset successful. Please log in.";
+}
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = trim($_POST["email"] ?? "");
     $password = $_POST["password"] ?? "";
@@ -92,6 +96,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             <?php if ($error): ?>
                 <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
+            <?php endif; ?>
+
+            <?php if (!empty($success)): ?>
+                <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
             <?php endif; ?>
 
             <form method="POST">
