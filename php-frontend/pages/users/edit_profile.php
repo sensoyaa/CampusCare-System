@@ -106,9 +106,6 @@ if (!$profileLoaded && $email !== "") {
 
 $avatarInitial = strtoupper(substr($fullName !== "" ? $fullName : "U", 0, 1));
 $avatarUrl = $avatarPath !== "" ? $avatarPath : "";
-$currentPassword = "";
-$newPassword = "";
-$confirmPassword = "";
 
 $allowedColleges = [
     "College of Nursing",
@@ -249,58 +246,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         }
 
                         $updateStmt->close();
-                    }
-                }
-            }
-        }
-    } elseif ($action === "change_password") {
-        $currentPassword = $_POST["current_password"] ?? "";
-        $newPassword = $_POST["new_password"] ?? "";
-        $confirmPassword = $_POST["confirm_password"] ?? "";
-
-        if ($currentPassword === "") {
-            $error = "Current password is required.";
-        } elseif ($newPassword === "") {
-            $error = "New password is required.";
-        } elseif ($confirmPassword === "") {
-            $error = "Password confirmation is required.";
-        } elseif (strlen($newPassword) < 8) {
-            $error = "New password must be at least 8 characters.";
-        } elseif ($newPassword !== $confirmPassword) {
-            $error = "Password confirmation does not match.";
-        } else {
-            $getUserStmt = $conn->prepare("SELECT password FROM users WHERE id = ? LIMIT 1");
-
-            if (!$getUserStmt) {
-                $error = "Unable to verify password.";
-            } else {
-                $getUserStmt->bind_param("i", $userId);
-                $getUserStmt->execute();
-                $userResult = $getUserStmt->get_result();
-                $user = $userResult->fetch_assoc();
-                $getUserStmt->close();
-
-                if (!$user || !password_verify($currentPassword, $user["password"])) {
-                    $error = "Current password is incorrect.";
-                } else {
-                    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-                    $updatePasswordStmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
-
-                    if (!$updatePasswordStmt) {
-                        $error = "Unable to update password.";
-                    } else {
-                        $updatePasswordStmt->bind_param("si", $hashedPassword, $userId);
-
-                        if ($updatePasswordStmt->execute()) {
-                            $success = "Password changed successfully.";
-                            $currentPassword = "";
-                            $newPassword = "";
-                            $confirmPassword = "";
-                        } else {
-                            $error = "Failed to change password.";
-                        }
-
-                        $updatePasswordStmt->close();
                     }
                 }
             }
@@ -455,7 +400,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         <div class="page-shell">
             <div class="profile-page-header">
                 <h1 class="page-title">Edit Profile</h1>
-                <p class="page-subtitle">Manage your account information and security</p>
+                <p class="page-subtitle">Manage your account information</p>
             </div>
 
             <?php if ($success !== ""): ?>
@@ -570,36 +515,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <button type="submit" class="btn" style="margin-top: 16px;">Save Changes</button>
                 </form>
             </div>
-
-            <div class="card" style="margin-top: 24px;">
-                <h2 class="card-title">Change Password</h2>
-
-                <form method="POST">
-                    <input type="hidden" name="action" value="change_password">
-
-                    <div class="form-group">
-                        <label>Current Password</label>
-                        <input type="password" name="current_password" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>New Password</label>
-                        <input type="password" name="new_password" minlength="8" required>
-                        <small style="color: var(--text-muted);">Minimum 8 characters</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Confirm New Password</label>
-                        <input type="password" name="confirm_password" minlength="8" required>
-                    </div>
-
-                    <button type="submit" class="btn" style="margin-top: 16px;">Change Password</button>
-                </form>
-            </div>
-
-            <p style="margin-top: 24px; text-align: center;">
-                <a href="/campuscare-api/php-frontend/pages/dashboard/dashboard.php" class="small-link">Back to Dashboard</a>
-            </p>
             </div>
             </div>
         </div>

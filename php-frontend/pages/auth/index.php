@@ -16,6 +16,10 @@ if (isset($_SESSION["oauth_error"])) {
     unset($_SESSION["oauth_error"]);
 }
 
+if (($_GET["expired"] ?? "") === "1") {
+    $error = "Your session expired due to inactivity. Please log in again.";
+}
+
 if (($_GET["reset"] ?? "") === "success") {
     $success = "Password reset successful. Please log in.";
 }
