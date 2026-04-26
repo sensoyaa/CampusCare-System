@@ -372,6 +372,36 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     gap: 16px;
 }
 
+body.theme-dark .profile-summary-avatar {
+    background: linear-gradient(135deg, #17293a, #1f3851);
+    border-color: #3d5b78;
+    color: #9dc8ec;
+}
+
+body.theme-dark .profile-summary-role {
+    color: #a7bdd2;
+}
+
+body.theme-dark .profile-summary-divider {
+    background: #30485f;
+}
+
+body.theme-dark .profile-summary-item {
+    color: #dce7f3;
+}
+
+body.theme-dark .profile-summary-icon {
+    color: #90aec8;
+}
+
+body.theme-dark .profile-summary-label {
+    color: #8fa8bf;
+}
+
+body.theme-dark .profile-summary-value {
+    color: #e6edf5;
+}
+
 @media (max-width: 960px) {
     .profile-layout {
         grid-template-columns: 1fr;

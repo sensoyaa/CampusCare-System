@@ -5,6 +5,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 $pageTitle = $pageTitle ?? "CampusCare";
 $userName = $_SESSION["full_name"] ?? "User";
+$darkModeEnabled = isset($_COOKIE["campuscare_dark_mode"]) && $_COOKIE["campuscare_dark_mode"] === "true";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -15,7 +16,7 @@ $userName = $_SESSION["full_name"] ?? "User";
     <link rel="stylesheet" href="/campuscare-api/php-frontend/assets/style.css">
     <link rel="stylesheet" href="/campuscare-api/php-frontend/assets/compact.css">
 </head>
-<body>
+<body class="<?php echo $darkModeEnabled ? "theme-dark" : ""; ?>">
 <div class="system-confirm-overlay" id="systemConfirmOverlay" aria-hidden="true">
     <div class="system-confirm-card" role="dialog" aria-modal="true" aria-labelledby="systemConfirmTitle">
         <div class="system-confirm-icon" id="systemConfirmIcon">?</div>
