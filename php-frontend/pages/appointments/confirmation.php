@@ -70,7 +70,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <?php endif; ?>
 
                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                    <a href="schedule.php" class="btn btn-outline">View Schedule</a>
+                    <a href="/campuscare-api/php-frontend/pages/appointments/schedule.php" class="btn btn-outline">View Schedule</a>
                     <a href="/campuscare-api/php-frontend/pages/dashboard/dashboard.php" class="btn">Back to Dashboard</a>
                 </div>
             </section>

@@ -6,7 +6,7 @@ require_once __DIR__ . "/../../../backend/config/mail.php";
 
 $error = "";
 $success = "";
-$step = isset($_SESSION["registration_verification_email"]) ? "verify" : "register";
+$step = "register";
 $frontendBaseUrl = "/campuscare-api/php-frontend";
 $projectBaseUrl = "/campuscare-api";
 $full_name = "";
@@ -46,6 +46,17 @@ function clearRegistrationVerificationSession(): void
         $_SESSION["registration_verification_requested_at"]
     );
 }
+
+if (($_GET["fresh"] ?? "") === "1") {
+    clearRegistrationVerificationSession();
+}
+
+$requestedAt = intval($_SESSION["registration_verification_requested_at"] ?? 0);
+if ($requestedAt > 0 && (time() - $requestedAt) > 1800) {
+    clearRegistrationVerificationSession();
+}
+
+$step = isset($_SESSION["registration_verification_email"]) ? "verify" : "register";
 
 function findActiveRegistrationVerificationByEmail(mysqli $conn, string $email): ?array
 {
@@ -113,7 +124,15 @@ if ($isGoogleSignup) {
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $action = trim((string) ($_POST["action"] ?? "register"));
 
-    if ($action === "google_signup") {
+    if ($action === "start_over") {
+        clearRegistrationVerificationSession();
+        $step = "register";
+        $error = "";
+        $success = "You can now register with a different email.";
+        $email = "";
+        $full_name = "";
+        $student_id = "";
+    } elseif ($action === "google_signup") {
         $pendingGoogleSignup = $_SESSION["pending_google_signup"] ?? null;
         $student_id = trim($_POST["student_id"] ?? "");
 
@@ -467,6 +486,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     <input type="hidden" name="action" value="resend_code">
                     <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
                     <button type="submit" class="btn-outline" style="width:100%;">Resend Code</button>
+                </form>
+
+                <form method="POST" style="margin-top: 12px;">
+                    <input type="hidden" name="action" value="start_over">
+                    <button type="submit" class="btn-outline" style="width:100%;">Use Different Email</button>
                 </form>
             <?php else: ?>
                 <form method="POST">

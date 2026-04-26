@@ -27,89 +27,97 @@ if ($notificationsEnabled && $notificationsInApp && isset($conn) && ($conn insta
     $now = time();
 
     if ($notifyAppointments) {
-        $appointmentStmt = $conn->prepare("\
-            SELECT id, service, appointment_date, appointment_time, status\
-            FROM appointments\
-            WHERE user_id = ? OR counselor_id = ?\
-            ORDER BY appointment_date ASC, appointment_time ASC\
-            LIMIT 20\
-        ");
+        try {
+            $appointmentStmt = $conn->prepare(
+                "SELECT id, service, appointment_date, appointment_time, status
+                FROM appointments
+                WHERE user_id = ? OR counselor_id = ?
+                ORDER BY appointment_date ASC, appointment_time ASC
+                LIMIT 20"
+            );
 
-        if ($appointmentStmt) {
-            $appointmentStmt->bind_param("ii", $topbarUserId, $topbarUserId);
-            $appointmentStmt->execute();
-            $appointmentResult = $appointmentStmt->get_result();
+            if ($appointmentStmt) {
+                $appointmentStmt->bind_param("ii", $topbarUserId, $topbarUserId);
+                $appointmentStmt->execute();
+                $appointmentResult = $appointmentStmt->get_result();
 
-            while ($appointmentResult && ($row = $appointmentResult->fetch_assoc())) {
-                $status = (string) ($row["status"] ?? "");
+                while ($appointmentResult && ($row = $appointmentResult->fetch_assoc())) {
+                    $status = (string) ($row["status"] ?? "");
 
-                if ($status === "Cancelled" || $status === "Rejected") {
-                    continue;
+                    if ($status === "Cancelled" || $status === "Rejected") {
+                        continue;
+                    }
+
+                    $dateTimeRaw = trim((string) ($row["appointment_date"] ?? "")) . " " . trim((string) ($row["appointment_time"] ?? ""));
+                    $dueTs = strtotime($dateTimeRaw);
+
+                    if ($dueTs === false || $dueTs < $now) {
+                        continue;
+                    }
+
+                    $secondsUntil = $dueTs - $now;
+
+                    if ($secondsUntil <= $timingWindowSeconds) {
+                        $service = trim((string) ($row["service"] ?? "Counseling"));
+                        $notificationItems[] = [
+                            "ts" => $dueTs,
+                            "icon" => "AP",
+                            "title" => "Appointment Reminder",
+                            "body" => $service . " at " . date("M j, g:i A", $dueTs),
+                            "href" => "/campuscare-api/php-frontend/pages/appointments/manage_appointments.php",
+                        ];
+                    }
                 }
 
-                $dateTimeRaw = trim((string) ($row["appointment_date"] ?? "")) . " " . trim((string) ($row["appointment_time"] ?? ""));
-                $dueTs = strtotime($dateTimeRaw);
-
-                if ($dueTs === false || $dueTs < $now) {
-                    continue;
-                }
-
-                $secondsUntil = $dueTs - $now;
-
-                if ($secondsUntil <= $timingWindowSeconds) {
-                    $service = trim((string) ($row["service"] ?? "Counseling"));
-                    $notificationItems[] = [
-                        "ts" => $dueTs,
-                        "icon" => "AP",
-                        "title" => "Appointment Reminder",
-                        "body" => $service . " at " . date("M j, g:i A", $dueTs),
-                        "href" => "/campuscare-api/php-frontend/pages/appointments/manage_appointments.php",
-                    ];
-                }
+                $appointmentStmt->close();
             }
-
-            $appointmentStmt->close();
+        } catch (Throwable $exception) {
+            // Keep dashboard usable even when notification queries fail.
         }
     }
 
     if ($notifyEvents) {
-        $eventStmt = $conn->prepare("\
-            SELECT e.id, e.title, e.event_date, e.event_time\
-            FROM event_participants ep\
-            INNER JOIN events e ON e.id = ep.event_id\
-            WHERE ep.user_id = ?\
-            ORDER BY e.event_date ASC, e.event_time ASC\
-            LIMIT 20\
-        ");
+        try {
+            $eventStmt = $conn->prepare(
+                "SELECT e.id, e.title, e.event_date, e.event_time
+                FROM event_participants ep
+                INNER JOIN events e ON e.id = ep.event_id
+                WHERE ep.user_id = ?
+                ORDER BY e.event_date ASC, e.event_time ASC
+                LIMIT 20"
+            );
 
-        if ($eventStmt) {
-            $eventStmt->bind_param("i", $topbarUserId);
-            $eventStmt->execute();
-            $eventResult = $eventStmt->get_result();
+            if ($eventStmt) {
+                $eventStmt->bind_param("i", $topbarUserId);
+                $eventStmt->execute();
+                $eventResult = $eventStmt->get_result();
 
-            while ($eventResult && ($row = $eventResult->fetch_assoc())) {
-                $dateTimeRaw = trim((string) ($row["event_date"] ?? "")) . " " . trim((string) ($row["event_time"] ?? ""));
-                $dueTs = strtotime($dateTimeRaw);
+                while ($eventResult && ($row = $eventResult->fetch_assoc())) {
+                    $dateTimeRaw = trim((string) ($row["event_date"] ?? "")) . " " . trim((string) ($row["event_time"] ?? ""));
+                    $dueTs = strtotime($dateTimeRaw);
 
-                if ($dueTs === false || $dueTs < $now) {
-                    continue;
+                    if ($dueTs === false || $dueTs < $now) {
+                        continue;
+                    }
+
+                    $secondsUntil = $dueTs - $now;
+
+                    if ($secondsUntil <= $timingWindowSeconds) {
+                        $title = trim((string) ($row["title"] ?? "Campus Event"));
+                        $notificationItems[] = [
+                            "ts" => $dueTs,
+                            "icon" => "EV",
+                            "title" => "Event Reminder",
+                            "body" => $title . " on " . date("M j, g:i A", $dueTs),
+                            "href" => "/campuscare-api/php-frontend/pages/events/events.php",
+                        ];
+                    }
                 }
 
-                $secondsUntil = $dueTs - $now;
-
-                if ($secondsUntil <= $timingWindowSeconds) {
-                    $title = trim((string) ($row["title"] ?? "Campus Event"));
-                    $notificationItems[] = [
-                        "ts" => $dueTs,
-                        "icon" => "EV",
-                        "title" => "Event Reminder",
-                        "body" => $title . " on " . date("M j, g:i A", $dueTs),
-                        "href" => "/campuscare-api/php-frontend/pages/events/events.php",
-                    ];
-                }
+                $eventStmt->close();
             }
-
-            $eventStmt->close();
+        } catch (Throwable $exception) {
+            // Keep dashboard usable even when notification queries fail.
         }
     }
 }

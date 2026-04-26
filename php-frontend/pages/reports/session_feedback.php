@@ -9,7 +9,7 @@ $userId = intval($_SESSION["user_id"] ?? 0);
 $fullName = $_SESSION["full_name"] ?? "Counselor";
 
 if ($role !== "Counselor") {
-    header("Location: dashboard.php");
+    header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
     exit();
 }
 

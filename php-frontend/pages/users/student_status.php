@@ -8,7 +8,7 @@ $role = normalizeRole($_SESSION["role"] ?? "Student");
 $fullName = $_SESSION["full_name"] ?? "User";
 
 if (!in_array($role, ["Instructor", "Administrator"], true)) {
-    header("Location: dashboard.php");
+    header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
     exit();
 }
 

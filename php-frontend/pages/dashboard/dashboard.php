@@ -277,28 +277,28 @@ $announcements = [
 $quickActions = [
     [
         "title" => "Book Counseling",
-        "path" => "book_appointment.php",
+        "path" => "/campuscare-api/php-frontend/pages/appointments/book_appointment.php?service=counseling",
         "cardClass" => "quick-light-blue",
         "iconClass" => "quick-icon-blue",
         "iconText" => "B"
     ],
     [
         "title" => "Join Workshops",
-        "path" => "events.php",
+        "path" => "/campuscare-api/php-frontend/pages/events/events.php",
         "cardClass" => "quick-light-green",
         "iconClass" => "quick-icon-teal",
         "iconText" => "W"
     ],
     [
         "title" => "Mental Health Test",
-        "path" => "mental_health_test.php",
+        "path" => "/campuscare-api/php-frontend/pages/tests/mental_health_test.php",
         "cardClass" => "quick-light-gray",
         "iconClass" => "quick-icon-teal",
         "iconText" => "M"
     ],
     [
         "title" => "My Schedule",
-        "path" => "schedule.php",
+        "path" => "/campuscare-api/php-frontend/pages/appointments/schedule.php",
         "cardClass" => "quick-light-blue",
         "iconClass" => "quick-icon-gold",
         "iconText" => "S"
@@ -308,25 +308,25 @@ $quickActions = [
 $adminQuickActions = [
     [
         "title" => "Manage Users",
-        "path" => "manage_users.php",
+        "path" => "/campuscare-api/php-frontend/pages/users/manage_users.php",
         "icon" => "user-plus",
         "iconClass" => "quick-icon-blue",
     ],
     [
         "title" => "Manage Appointments",
-        "path" => "manage_appointments.php",
+        "path" => "/campuscare-api/php-frontend/pages/appointments/manage_appointments.php",
         "icon" => "calendar",
         "iconClass" => "quick-icon-blue",
     ],
     [
         "title" => "Manage Events",
-        "path" => "events.php",
+        "path" => "/campuscare-api/php-frontend/pages/events/events.php",
         "icon" => "users",
         "iconClass" => "quick-icon-blue",
     ],
     [
         "title" => "View Reports",
-        "path" => "reports.php",
+        "path" => "/campuscare-api/php-frontend/pages/reports/reports.php",
         "icon" => "report",
         "iconClass" => "quick-icon-gold",
     ],
@@ -335,19 +335,19 @@ $adminQuickActions = [
 $facilitatorQuickActions = [
     [
         "title" => "Manage Events",
-        "path" => "events.php",
+        "path" => "/campuscare-api/php-frontend/pages/events/events.php",
         "icon" => "calendar",
         "iconClass" => "blue",
     ],
     [
         "title" => "View Participants",
-        "path" => "view_participants.php",
+        "path" => "/campuscare-api/php-frontend/pages/events/view_participants.php",
         "icon" => "users",
         "iconClass" => "blue",
     ],
     [
         "title" => "Create Session",
-        "path" => "events.php?open=create",
+        "path" => "/campuscare-api/php-frontend/pages/events/events.php?open=create",
         "icon" => "plus",
         "iconClass" => "gold",
     ],
@@ -356,13 +356,13 @@ $facilitatorQuickActions = [
 $instructorQuickActions = [
     [
         "title" => "Student Status",
-        "path" => "student_status.php",
+        "path" => "/campuscare-api/php-frontend/pages/users/student_status.php",
         "icon" => "eye",
         "iconClass" => "blue",
     ],
     [
         "title" => "View Events",
-        "path" => "events.php",
+        "path" => "/campuscare-api/php-frontend/pages/events/events.php",
         "icon" => "calendar",
         "iconClass" => "blue",
     ],
@@ -485,7 +485,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <section>
                     <div class="section-head">
                         <h2 class="section-title">Upcoming Appointments</h2>
-                        <a href="schedule.php" class="section-link">View All &rarr;</a>
+                        <a href="/campuscare-api/php-frontend/pages/appointments/schedule.php" class="section-link">View All &rarr;</a>
                     </div>
 
                     <?php if (empty($upcomingAppointments)): ?>
@@ -601,17 +601,17 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <h2 class="quick-title">Quick Actions</h2>
 
                     <div class="counselor-quick">
-                        <a href="schedule.php" class="counselor-quick-card">
+                        <a href="/campuscare-api/php-frontend/pages/appointments/schedule.php" class="counselor-quick-card">
                             <span class="counselor-quick-icon blue"><?php echo sidebarIconSvg("calendar"); ?></span>
                             <h3 class="counselor-quick-title">View Appointments</h3>
                         </a>
 
-                        <a href="manage_schedule.php" class="counselor-quick-card">
+                        <a href="/campuscare-api/php-frontend/pages/appointments/manage_schedule.php" class="counselor-quick-card">
                             <span class="counselor-quick-icon gold"><?php echo sidebarIconSvg("clock"); ?></span>
                             <h3 class="counselor-quick-title">Manage Schedule</h3>
                         </a>
 
-                        <a href="session_feedback.php" class="counselor-quick-card">
+                        <a href="/campuscare-api/php-frontend/pages/reports/session_feedback.php" class="counselor-quick-card">
                             <span class="counselor-quick-icon blue"><?php echo sidebarIconSvg("message"); ?></span>
                             <h3 class="counselor-quick-title">Session Feedback</h3>
                         </a>
@@ -764,7 +764,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <section>
                     <div class="instructor-overview-head">
                         <h2 class="instructor-overview-title">Student Participation Overview</h2>
-                        <a href="student_status.php" class="instructor-view-all">View All &rarr;</a>
+                        <a href="/campuscare-api/php-frontend/pages/users/student_status.php" class="instructor-view-all">View All &rarr;</a>
                     </div>
 
                     <?php if (empty($instructorStudentOverview)): ?>

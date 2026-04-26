@@ -58,7 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $_SESSION["email"] = $user["email"];
                     $_SESSION["role"] = $user["role"];
 
-                    header("Location: dashboard.php");
+                    header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
                     exit();
                 } else {
                     $error = "Invalid email or password.";
@@ -216,7 +216,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             <p class="login-register-note">
                 Don't have account?
-                <a href="register.php" class="small-link">Register Now</a>
+                <a href="register.php?fresh=1" class="small-link">Create account</a>
             </p>
 
 

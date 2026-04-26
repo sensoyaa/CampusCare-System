@@ -392,6 +392,6 @@ $_SESSION["email"] = (string) ($user["email"] ?? $email);
 $_SESSION["role"] = (string) ($user["role"] ?? "Student");
 unset($_SESSION["google_oauth_mode"], $_SESSION["pending_google_signup"]);
 
-header("Location: dashboard.php");
+header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
 exit();
 

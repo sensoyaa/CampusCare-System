@@ -2880,6 +2880,15 @@ textarea:focus {
     height: 18px;
 }
 
+.g-recaptcha {
+    display: flex;
+    justify-content: center;
+}
+
+.g-recaptcha > div {
+    margin: 0 auto;
+}
+
 .google-login-btn:hover {
     border-color: #c6d6e6;
     box-shadow: 0 6px 18px rgba(38, 56, 74, 0.08);

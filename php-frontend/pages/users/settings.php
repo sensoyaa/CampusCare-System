@@ -431,11 +431,23 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     const profileMenuToggle = document.querySelector(".profile-menu-toggle");
     const profileDropdown = document.querySelector(".profile-dropdown");
     const profilePill = document.querySelector(".profile-pill");
+    const preferencesForm = document.querySelector('form.settings-stack');
+    const darkModeToggle = document.querySelector('input[name="dark_mode"]');
     const notificationsToggle = document.getElementById("enableNotificationsToggle");
     const notificationDependents = document.querySelectorAll(".notification-dependent input, .notification-dependent select");
     const newPasswordInput = document.getElementById("newPassword");
     const passwordStrengthBar = document.getElementById("passwordStrengthBar");
     const passwordStrengthText = document.getElementById("passwordStrengthText");
+
+    function applyDarkMode(enabled) {
+        document.body.classList.toggle("theme-dark", !!enabled);
+
+        try {
+            localStorage.setItem("campuscare_dark_mode", enabled ? "true" : "false");
+        } catch (error) {
+            // Ignore storage errors and keep cookie-based fallback.
+        }
+    }
 
     if (!profileMenuToggle || !profileDropdown || !profilePill) {
         return;
@@ -522,6 +534,22 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         passwordStrengthBar.style.width = width;
         passwordStrengthBar.style.background = color;
         passwordStrengthText.textContent = label;
+    }
+
+    if (darkModeToggle) {
+        applyDarkMode(darkModeToggle.checked);
+
+        darkModeToggle.addEventListener("change", function () {
+            applyDarkMode(darkModeToggle.checked);
+        });
+    }
+
+    if (preferencesForm) {
+        preferencesForm.addEventListener("submit", function () {
+            if (darkModeToggle) {
+                applyDarkMode(darkModeToggle.checked);
+            }
+        });
     }
 
     if (notificationsToggle) {

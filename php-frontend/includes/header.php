@@ -5,7 +5,8 @@ if (session_status() === PHP_SESSION_NONE) {
 
 $pageTitle = $pageTitle ?? "CampusCare";
 $userName = $_SESSION["full_name"] ?? "User";
-$darkModeEnabled = isset($_COOKIE["campuscare_dark_mode"]) && $_COOKIE["campuscare_dark_mode"] === "true";
+$darkModeCookie = strtolower(trim((string) ($_COOKIE["campuscare_dark_mode"] ?? "")));
+$darkModeEnabled = in_array($darkModeCookie, ["true", "1", "yes", "on"], true);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -15,8 +16,41 @@ $darkModeEnabled = isset($_COOKIE["campuscare_dark_mode"]) && $_COOKIE["campusca
     <title><?php echo htmlspecialchars($pageTitle); ?> | CampusCare</title>
     <link rel="stylesheet" href="/campuscare-api/php-frontend/assets/style.css">
     <link rel="stylesheet" href="/campuscare-api/php-frontend/assets/compact.css">
+    <script>
+    (function () {
+        try {
+            var localTheme = localStorage.getItem("campuscare_dark_mode");
+            var isDark = null;
+
+            if (localTheme === "true" || localTheme === "1") {
+                isDark = true;
+            } else if (localTheme === "false" || localTheme === "0") {
+                isDark = false;
+            }
+
+            if (isDark === null) {
+                var cookieMatch = document.cookie.match(/(?:^|; )campuscare_dark_mode=([^;]*)/);
+                var cookieValue = cookieMatch ? decodeURIComponent(cookieMatch[1]).toLowerCase() : "";
+                isDark = (cookieValue === "true" || cookieValue === "1" || cookieValue === "yes" || cookieValue === "on");
+            }
+
+            window.__campuscareDarkMode = !!isDark;
+        } catch (error) {
+            window.__campuscareDarkMode = false;
+        }
+    })();
+    </script>
 </head>
 <body class="<?php echo $darkModeEnabled ? "theme-dark" : ""; ?>">
+<script>
+(function () {
+    if (window.__campuscareDarkMode) {
+        document.body.classList.add("theme-dark");
+    } else {
+        document.body.classList.remove("theme-dark");
+    }
+})();
+</script>
 <div class="system-confirm-overlay" id="systemConfirmOverlay" aria-hidden="true">
     <div class="system-confirm-card" role="dialog" aria-modal="true" aria-labelledby="systemConfirmTitle">
         <div class="system-confirm-icon" id="systemConfirmIcon">?</div>

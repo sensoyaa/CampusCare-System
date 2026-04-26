@@ -10,7 +10,7 @@ $role = normalizeRole($_SESSION["role"] ?? "Student");
 $userId = intval($_SESSION["user_id"] ?? 0);
 
 if ($role !== "Student") {
-    header("Location: dashboard.php");
+    header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
     exit();
 }
 
@@ -18,6 +18,24 @@ $success = "";
 $error = "";
 $chosenService = trim($_POST["service"] ?? ($_GET["service"] ?? ""));
 $chosenTime = trim($_POST["appointment_time"] ?? "");
+$hasCounselingIntakeForm = false;
+
+function booking_table_exists(mysqli $conn, string $tableName): bool {
+    $safeTableName = $conn->real_escape_string($tableName);
+    $result = $conn->query("SHOW TABLES LIKE '{$safeTableName}'");
+    return $result !== false && $result->num_rows > 0;
+}
+
+if (booking_table_exists($conn, "counseling_intake_forms") && $userId > 0) {
+    $intakeCheckStmt = $conn->prepare("SELECT id FROM counseling_intake_forms WHERE user_id = ? AND agreement_accepted = 1 ORDER BY created_at DESC LIMIT 1");
+
+    if ($intakeCheckStmt) {
+        $intakeCheckStmt->bind_param("i", $userId);
+        $intakeCheckStmt->execute();
+        $hasCounselingIntakeForm = $intakeCheckStmt->get_result()->fetch_assoc() !== null;
+        $intakeCheckStmt->close();
+    }
+}
 
 function formatTimeToMysql($time) {
     return date("H:i:s", strtotime($time));
@@ -63,6 +81,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if ($service === "" || $counselor_id <= 0 || $appointment_date === "" || $appointment_time === "") {
         $error = "Please complete all fields.";
+    } elseif (formatService($service) === "Counseling" && !$hasCounselingIntakeForm) {
+        $error = "Please complete your Counseling Intake Form first before booking a Counseling appointment.";
     } else {
         $counselorQuery = $conn->prepare("SELECT full_name, email FROM users WHERE id = ? LIMIT 1");
         $counselorQuery->bind_param("i", $counselor_id);
@@ -328,6 +348,14 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <h1 class="page-title">Book Appointment</h1>
             <p class="page-subtitle">Schedule a session with our guidance team</p>
 
+            <?php if (!$hasCounselingIntakeForm): ?>
+                <div class="alert" style="margin-bottom:16px; border:1px solid var(--border); background:var(--card-bg);">
+                    <strong>Counseling Intake Form Required:</strong>
+                    Complete your intake form before booking a <strong>Counseling</strong> service.
+                    <a class="small-link" style="margin-left:8px;" href="/campuscare-api/php-frontend/pages/appointments/counseling_intake_form.php">Open Intake Form</a>
+                </div>
+            <?php endif; ?>
+
             <div class="stepper">
                 <div class="step-item <?php echo $chosenService !== "" ? "done" : ""; ?>" id="step-service-item">
                     <span class="step-dot <?php echo $chosenService !== "" ? "done" : ""; ?>" id="step-service-dot">1</span>
@@ -421,13 +449,19 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             <?php endif; ?>
 
                             <div style="margin-top: 16px;">
+                                <?php $requiresIntakeFirst = ($chosenService === "counseling" && !$hasCounselingIntakeForm); ?>
                                 <button
                                     type="submit"
                                     class="btn btn-block"
-                                    <?php echo empty($availableSlots) ? "disabled" : ""; ?>
+                                    <?php echo (empty($availableSlots) || $requiresIntakeFirst) ? "disabled" : ""; ?>
                                 >
                                     Confirm Booking
                                 </button>
+                                <?php if ($requiresIntakeFirst): ?>
+                                    <p class="page-subtitle" style="margin-top:8px; margin-bottom:0; font-size:13px;">
+                                        Please complete the Counseling Intake Form first.
+                                    </p>
+                                <?php endif; ?>
                             </div>
                         </form>
                     </section>

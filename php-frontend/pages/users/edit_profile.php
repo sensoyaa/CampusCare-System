@@ -47,16 +47,27 @@ $program = "";
 $avatarPath = trim((string) ($_SESSION["avatar_path"] ?? ""));
 $profileLoaded = false;
 
-$profileStmt = $conn->prepare("SELECT id, full_name, email, role, student_id, college, program, avatar_path FROM users WHERE id = ? LIMIT 1");
-if (!$profileStmt) {
-    $profileStmt = $conn->prepare("SELECT id, full_name, email, role, student_id, college, program FROM users WHERE id = ? LIMIT 1");
+$studentSelectSql = "'' AS student_id";
+if ($usersHasStudentId) {
+    $studentSelectSql = "student_id";
+} elseif ($usersHasStudentNumber) {
+    $studentSelectSql = "student_number AS student_id";
 }
-if (!$profileStmt) {
-    $profileStmt = $conn->prepare("SELECT id, full_name, email, role, student_id FROM users WHERE id = ? LIMIT 1");
+
+$profileSelectSql = "SELECT id, full_name, email, role, "
+    . $studentSelectSql
+    . ($usersHasCollege ? ", college" : ", '' AS college")
+    . ($usersHasProgram ? ", program" : ", '' AS program")
+    . ($usersHasAvatarPath ? ", avatar_path" : ", '' AS avatar_path")
+    . " FROM users WHERE id = ? LIMIT 1";
+
+$profileStmt = null;
+try {
+    $profileStmt = $conn->prepare($profileSelectSql);
+} catch (Throwable $exception) {
+    $profileStmt = null;
 }
-if (!$profileStmt) {
-    $profileStmt = $conn->prepare("SELECT id, full_name, email, role, student_number AS student_id FROM users WHERE id = ? LIMIT 1");
-}
+
 if ($profileStmt) {
     $profileStmt->bind_param("i", $userId);
     $profileStmt->execute();
@@ -82,7 +93,20 @@ if ($profileStmt) {
 }
 
 if (!$profileLoaded && $email !== "") {
-    $profileByEmailStmt = $conn->prepare("SELECT id, full_name, email, student_id, college, program, avatar_path FROM users WHERE email = ? LIMIT 1");
+    $profileByEmailSql = "SELECT id, full_name, email, "
+        . $studentSelectSql
+        . ($usersHasCollege ? ", college" : ", '' AS college")
+        . ($usersHasProgram ? ", program" : ", '' AS program")
+        . ($usersHasAvatarPath ? ", avatar_path" : ", '' AS avatar_path")
+        . " FROM users WHERE email = ? LIMIT 1";
+
+    $profileByEmailStmt = null;
+    try {
+        $profileByEmailStmt = $conn->prepare($profileByEmailSql);
+    } catch (Throwable $exception) {
+        $profileByEmailStmt = null;
+    }
+
     if ($profileByEmailStmt) {
         $profileByEmailStmt->bind_param("s", $email);
         $profileByEmailStmt->execute();
