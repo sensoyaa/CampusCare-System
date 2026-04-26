@@ -202,7 +202,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <p class="oauth-help">Google sign-in is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI in backend/.env.</p>
             <?php endif; ?>
 
-            <p class="login-register-note" style="margin-top:20px;">
+            <p class="login-register-note">
                 Don't have account?
                 <a href="register.php" class="small-link">Register Now</a>
             </p>

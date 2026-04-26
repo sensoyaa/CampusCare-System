@@ -2522,8 +2522,8 @@ textarea:focus {
 .login-page .login-register-note {
     text-align: center;
     color: #303030;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 9px;
+    font-weight: 400;
     margin-top: 8px !important;
 }
 
