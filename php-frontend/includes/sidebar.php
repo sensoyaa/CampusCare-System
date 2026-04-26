@@ -36,6 +36,26 @@ $navItems = [
     ],
 ];
 
+function sidebarPageUrl($fileName)
+{
+    static $pathMap = [
+        "dashboard.php" => "/campuscare-api/php-frontend/pages/dashboard/dashboard.php",
+        "book_appointment.php" => "/campuscare-api/php-frontend/pages/appointments/book_appointment.php",
+        "schedule.php" => "/campuscare-api/php-frontend/pages/appointments/schedule.php",
+        "mental_health_test.php" => "/campuscare-api/php-frontend/pages/tests/mental_health_test.php",
+        "events.php" => "/campuscare-api/php-frontend/pages/events/events.php",
+        "manage_users.php" => "/campuscare-api/php-frontend/pages/users/manage_users.php",
+        "manage_appointments.php" => "/campuscare-api/php-frontend/pages/appointments/manage_appointments.php",
+        "reports.php" => "/campuscare-api/php-frontend/pages/reports/reports.php",
+        "manage_schedule.php" => "/campuscare-api/php-frontend/pages/appointments/manage_schedule.php",
+        "session_feedback.php" => "/campuscare-api/php-frontend/pages/reports/session_feedback.php",
+        "view_participants.php" => "/campuscare-api/php-frontend/pages/events/view_participants.php",
+        "student_status.php" => "/campuscare-api/php-frontend/pages/users/student_status.php",
+    ];
+
+    return $pathMap[$fileName] ?? "/campuscare-api/php-frontend/pages/dashboard/dashboard.php";
+}
+
 function sidebarIconSvg($name)
 {
     $icons = [
@@ -71,7 +91,7 @@ $items = $navItems[$role] ?? $navItems["Student"];
 
 <aside class="sidebar">
     <div class="brand">
-        <img src="../images/logo.png" alt="CampusCare">
+        <img src="/campuscare-api/images/logo.png" alt="CampusCare">
         <div>
             <h2>CampusCare</h2>
             <p>Balanced. Supported. Thriving.</p>
@@ -82,9 +102,9 @@ $items = $navItems[$role] ?? $navItems["Student"];
         <?php foreach ($items as $item): ?>
             <?php
                 $title = $item[0];
-                $url = $item[1];
+                $url = sidebarPageUrl($item[1]);
                 $icon = $item[2];
-                $active = $currentPage === $url ? "active" : "";
+                $active = $currentPage === $item[1] ? "active" : "";
             ?>
             <a href="<?php echo $url; ?>" class="<?php echo $active; ?>">
                 <span class="nav-icon"><?php echo sidebarIconSvg($icon); ?></span>
@@ -96,7 +116,7 @@ $items = $navItems[$role] ?? $navItems["Student"];
     <div class="sidebar-footer">
         <p>Role: <strong><?php echo htmlspecialchars($role); ?></strong></p>
         <a
-            href="logout.php"
+            href="/campuscare-api/php-frontend/pages/auth/logout.php"
             class="logout"
             data-confirm-title="Log out"
             data-confirm-message="Are you sure you want to log out of CampusCare?"

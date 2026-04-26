@@ -12,6 +12,22 @@ function requireLogin() {
         header("Location: index.php");
         exit();
     }
+
+    $allowedTimeouts = [15, 30, 60, 120];
+    $cookieTimeout = intval($_COOKIE["campuscare_idle_timeout"] ?? 60);
+    $timeoutMinutes = in_array($cookieTimeout, $allowedTimeouts, true) ? $cookieTimeout : 60;
+    $timeoutSeconds = $timeoutMinutes * 60;
+
+    $lastActivityAt = intval($_SESSION["last_activity_at"] ?? 0);
+
+    if ($lastActivityAt > 0 && (time() - $lastActivityAt) > $timeoutSeconds) {
+        session_unset();
+        session_destroy();
+        header("Location: /campuscare-api/php-frontend/pages/auth/index.php?expired=1");
+        exit();
+    }
+
+    $_SESSION["last_activity_at"] = time();
 }
 
 function normalizeRole($role) {

@@ -5,7 +5,7 @@ require_once __DIR__ . "/../../../backend/config/mail.php";
 
 $error = "";
 $success = "";
-$email = trim((string) ($_POST["email"] ?? ($_SESSION["password_reset_email"] ?? "")));
+$email = trim((string) ($_POST["email"] ?? ($_GET["email"] ?? ($_SESSION["password_reset_email"] ?? ""))));
 $step = "request";
 $frontendBaseUrl = "/campuscare-api/php-frontend";
 $projectBaseUrl = "/campuscare-api";
@@ -44,7 +44,7 @@ function findActivePasswordResetByEmail(mysqli $conn, string $email): ?array
     $stmt = $conn->prepare("
         SELECT id, user_id, email, token_hash, expires_at
         FROM password_resets
-        WHERE email = ? AND used_at IS NULL AND expires_at >= NOW()
+        WHERE email = ? AND used_at IS NULL
         ORDER BY created_at DESC
         LIMIT 1
     ");
@@ -103,7 +103,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                     $resetCode = str_pad((string) random_int(0, 999999), 6, "0", STR_PAD_LEFT);
                     $codeHash = password_hash($resetCode, PASSWORD_DEFAULT);
-                    $expiresAt = date("Y-m-d H:i:s", strtotime("+15 minutes"));
+                    $expiresAt = date("Y-m-d H:i:s", time() + 900);
                     $userId = intval($user["id"]);
 
                     $insertStmt = $conn->prepare("
@@ -181,8 +181,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $step = "verify";
         } else {
             $resetRequest = findActivePasswordResetByEmail($conn, $email);
+            $expiresAt = $resetRequest ? strtotime((string) ($resetRequest["expires_at"] ?? "")) : false;
 
-            if (!$resetRequest || !password_verify($code, $resetRequest["token_hash"])) {
+            if (!$resetRequest || $expiresAt === false || $expiresAt < time() || !password_verify($code, $resetRequest["token_hash"])) {
                 $error = "The verification code is invalid or has expired.";
                 $step = "verify";
             } else {

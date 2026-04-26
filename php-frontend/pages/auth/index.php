@@ -16,6 +16,14 @@ if (isset($_SESSION["oauth_error"])) {
     unset($_SESSION["oauth_error"]);
 }
 
+if (($_GET["expired"] ?? "") === "1") {
+    $error = "Your session expired due to inactivity. Please log in again.";
+}
+
+if (($_GET["reset"] ?? "") === "success") {
+    $success = "Password reset successful. Please log in.";
+}
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = trim($_POST["email"] ?? "");
     $password = $_POST["password"] ?? "";
@@ -42,7 +50,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $user = $result->fetch_assoc();
 
                 if ($user["status"] !== "Active") {
-                    $error = "Your account is not active.";
+                    $error = "Your account is not active. Please verify your email before logging in.";
                 } elseif (password_verify($password, $user["password"])) {
                     $_SESSION["user_id"] = $user["id"];
                     $_SESSION["full_name"] = $user["full_name"];
@@ -112,6 +120,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
 
+            <?php if (!empty($success)): ?>
+                <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+            <?php endif; ?>
+
             <form method="POST">
                 <div class="form-group">
                     <label>Email</label>
@@ -146,7 +158,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 </div>
 
                 <p style="margin-top:-4px; margin-bottom:10px; text-align:right;">
-                    <a href="forgot_password.php" class="small-link">Forgot password?</a>
+                    <a href="forgot_password.php" id="forgotPasswordLink" class="small-link">Forgot password?</a>
                 </p>
 
                 <div class="form-group">
@@ -213,7 +225,27 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </div>
 <script>
 (function () {
+    var forgotPasswordLink = document.getElementById("forgotPasswordLink");
+    var emailInput = document.querySelector('input[name="email"]');
     var toggles = document.querySelectorAll(".password-toggle");
+
+    if (forgotPasswordLink && emailInput) {
+        var updateForgotPasswordLink = function () {
+            var emailValue = emailInput.value.trim();
+            var baseHref = "forgot_password.php";
+
+            forgotPasswordLink.href = emailValue
+                ? baseHref + "?email=" + encodeURIComponent(emailValue)
+                : baseHref;
+        };
+
+        emailInput.addEventListener("input", updateForgotPasswordLink);
+        updateForgotPasswordLink();
+
+        forgotPasswordLink.addEventListener("click", function () {
+            updateForgotPasswordLink();
+        });
+    }
 
     toggles.forEach(function (toggleButton) {
         var targetId = toggleButton.getAttribute("data-target");
