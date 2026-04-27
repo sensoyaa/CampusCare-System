@@ -375,7 +375,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
                 <div class="settings-actions">
                     <button type="submit" class="btn">Save Preferences</button>
-                    <a href="/campuscare-api/php-frontend/pages/auth/logout.php" class="btn-outline">Sign Out</a>
                 </div>
             </form>
 

@@ -151,6 +151,22 @@ $darkModeEnabled = in_array($darkModeCookie, ["true", "1", "yes", "on"], true);
             action();
         }
     });
+
+    document.addEventListener("click", function (e) {
+        const toggleBtn = e.target.closest(".menu-toggle");
+        if (toggleBtn) {
+            const appDiv = document.querySelector(".app");
+            if (appDiv) {
+                const isCollapsed = appDiv.classList.toggle("sidebar-collapsed");
+                localStorage.setItem("campuscare_sidebar", isCollapsed ? "collapsed" : "open");
+            }
+        }
+    });
 })();
 </script>
-<div class="app">
+<div class="app" id="mainAppDiv">
+<script>
+    if (localStorage.getItem("campuscare_sidebar") === "collapsed") {
+        document.getElementById("mainAppDiv").classList.add("sidebar-collapsed");
+    }
+</script>
