@@ -423,9 +423,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </head>
 <body>
 <div class="form-page">
+     <img id="background_r" src="../images/Signin_cover.png">
     <div class="form-left">
+    
         <div>
+<<<<<<< HEAD
             <img src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/logo.png" alt="CampusCare">
+=======
+            
+>>>>>>> dc8ac97 (gamay na design)
             <h1>CampusCare</h1>
             <p>Your university mental health and wellness companion</p>
         </div>
