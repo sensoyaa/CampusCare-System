@@ -422,37 +422,34 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <?php if ($role === "Student"): ?>
                 <section class="summary-grid">
                     <article class="summary-card">
-                        <p>Upcoming Events</p>
-                        <div class="summary-row">
-                            <h3>
-                                <span class="big summary-primary">3</span>
-                                <span class="muted">this week</span>
-                            </h3>
-                            <span class="summary-arrow">&rarr;</span>
+                        <img src="/campuscare-api/php-frontend/assets/images/icons/Schedule.png" alt="Upcoming Events" class="summary-icon">
+                        <div class="summary-content">
+                            <p>Upcoming Events</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-primary">3</span>
+                                    <span class="muted">this week</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
                         </div>
                     </article>
 
                     <article class="summary-card">
-                        <p>Pending Requests</p>
-                        <div class="summary-row">
-                            <h3>
-                                <span class="big summary-accent">2</span>
-                                <span class="muted">new messages</span>
-                            </h3>
-                            <span class="summary-arrow">&rarr;</span>
+                        <img src="/campuscare-api/php-frontend/assets/images/icons/pending request.png" alt="Pending Requests" class="summary-icon">
+                        <div class="summary-content">
+                            <p>Pending Requests</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-accent">2</span>
+                                    <span class="muted">new messages</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
                         </div>
                     </article>
 
-                    <article class="summary-card">
-                        <p>Your Apps</p>
-                        <div class="summary-row">
-                            <h3>
-                                <span class="big summary-gold"><?php echo $pendingCount; ?></span>
-                                <span class="muted">for approval</span>
-                            </h3>
-                            <span class="summary-arrow">&rarr;</span>
-                        </div>
-                    </article>
+
                 </section>
 
                 <section class="quick-layout">
