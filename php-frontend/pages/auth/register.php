@@ -421,18 +421,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <title>Register | CampusCare</title>
     <link rel="stylesheet" href="<?php echo htmlspecialchars($frontendBaseUrl); ?>/assets/style.css">
 </head>
-<body>
-<div class="form-page">
-    <div class="form-left">
-        <div>
-            <img src="<?php echo htmlspecialchars($projectBaseUrl); ?>/images/logo.png" alt="CampusCare">
-            <h1>CampusCare</h1>
-            <p>Your university mental health and wellness companion</p>
+<body class="login-page">
+<div class="form-page login-form-page">
+    <div class="form-left login-hero">
+        <img
+            class="login-hero-image"
+            src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/Signin_cover.png"
+            alt="CampusCare registration cover"
+            loading="eager"
+            decoding="async"
+        >
+        <div class="login-hero-content">
+            <h1>Get Started</h1>
+            <p>Join our community and begin your wellness journey today.</p>
         </div>
     </div>
 
-    <div class="form-right">
-        <div class="form-box">
+    <div class="form-right login-panel">
+        <div class="form-box login-box">
             <h2>Create Account</h2>
             <p>Join CampusCare</p>
 
@@ -552,7 +558,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         </div>
                     </div>
 
-                    <button type="submit" class="btn" style="width:100%;">Register</button>
+                    <button type="submit" class="btn" style="width:100%; margin-top:20px";>Register</button>
                 </form>
             <?php endif; ?>
 

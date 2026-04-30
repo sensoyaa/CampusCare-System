@@ -278,30 +278,34 @@ $quickActions = [
     [
         "title" => "Book Counseling",
         "path" => "/campuscare-api/php-frontend/pages/appointments/book_appointment.php?service=counseling",
-        "cardClass" => "quick-light-blue",
+        "cardClass" => "quick-light-blue quick-counseling-bg",
         "iconClass" => "quick-icon-blue",
-        "iconText" => "B"
+        "iconText" => "B",
+        "iconImage" => "/campuscare-api/php-frontend/assets/images/icons/counseling.png"
     ],
     [
         "title" => "Join Workshops",
         "path" => "/campuscare-api/php-frontend/pages/events/events.php",
-        "cardClass" => "quick-light-green",
+        "cardClass" => "quick-light-green quick-workshop-bg",
         "iconClass" => "quick-icon-teal",
-        "iconText" => "W"
+        "iconText" => "W",
+        "iconImage" => "/campuscare-api/php-frontend/assets/images/icons/workshop.png"
     ],
     [
         "title" => "Mental Health Test",
         "path" => "/campuscare-api/php-frontend/pages/tests/mental_health_test.php",
-        "cardClass" => "quick-light-gray",
+        "cardClass" => "quick-light-gray quick-bg-3",
         "iconClass" => "quick-icon-teal",
-        "iconText" => "M"
+        "iconText" => "M",
+        "iconImage" => "/campuscare-api/php-frontend/assets/images/icons/Mental-Test.png"
     ],
     [
         "title" => "My Schedule",
         "path" => "/campuscare-api/php-frontend/pages/appointments/schedule.php",
-        "cardClass" => "quick-light-blue",
+        "cardClass" => "quick-light-blue quick-bg-4",
         "iconClass" => "quick-icon-gold",
-        "iconText" => "S"
+        "iconText" => "S",
+        "iconImage" => "/campuscare-api/php-frontend/assets/images/icons/sched.png"
     ],
 ];
 
@@ -418,37 +422,34 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <?php if ($role === "Student"): ?>
                 <section class="summary-grid">
                     <article class="summary-card">
-                        <p>Upcoming Events</p>
-                        <div class="summary-row">
-                            <h3>
-                                <span class="big summary-primary">3</span>
-                                <span class="muted">this week</span>
-                            </h3>
-                            <span class="summary-arrow">&rarr;</span>
+                        <img src="/campuscare-api/php-frontend/assets/images/icons/Schedule.png" alt="Upcoming Events" class="summary-icon">
+                        <div class="summary-content">
+                            <p>Upcoming Events</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-primary">3</span>
+                                    <span class="muted">this week</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
                         </div>
                     </article>
 
                     <article class="summary-card">
-                        <p>Pending Requests</p>
-                        <div class="summary-row">
-                            <h3>
-                                <span class="big summary-accent">2</span>
-                                <span class="muted">new messages</span>
-                            </h3>
-                            <span class="summary-arrow">&rarr;</span>
+                        <img src="/campuscare-api/php-frontend/assets/images/icons/pending request.png" alt="Pending Requests" class="summary-icon">
+                        <div class="summary-content">
+                            <p>Pending Requests</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-accent">2</span>
+                                    <span class="muted">new messages</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
                         </div>
                     </article>
 
-                    <article class="summary-card">
-                        <p>Your Apps</p>
-                        <div class="summary-row">
-                            <h3>
-                                <span class="big summary-gold"><?php echo $pendingCount; ?></span>
-                                <span class="muted">for approval</span>
-                            </h3>
-                            <span class="summary-arrow">&rarr;</span>
-                        </div>
-                    </article>
+
                 </section>
 
                 <section class="quick-layout">
@@ -457,8 +458,14 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
                         <div class="quick-grid">
                             <?php foreach ($quickActions as $action): ?>
-                                <a href="<?php echo htmlspecialchars($action["path"]); ?>" class="quick-card <?php echo $action["cardClass"]; ?>">
-                                    <span class="quick-icon <?php echo $action["iconClass"]; ?>"><?php echo htmlspecialchars($action["iconText"]); ?></span>
+                                <a href="<?php echo htmlspecialchars($action["path"]); ?>" class="quick-card <?php echo $action["cardClass"]; ?> roboto-regular">
+                                    <span class="quick-icon <?php echo $action["iconClass"]; ?>">
+                                        <?php if (!empty($action["iconImage"])): ?>
+                                            <img src="<?php echo htmlspecialchars($action["iconImage"]); ?>" alt="<?php echo htmlspecialchars($action["title"]); ?>">
+                                        <?php else: ?>
+                                            <?php echo htmlspecialchars($action["iconText"]); ?>
+                                        <?php endif; ?>
+                                    </span>
                                     <h4><?php echo htmlspecialchars($action["title"]); ?></h4>
                                 </a>
                             <?php endforeach; ?>
@@ -491,7 +498,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <?php if (empty($upcomingAppointments)): ?>
                         <div class="appointment-card">
                             <div class="appointment-left">
-                                <span class="appointment-icon">C</span>
+                                <img src="/campuscare-api/php-frontend/assets/images/icons/Book-now.png" alt="Appointment" class="appointment-icon">
                                 <div>
                                     <p class="appointment-title">No upcoming appointments yet</p>
                                     <p class="appointment-meta">Book your first counseling session to get started.</p>
@@ -511,7 +518,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
                                 <article class="appointment-card">
                                     <div class="appointment-left">
-                                        <span class="appointment-icon">C</span>
+                                        <img src="/campuscare-api/php-frontend/assets/images/icons/Book-now.png" alt="Appointment" class="appointment-icon">
                                         <div>
                                             <p class="appointment-title">
                                                 <?php echo htmlspecialchars($apt["service"] . " with " . $apt["counselor"]); ?>

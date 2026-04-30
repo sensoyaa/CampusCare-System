@@ -211,7 +211,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <div class="form-page">
     <div class="form-left">
         <div>
-            <img src="<?php echo htmlspecialchars($projectBaseUrl); ?>/images/logo.png" alt="CampusCare">
+            <img src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/logo.png" alt="CampusCare">
             <h1>CampusCare</h1>
             <p>Your university mental health and wellness companion</p>
         </div>
