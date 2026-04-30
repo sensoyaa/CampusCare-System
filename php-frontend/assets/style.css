@@ -3246,11 +3246,13 @@ textarea:focus {
   display: flex;
 }
 
+/*dili nako makita ang register na css na page nara diayyyy ghaddd*/
+
 #background_r {
-  position: absolute; /* change from fixed → absolute */
+  position: absolute;
   inset: 0;
   width: 50%;
-  height: 122%;
+  height: 10%;
   object-fit: cover;
   object-position: center;
   z-index: 0;
@@ -3258,8 +3260,8 @@ textarea:focus {
 .form-left {
   width: 50%;
   min-height: 100vh;
-  position: relative; /* IMPORTANT: parent for absolute image */
-  overflow: hidden; /* prevents spill */
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;

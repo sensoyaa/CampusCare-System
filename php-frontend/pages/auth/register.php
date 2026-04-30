@@ -425,6 +425,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <div class="form-page">
      <img id="background_r" src="../images/Signin_cover.png">
     <div class="form-left">
+
     
         <div>
 <<<<<<< HEAD
@@ -439,7 +440,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     <div class="form-right">
         <div class="form-box">
+            
             <h2>Create Account</h2>
+         
+            
             <p>Join CampusCare</p>
 
             <?php if ($error): ?>
@@ -558,7 +562,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         </div>
                     </div>
 
-                    <button type="submit" class="btn" style="width:100%;">Register</button>
+                    <button type="submit" class="btn" style="width:100%; margin-top:20px";>Register</button>
                 </form>
             <?php endif; ?>
 
