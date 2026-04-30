@@ -421,29 +421,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <title>Register | CampusCare</title>
     <link rel="stylesheet" href="<?php echo htmlspecialchars($frontendBaseUrl); ?>/assets/style.css">
 </head>
-<body>
-<div class="form-page">
-     <img id="background_r" src="../images/Signin_cover.png">
-    <div class="form-left">
-
-    
-        <div>
-<<<<<<< HEAD
-            <img src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/logo.png" alt="CampusCare">
-=======
-            
->>>>>>> dc8ac97 (gamay na design)
-            <h1>CampusCare</h1>
-            <p>Your university mental health and wellness companion</p>
+<body class="login-page">
+<div class="form-page login-form-page">
+    <div class="form-left login-hero">
+        <img
+            class="login-hero-image"
+            src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/Signin_cover.png"
+            alt="CampusCare registration cover"
+            loading="eager"
+            decoding="async"
+        >
+        <div class="login-hero-content">
+            <h1>Get Started</h1>
+            <p>Join our community and begin your wellness journey today.</p>
         </div>
     </div>
 
-    <div class="form-right">
-        <div class="form-box">
-            
+    <div class="form-right login-panel">
+        <div class="form-box login-box">
             <h2>Create Account</h2>
-         
-            
             <p>Join CampusCare</p>
 
             <?php if ($error): ?>
