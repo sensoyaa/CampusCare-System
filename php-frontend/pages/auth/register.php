@@ -423,9 +423,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </head>
 <body>
 <div class="form-page">
+     <img id="background_r" src="../images/Signin_cover.png">
     <div class="form-left">
+
+    
         <div>
+<<<<<<< HEAD
             <img src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/logo.png" alt="CampusCare">
+=======
+            
+>>>>>>> dc8ac97 (gamay na design)
             <h1>CampusCare</h1>
             <p>Your university mental health and wellness companion</p>
         </div>
@@ -433,7 +440,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     <div class="form-right">
         <div class="form-box">
+            
             <h2>Create Account</h2>
+         
+            
             <p>Join CampusCare</p>
 
             <?php if ($error): ?>
@@ -552,7 +562,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         </div>
                     </div>
 
-                    <button type="submit" class="btn" style="width:100%;">Register</button>
+                    <button type="submit" class="btn" style="width:100%; margin-top:20px";>Register</button>
                 </form>
             <?php endif; ?>
 
