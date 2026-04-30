@@ -7,19 +7,23 @@ $navItems = [
     "Student" => [
         ["Dashboard", "dashboard.php", "dashboard"],
         ["Book Appointment", "book_appointment.php", "calendar-plus"],
-        ["Counseling Intake Form", "counseling_intake_form.php", "edit"],
-        ["Request Testing Form", "testing_request_form.php", "report"],
         ["My Schedule", "schedule.php", "calendar"],
         ["Mental Health Test", "mental_health_test.php", "brain"],
-        ["Brown Bag Sessions", "events.php", "users"],
+        "Forms" => [
+            ["Counseling Intake", "counseling_intake_form.php", "edit"],
+            ["Request Testing", "testing_request_form.php", "report"]
+        ],
+        ["Events", "events.php", "calendar"],
     ],
     "Administrator" => [
         ["Dashboard", "dashboard.php", "dashboard"],
-        ["Intake Reviews", "counseling_intake_reviews.php", "eye"],
-        ["Referral Slip", "referral_form.php", "message"],
-        ["Referral Inbox", "referral_inbox.php", "search"],
-        ["Request Testing Form", "testing_request_form.php", "report"],
-        ["Testing Inbox", "testing_requests_inbox.php", "search"],
+        "Forms & Inbox" => [
+            ["Intake Reviews", "counseling_intake_reviews.php", "eye"],
+            ["Referral Slip", "referral_form.php", "message"],
+            ["Referral Inbox", "referral_inbox.php", "search"],
+            ["Request Testing", "testing_request_form.php", "report"],
+            ["Testing Inbox", "testing_requests_inbox.php", "search"]
+        ],
         ["Manage Users", "manage_users.php", "user-plus"],
         ["Manage Appointments", "manage_appointments.php", "calendar"],
         ["Manage Events", "events.php", "users"],
@@ -27,26 +31,32 @@ $navItems = [
     ],
     "Counselor" => [
         ["Dashboard", "dashboard.php", "dashboard"],
-        ["Intake Reviews", "counseling_intake_reviews.php", "eye"],
-        ["Referral Slip", "referral_form.php", "message"],
-        ["Referral Inbox", "referral_inbox.php", "search"],
-        ["Request Testing Form", "testing_request_form.php", "report"],
-        ["Testing Inbox", "testing_requests_inbox.php", "search"],
+        "Forms & Inbox" => [
+            ["Intake Reviews", "counseling_intake_reviews.php", "eye"],
+            ["Referral Slip", "referral_form.php", "message"],
+            ["Referral Inbox", "referral_inbox.php", "search"],
+            ["Request Testing", "testing_request_form.php", "report"],
+            ["Testing Inbox", "testing_requests_inbox.php", "search"]
+        ],
         ["View Appointments", "schedule.php", "calendar"],
         ["Manage Schedule", "manage_schedule.php", "clock"],
         ["Session Feedback", "session_feedback.php", "message"],
     ],
     "Facilitator" => [
         ["Dashboard", "dashboard.php", "dashboard"],
-        ["Referral Slip", "referral_form.php", "message"],
-        ["Request Testing Form", "testing_request_form.php", "report"],
+        "Forms" => [
+            ["Referral Slip", "referral_form.php", "message"],
+            ["Request Testing", "testing_request_form.php", "report"]
+        ],
         ["Manage Events", "events.php", "users"],
         ["View Participants", "view_participants.php", "eye"],
     ],
     "Instructor" => [
         ["Dashboard", "dashboard.php", "dashboard"],
-        ["Referral Slip", "referral_form.php", "message"],
-        ["Request Testing Form", "testing_request_form.php", "report"],
+        "Forms" => [
+            ["Referral Slip", "referral_form.php", "message"],
+            ["Request Testing", "testing_request_form.php", "report"]
+        ],
         ["Student Status", "student_status.php", "eye"],
         ["View Events", "events.php", "calendar"],
     ],
@@ -121,19 +131,95 @@ $items = $navItems[$role] ?? $navItems["Student"];
     </div>
 
     <nav class="nav">
-        <?php foreach ($items as $item): ?>
-            <?php
-                $title = $item[0];
-                $url = sidebarPageUrl($item[1]);
-                $icon = $item[2];
-                $active = $currentPage === $item[1] ? "active" : "";
-            ?>
-            <a href="<?php echo $url; ?>" class="<?php echo $active; ?>">
-                <span class="nav-icon"><?php echo sidebarIconSvg($icon); ?></span>
-                <span><?php echo htmlspecialchars($title); ?></span>
-            </a>
+        <?php foreach ($items as $key => $item): ?>
+            <?php if (is_array($item) && is_string($key)): ?>
+                <!-- Submenu / Accordion Native Implementation -->
+                <details class="nav-details" <?php
+                    // Keep open if any sub-item is the current page
+                    $isOpen = false;
+                    foreach($item as $subItem) {
+                        if ($currentPage === $subItem[1]) { $isOpen = true; break; }
+                    }
+                    echo $isOpen ? 'open' : '';
+                ?>>
+                    <summary class="nav-summary">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="nav-icon"><?php echo sidebarIconSvg("edit"); ?></span>
+                            <span><?php echo htmlspecialchars($key); ?></span>
+                        </div>
+                        <svg class="caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                    </summary>
+                    <div class="nav-submenu">
+                        <?php foreach ($item as $subItem): ?>
+                            <?php
+                                $title = $subItem[0];
+                                $url = sidebarPageUrl($subItem[1]);
+                                $active = $currentPage === $subItem[1] ? "active" : "";
+                            ?>
+                            <a href="<?php echo $url; ?>" class="<?php echo $active; ?>">
+                                <span><?php echo htmlspecialchars($title); ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </details>
+            <?php else: ?>
+                <?php
+                    $title = $item[0];
+                    $url = sidebarPageUrl($item[1]);
+                    $icon = $item[2];
+                    $active = $currentPage === $item[1] ? "active" : "";
+                ?>
+                <a href="<?php echo $url; ?>" class="<?php echo $active; ?>">
+                    <span class="nav-icon"><?php echo sidebarIconSvg($icon); ?></span>
+                    <span><?php echo htmlspecialchars($title); ?></span>
+                </a>
+            <?php endif; ?>
         <?php endforeach; ?>
     </nav>
+
+    <style>
+        .nav-details summary::-webkit-details-marker {
+            display: none;
+        }
+        .nav-details {
+            margin-bottom: 2px;
+        }
+        .nav-summary {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            color: #fff;
+            border-radius: 12px;
+            padding: 9px 11px;
+            font-weight: 600;
+            font-size: 13px;
+            transition: background-color 0.2s ease;
+        }
+        .nav-summary:hover {
+            background: var(--sidebar-accent);
+        }
+        .nav-summary .caret {
+            transition: transform 0.2s ease;
+            opacity: 0.7;
+        }
+        .nav-details[open] .nav-summary .caret {
+            transform: rotate(180deg);
+        }
+        .nav-submenu {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-top: 4px;
+            padding-left: 36px;
+        }
+        .nav-submenu a {
+            padding: 7px 11px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+    </style>
 
     <div class="sidebar-footer">
         <p>Role: <strong><?php echo htmlspecialchars($role); ?></strong></p>
