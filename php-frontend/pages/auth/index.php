@@ -91,7 +91,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <div class="form-left login-hero">
         <img
             class="login-hero-image"
-            src="<?php echo htmlspecialchars($projectBaseUrl); ?>/images/LoginCover.png"
+            src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/LoginCover.png"
             alt="CampusCare login cover"
             loading="eager"
             decoding="async"
@@ -108,7 +108,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <h2>Campus<span class="brand-second-c">C</span>are</h2>
                 <img
                     class="login-heartbeat"
-                    src="<?php echo htmlspecialchars($projectBaseUrl); ?>/images/Heartbeat.png"
+                    src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/Heartbeat.png"
                     alt="Heartbeat icon"
                     loading="eager"
                     decoding="async"

@@ -113,7 +113,7 @@ $items = $navItems[$role] ?? $navItems["Student"];
 
 <aside class="sidebar">
     <div class="brand">
-        <img src="/campuscare-api/images/logo.png" alt="CampusCare">
+        <img src="/campuscare-api/php-frontend/assets/images/logo.png" alt="CampusCare">
         <div>
             <h2>CampusCare</h2>
             <p>Balanced. Supported. Thriving.</p>
