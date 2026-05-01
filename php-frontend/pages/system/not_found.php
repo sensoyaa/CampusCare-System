@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 http_response_code(404);
 
 $isLoggedIn = isset($_SESSION["user_id"]);
-$returnHref = $isLoggedIn ? "/campuscare-api/php-frontend/pages/dashboard/dashboard.php" : "/campuscare-api/php-frontend/index.php";
+$returnHref = $isLoggedIn ? "/campuscare-api/php-frontend/pages/dashboard/dashboard.php" : "/campuscare-api/landingpage.php";
 $returnLabel = $isLoggedIn ? "Return to Dashboard" : "Return to Home";
 $requestedPath = trim((string) ($_SERVER["REQUEST_URI"] ?? ""));
 ?>

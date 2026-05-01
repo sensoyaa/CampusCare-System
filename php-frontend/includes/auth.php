@@ -9,7 +9,7 @@ function isLoggedIn() {
 
 function requireLogin() {
     if (!isLoggedIn()) {
-        header("Location: index.php");
+        header("Location: /campuscare-api/landingpage.php");
         exit();
     }
 

@@ -4,6 +4,7 @@ RewriteBase /campuscare-api/php-frontend/
 # Auth pages
 RewriteRule ^$ pages/auth/index.php [L]
 RewriteRule ^index\.php$ pages/auth/index.php [L]
+RewriteRule ^landingpage\.php$ ../landingpage.php [L]
 RewriteRule ^register\.php$ pages/auth/register.php [L]
 RewriteRule ^forgot_password\.php$ pages/auth/forgot_password.php [L]
 RewriteRule ^reset_password\.php$ pages/auth/reset_password.php [L]
