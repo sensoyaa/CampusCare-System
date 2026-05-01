@@ -1210,6 +1210,18 @@ body.theme-dark .menu-lines {
     flex-shrink: 0;
 }
 
+/* Summary card icon badges (reuse announcement styles) */
+.summary-card .announcement-icon-wrap {
+    width: 52px;
+    height: 52px;
+}
+
+.summary-card .announcement-icon-wrap svg {
+    width: 30px;
+    height: 30px;
+    stroke-width: 1.8;
+}
+
 .summary-content {
     flex: 1;
 }
@@ -2102,8 +2114,7 @@ body.theme-dark .announcement-chevron {
 }
 
 .appointment-card {
-  background: #fff;
-  border: 1px solid var(--border);
+  background: #e1f9ff91;
   border-radius: 16px;
   padding: 16px 18px;
   display: flex;
@@ -2120,10 +2131,9 @@ body.theme-dark .announcement-chevron {
 }
 
 .appointment-icon {
-  width: 44px;
-  height: 44px;
+  width: 100%;
+  height: 100%;
   border-radius: 12px;
-  background: var(--primary);
   color: #fff;
   display: inline-flex;
   align-items: center;

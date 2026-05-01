@@ -156,7 +156,7 @@ $items = $navItems[$role] ?? $navItems["Student"];
                                 $url = sidebarPageUrl($subItem[1]);
                                 $active = $currentPage === $subItem[1] ? "active" : "";
                             ?>
-                            <a href="<?php echo $url; ?>" class="<?php echo $active; ?>">
+                            <a href="<?php echo $url; ?>" class="nav-link <?php echo $active; ?>">
                                 <span><?php echo htmlspecialchars($title); ?></span>
                             </a>
                         <?php endforeach; ?>
@@ -169,7 +169,7 @@ $items = $navItems[$role] ?? $navItems["Student"];
                     $icon = $item[2];
                     $active = $currentPage === $item[1] ? "active" : "";
                 ?>
-                <a href="<?php echo $url; ?>" class="<?php echo $active; ?>">
+                <a href="<?php echo $url; ?>" class="nav-link <?php echo $active; ?>">
                     <span class="nav-icon"><?php echo sidebarIconSvg($icon); ?></span>
                     <span><?php echo htmlspecialchars($title); ?></span>
                 </a>
@@ -178,35 +178,77 @@ $items = $navItems[$role] ?? $navItems["Student"];
     </nav>
 
     <style>
+        /* Unified sidebar nav styling for links and summary (submenu header) */
         .nav-details summary::-webkit-details-marker {
             display: none;
         }
-        .nav-details {
-            margin-bottom: 2px;
-        }
+
+        .nav a,
+        .nav-link,
         .nav-summary {
-            list-style: none;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            gap: 10px;
+            justify-content: flex-start;
             cursor: pointer;
-            color: #fff;
+            color: #0066cc;
             border-radius: 12px;
             padding: 9px 11px;
             font-weight: 600;
             font-size: 13px;
-            transition: background-color 0.2s ease;
+            text-decoration: none;
+            transition: background-color 0.15s ease, color 0.15s ease;
         }
-        .nav-summary:hover {
-            background: var(--sidebar-accent);
+
+        /* Hover / active: blue background, white text/icon */
+        .nav a:hover,
+        .nav a.active,
+        .nav-link:hover,
+        .nav-link.active,
+        .nav-details[open] > .nav-summary,
+        .nav-details:hover > .nav-summary {
+            background: #0066cc;
+            color: #ffffff !important;
         }
+
+        /* Ensure icons and caret inherit the color on hover/active */
+        .nav a:hover .nav-icon,
+        .nav a.active .nav-icon,
+        .nav-link:hover .nav-icon,
+        .nav-link.active .nav-icon,
+        .nav-details:hover > .nav-summary .nav-icon,
+        .nav-details[open] > .nav-summary .nav-icon,
+        .nav-details:hover > .nav-summary .caret,
+        .nav-details[open] > .nav-summary .caret {
+            color: #ffffff !important;
+        }
+
+        /* Ensure logout (footer) gets same hover styling */
+        .logout.nav-link:hover {
+            background: #0066cc;
+            color: #ffffff !important;
+        }
+
+        .logout.nav-link:hover .nav-icon {
+            color: #ffffff !important;
+        }
+
+        /* Make inline SVG inherit text color for stroke/fill */
+        .nav-icon svg {
+            color: inherit;
+        }
+
         .nav-summary .caret {
             transition: transform 0.2s ease;
-            opacity: 0.7;
+            opacity: 0.8;
+            color: #0066cc;
+            margin-left: auto;
         }
+
         .nav-details[open] .nav-summary .caret {
             transform: rotate(180deg);
         }
+
         .nav-submenu {
             display: flex;
             flex-direction: column;
@@ -214,10 +256,13 @@ $items = $navItems[$role] ?? $navItems["Student"];
             margin-top: 4px;
             padding-left: 36px;
         }
+
         .nav-submenu a {
             padding: 7px 11px;
             font-size: 12px;
             font-weight: 500;
+            color: inherit;
+            text-decoration: none;
         }
     </style>
 
@@ -225,7 +270,7 @@ $items = $navItems[$role] ?? $navItems["Student"];
         <p>Role: <strong><?php echo htmlspecialchars($role); ?></strong></p>
         <a
             href="/campuscare-api/php-frontend/pages/auth/logout.php"
-            class="logout"
+            class="logout nav-link"
             data-confirm-title="Log out"
             data-confirm-message="Are you sure you want to log out of CampusCare?"
             data-confirm-button="Log Out"

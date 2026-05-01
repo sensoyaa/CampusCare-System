@@ -423,7 +423,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <?php if ($role === "Student"): ?>
                 <section class="summary-grid">
                     <article class="summary-card">
-                        <img src="/campuscare-api/php-frontend/assets/images/icons/Schedule.png" alt="Upcoming Events" class="summary-icon">
+                        <span class="announcement-icon-wrap announcement-tone-blue">
+                            <?php echo sidebarIconSvg("calendar"); ?>
+                        </span>
                         <div class="summary-content">
                             <p>Upcoming Events</p>
                             <div class="summary-row">
@@ -437,7 +439,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     </article>
 
                     <article class="summary-card">
-                        <img src="/campuscare-api/php-frontend/assets/images/icons/pending request.png" alt="Pending Requests" class="summary-icon">
+                        <span class="announcement-icon-wrap announcement-tone-gold">
+                            <?php echo sidebarIconSvg("message"); ?>
+                        </span>
                         <div class="summary-content">
                             <p>Pending Requests</p>
                             <div class="summary-row">
@@ -496,7 +500,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     </aside>
                 </section>
 
-                <section>
+                <section class="announcement-card"">
                     <div class="section-head">
                         <h2 class="section-title">Upcoming Appointments</h2>
                         <a href="/campuscare-api/php-frontend/pages/appointments/schedule.php" class="section-link">View All &rarr;</a>
