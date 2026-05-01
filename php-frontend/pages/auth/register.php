@@ -39,6 +39,70 @@ function ensureRegistrationVerificationTable(mysqli $conn): bool
     return $conn->query($sql) === true;
 }
 
+function dbColumnExists(mysqli $conn, string $table, string $column): bool
+{
+    $stmt = $conn->prepare(
+        "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? LIMIT 1"
+    );
+
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bind_param("ss", $table, $column);
+    $stmt->execute();
+    $stmt->store_result();
+    $exists = $stmt->num_rows > 0;
+    $stmt->close();
+
+    return $exists;
+}
+
+function getColumnName(mysqli $conn, string $table, array $choices, string $default): string
+{
+    foreach ($choices as $column) {
+        if (dbColumnExists($conn, $table, $column)) {
+            return $column;
+        }
+    }
+
+    return $default;
+}
+
+function resolveRoleId(mysqli $conn, string $role): ?int
+{
+    $roleKey = strtolower(trim($role));
+    $stmt = $conn->prepare("SELECT id FROM roles WHERE LOWER(code) = ? OR LOWER(display_name) = ? LIMIT 1");
+    if (!$stmt) {
+        return null;
+    }
+
+    $stmt->bind_param("ss", $roleKey, $roleKey);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $stmt->close();
+
+    return $row ? intval($row["id"]) : null;
+}
+
+function resolveAccountStatusId(mysqli $conn, string $status): ?int
+{
+    $statusKey = strtolower(trim($status));
+    $stmt = $conn->prepare("SELECT id FROM account_statuses WHERE LOWER(code) = ? OR LOWER(display_name) = ? LIMIT 1");
+    if (!$stmt) {
+        return null;
+    }
+
+    $stmt->bind_param("ss", $statusKey, $statusKey);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $stmt->close();
+
+    return $row ? intval($row["id"]) : null;
+}
+
 function clearRegistrationVerificationSession(): void
 {
     unset(
@@ -60,13 +124,16 @@ $step = isset($_SESSION["registration_verification_email"]) ? "verify" : "regist
 
 function findActiveRegistrationVerificationByEmail(mysqli $conn, string $email): ?array
 {
-    $stmt = $conn->prepare("
-        SELECT id, full_name, student_id, email, password_hash, role, token_hash, expires_at
+    $studentColumn = getColumnName($conn, "registration_verifications", ["student_id", "student_number"], "student_id");
+    $roleColumn = getColumnName($conn, "registration_verifications", ["role", "role_id"], "role");
+
+    $stmt = $conn->prepare(
+        "SELECT id, full_name, " . $studentColumn . " AS student_id, email, password_hash, " . $roleColumn . " AS role, token_hash, expires_at
         FROM registration_verifications
         WHERE email = ? AND verified_at IS NULL
         ORDER BY created_at DESC
-        LIMIT 1
-    ");
+        LIMIT 1"
+    );
 
     if (!$stmt) {
         return null;
@@ -161,7 +228,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $error = "An account with this Google email already exists. Please log in instead.";
                     unset($_SESSION["pending_google_signup"]);
                 } else {
-                    $checkStudent = $conn->prepare("SELECT id FROM users WHERE student_id = ? LIMIT 1");
+                    $userStudentColumn = getColumnName($conn, "users", ["student_id", "student_number"], "student_id");
+                $userPasswordColumn = getColumnName($conn, "users", ["password_hash", "password"], "password");
+                $userRoleColumn = getColumnName($conn, "users", ["role", "role_id"], "role");
+                $userStatusColumn = getColumnName($conn, "users", ["status", "account_status_id"], "status");
+
+                $checkStudent = $conn->prepare("SELECT id FROM users WHERE " . $userStudentColumn . " = ? LIMIT 1");
 
                     if (!$checkStudent) {
                         $error = "Unable to validate student ID.";
@@ -174,15 +246,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         if ($studentIdExists) {
                             $error = "Student ID is already in use.";
                         } else {
-                            $stmt = $conn->prepare("
-                                INSERT INTO users (full_name, student_id, email, password, role, status)
-                                VALUES (?, ?, ?, ?, ?, ?)
-                            ");
+                            $roleValue = $userRoleColumn === "role_id"
+                                ? (resolveRoleId($conn, $role) ?? 4)
+                                : $role;
+                            $statusValue = $userStatusColumn === "account_status_id"
+                                ? (resolveAccountStatusId($conn, $status) ?? 1)
+                                : $status;
+                            $passwordColumn = $userPasswordColumn;
+
+                            $stmt = $conn->prepare(
+                                "INSERT INTO users (full_name, " . $userStudentColumn . ", email, " . $passwordColumn . ", " . $userRoleColumn . ", " . $userStatusColumn . ") VALUES (?, ?, ?, ?, ?, ?)"
+                            );
 
                             if (!$stmt) {
                                 $error = "Failed to create account.";
                             } else {
-                                $stmt->bind_param("ssssss", $full_name, $student_id, $email, $placeholderPassword, $role, $status);
+                                $bindTypes = "ssss" . ($userRoleColumn === "role_id" ? "i" : "s") . ($userStatusColumn === "account_status_id" ? "i" : "s");
+                                $stmt->bind_param($bindTypes, $full_name, $student_id, $email, $placeholderPassword, $roleValue, $statusValue);
 
                                 if ($stmt->execute()) {
                                     unset($_SESSION["pending_google_signup"]);
@@ -225,10 +305,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $step = "verify";
                 $email = $verificationEmail;
             } else {
-                $insertStmt = $conn->prepare("
-                    INSERT INTO users (full_name, student_id, email, password, role, status)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ");
+                $userStudentColumn = getColumnName($conn, "users", ["student_id", "student_number"], "student_id");
+                $userPasswordColumn = getColumnName($conn, "users", ["password_hash", "password"], "password");
+                $userRoleColumn = getColumnName($conn, "users", ["role", "role_id"], "role");
+                $userStatusColumn = getColumnName($conn, "users", ["status", "account_status_id"], "status");
+
+                $insertStmt = $conn->prepare(
+                    "INSERT INTO users (full_name, " . $userStudentColumn . ", email, " . $userPasswordColumn . ", " . $userRoleColumn . ", " . $userStatusColumn . ") VALUES (?, ?, ?, ?, ?, ?)"
+                );
 
                 if (!$insertStmt) {
                     $error = "Failed to create account.";
@@ -239,10 +323,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $studentId = (string) $verificationRequest["student_id"];
                     $storedEmail = (string) $verificationRequest["email"];
                     $passwordHash = (string) $verificationRequest["password_hash"];
-                    $userRole = (string) $verificationRequest["role"];
-                    $status = "Active";
+                    $userRole = $userRoleColumn === "role_id"
+                        ? (intval((string) $verificationRequest["role"]) ?: (resolveRoleId($conn, "Student") ?? 4))
+                        : (string) $verificationRequest["role"];
+                    $status = $userStatusColumn === "account_status_id"
+                        ? (resolveAccountStatusId($conn, "Active") ?? 1)
+                        : "Active";
 
-                    $insertStmt->bind_param("ssssss", $fullName, $studentId, $storedEmail, $passwordHash, $userRole, $status);
+                    $bindTypes = "ssss" . ($userRoleColumn === "role_id" ? "i" : "s") . ($userStatusColumn === "account_status_id" ? "i" : "s");
+                    $insertStmt->bind_param($bindTypes, $fullName, $studentId, $storedEmail, $passwordHash, $userRole, $status);
 
                     if ($insertStmt->execute()) {
                         $verificationId = intval($verificationRequest["id"]);
@@ -368,15 +457,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $deleteStmt->close();
                 }
 
-                $stmt = $conn->prepare("
-                    INSERT INTO registration_verifications (full_name, student_id, email, password_hash, role, token_hash, expires_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ");
+                $verificationStudentColumn = getColumnName($conn, "registration_verifications", ["student_id", "student_number"], "student_id");
+                $verificationRoleColumn = getColumnName($conn, "registration_verifications", ["role", "role_id"], "role");
+                $roleValue = $verificationRoleColumn === "role_id"
+                    ? (resolveRoleId($conn, $role) ?? 4)
+                    : $role;
+
+                $stmt = $conn->prepare(
+                    "INSERT INTO registration_verifications (full_name, " . $verificationStudentColumn . ", email, password_hash, " . $verificationRoleColumn . ", token_hash, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+                );
 
                 if (!$stmt) {
                     $error = "Failed to create verification request.";
                 } else {
-                    $stmt->bind_param("sssssss", $full_name, $student_id, $email, $hashedPassword, $role, $codeHash, $expiresAt);
+                    $bindTypes = "ssss" . ($verificationRoleColumn === "role_id" ? "iss" : "sss");
+                    $stmt->bind_param($bindTypes, $full_name, $student_id, $email, $hashedPassword, $roleValue, $codeHash, $expiresAt);
 
                     if ($stmt->execute()) {
                         $mailResult = sendRegistrationVerificationEmail($email, $full_name, $verificationCode);
