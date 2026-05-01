@@ -269,9 +269,9 @@ if ($role === "Student" && $userId > 0) {
 }
 
 $announcements = [
-    ["title" => "Mental Health Week", "date" => "Apr 28 - May 3", "dot" => "dot-gold"],
-    ["title" => "Resume Workshop", "date" => "Apr 27, 2PM", "dot" => "dot-blue"],
-    ["title" => "Student Org Fair", "date" => "May 5, 10AM", "dot" => "dot-teal"],
+    ["title" => "Mental Health Week", "date" => "Apr 28 - May 3", "icon" => "report", "tone" => "gold"],
+    ["title" => "Resume Workshop", "date" => "Apr 27, 2PM", "icon" => "users", "tone" => "blue"],
+    ["title" => "Student Org Fair", "date" => "May 5, 10AM", "icon" => "user", "tone" => "sky"],
 ];
 
 $quickActions = [
@@ -412,9 +412,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
                 <div class="date-card">
                     <span class="date-icon"><?php echo sidebarIconSvg("calendar"); ?></span>
-                    <div>
+                    <div class="date-content">
                         <small>Today</small>
                         <strong><?php echo date("F j, Y"); ?></strong>
+                        <span class="date-weekday"><?php echo date("l"); ?></span>
                     </div>
                 </div>
             </div>
@@ -453,7 +454,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 </section>
 
                 <section class="quick-layout">
-                    <div>
+                    <div class="announcement-card">
                         <h2 class="quick-title">Quick Access</h2>
 
                         <div class="quick-grid">
@@ -473,16 +474,22 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     </div>
 
                     <aside class="announcement-card">
-                        <h3 class="announcement-head">Announcements</h3>
+                        <div class="announcement-head-row">
+                            <h3 class="announcement-head">Announcements</h3>
+                            <a href="/campuscare-api/php-frontend/pages/events/events.php" class="announcement-view-all">View All</a>
+                        </div>
 
                         <ul class="announcement-list">
                             <?php foreach ($announcements as $item): ?>
-                                <li class="announcement-item">
-                                    <span class="announcement-dot <?php echo $item["dot"]; ?>"></span>
-                                    <div>
+                                <li class="announcement-item-card">
+                                    <span class="announcement-icon-wrap announcement-tone-<?php echo htmlspecialchars((string) ($item["tone"] ?? "blue")); ?>">
+                                        <?php echo sidebarIconSvg((string) ($item["icon"] ?? "calendar")); ?>
+                                    </span>
+                                    <div class="announcement-body">
                                         <strong><?php echo htmlspecialchars($item["title"]); ?></strong>
                                         <span><?php echo htmlspecialchars($item["date"]); ?></span>
                                     </div>
+                                    <span class="announcement-chevron" aria-hidden="true">›</span>
                                 </li>
                             <?php endforeach; ?>
                         </ul>
