@@ -437,7 +437,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             </div>
                         </div>
                     </article>
-
                     <article class="summary-card">
                         <span class="announcement-icon-wrap announcement-tone-gold">
                             <?php echo sidebarIconSvg("message"); ?>
@@ -500,54 +499,90 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     </aside>
                 </section>
 
-                <section class="announcement-card"">
-                    <div class="section-head">
-                        <h2 class="section-title">Upcoming Appointments</h2>
-                        <a href="/campuscare-api/php-frontend/pages/appointments/schedule.php" class="section-link">View All &rarr;</a>
+                <section class="appointments-wellness-row">
+                    <div class="announcement-card appointments-column">
+                        <div class="section-head">
+                            <h2 class="section-title">Upcoming Appointments</h2>
+                            <a href="/campuscare-api/php-frontend/pages/appointments/schedule.php" class="section-link">View All &rarr;</a>
+                        </div>
+
+                        <?php if (empty($upcomingAppointments)): ?>
+                            <div class="appointment-card">
+                                <div class="appointment-left">
+                                    <img src="/campuscare-api/php-frontend/assets/images/icons/Book-now.png" alt="Appointment" class="appointment-icon">
+                                    <div>
+                                        <p class="appointment-title">No upcoming appointments yet</p>
+                                        <p class="appointment-meta">Book your first counseling session to get started.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <div class="appointment-list">
+                                <?php foreach ($upcomingAppointments as $apt): ?>
+                                    <?php
+                                        $status = $apt["status"] ?: "Pending";
+                                        $formattedDate = date(
+                                            "D, F j | g:i A",
+                                            strtotime($apt["appointment_date"] . " " . $apt["appointment_time"])
+                                        );
+                                    ?>
+
+                                    <article class="appointment-card">
+                                        <div class="appointment-left">
+                                            <img src="/campuscare-api/php-frontend/assets/images/icons/Book-now.png" alt="Appointment" class="appointment-icon">
+                                            <div>
+                                                <p class="appointment-title">
+                                                    <?php echo htmlspecialchars($apt["service"] . " with " . $apt["counselor"]); ?>
+                                                </p>
+                                                <p class="appointment-meta">
+                                                    <?php echo htmlspecialchars($formattedDate); ?> &bull; Guidance Office
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <span class="status-pill <?php echo statusClass($status); ?>">
+                                            <?php echo htmlspecialchars($status); ?>
+                                        </span>
+                                    </article>
+                                    
+                                <?php endforeach; ?>
+                            </div>
+                            
+                        <?php endif; ?>
                     </div>
 
-                    <?php if (empty($upcomingAppointments)): ?>
-                        <div class="appointment-card">
-                            <div class="appointment-left">
-                                <img src="/campuscare-api/php-frontend/assets/images/icons/Book-now.png" alt="Appointment" class="appointment-icon">
-                                <div>
-                                    <p class="appointment-title">No upcoming appointments yet</p>
-                                    <p class="appointment-meta">Book your first counseling session to get started.</p>
+                    <article class="wellness-tip-card wellness-column">
+                        <div class="wellness-carousel">
+                            <div class="wellness-tip active" style="background-image: url('/campuscare-api/php-frontend/assets/images/bg/tip1.png');">
+                                <div class="tip-content">
+                                    <h2>Wellness Tip</h2>
+                                    <p class="tip-quote">"Small steps every day lead to big changes."</p>
+                                    <p class="tip-text">Take care of your mind, it's where your journey begins.</p>
+                                </div>
+                            </div>
+                            <div class="wellness-tip" style="background-image: url('/campuscare-api/php-frontend/assets/images/bg/tip1.png');">
+                                <div class="tip-content">
+                                    <h2>Wellness Tip</h2>
+                                    <p class="tip-quote">"Your mental health matters."</p>
+                                    <p class="tip-text">/tReach out for support when you need it. You're not alone.</p>
+                                </div>
+                            </div>
+                            <div class="wellness-tip" style="background-image: url('/campuscare-api/php-frontend/assets/images/bg/tip1.png');">
+                                <div class="tip-content">
+                                    <h2>Wellness Tip</h2>
+                                    <p class="tip-quote">"Balance is key to success."</p>
+                                    <p class="tip-text">Take time to rest, reflect, and recharge.</p>
                                 </div>
                             </div>
                         </div>
-                    <?php else: ?>
-                        <div class="appointment-list">
-                            <?php foreach ($upcomingAppointments as $apt): ?>
-                                <?php
-                                    $status = $apt["status"] ?: "Pending";
-                                    $formattedDate = date(
-                                        "D, F j | g:i A",
-                                        strtotime($apt["appointment_date"] . " " . $apt["appointment_time"])
-                                    );
-                                ?>
-
-                                <article class="appointment-card">
-                                    <div class="appointment-left">
-                                        <img src="/campuscare-api/php-frontend/assets/images/icons/Book-now.png" alt="Appointment" class="appointment-icon">
-                                        <div>
-                                            <p class="appointment-title">
-                                                <?php echo htmlspecialchars($apt["service"] . " with " . $apt["counselor"]); ?>
-                                            </p>
-                                            <p class="appointment-meta">
-                                                <?php echo htmlspecialchars($formattedDate); ?> &bull; Guidance Office
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <span class="status-pill <?php echo statusClass($status); ?>">
-                                        <?php echo htmlspecialchars($status); ?>
-                                    </span>
-                                </article>
-                            <?php endforeach; ?>
+                        <div class="wellness-dots">
+                            <span class="dot active" onclick="currentTip(0)"></span>
+                            <span class="dot" onclick="currentTip(1)"></span>
+                            <span class="dot" onclick="currentTip(2)"></span>
                         </div>
-                    <?php endif; ?>
+                    </article>
                 </section>
+                
             <?php elseif ($role === "Administrator"): ?>
                 <section class="admin-stats">
                     <article class="admin-stat-card">
@@ -880,6 +915,39 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     profileDropdown.addEventListener("click", function (e) {
         e.stopPropagation();
     });
+})();
+
+// Wellness Tips Carousel
+(function () {
+    let currentTipIndex = 0;
+    const tips = document.querySelectorAll(".wellness-tip");
+    const dots = document.querySelectorAll(".wellness-dots .dot");
+    const totalTips = tips.length;
+
+    function showTip(index) {
+        if (totalTips === 0) return;
+        
+        currentTipIndex = (index + totalTips) % totalTips;
+
+        tips.forEach((tip) => tip.classList.remove("active"));
+        dots.forEach((dot) => dot.classList.remove("active"));
+
+        tips[currentTipIndex].classList.add("active");
+        dots[currentTipIndex].classList.add("active");
+    }
+
+    // Auto-rotate tips every 5 seconds
+    setInterval(() => {
+        showTip(currentTipIndex + 1);
+    }, 5000);
+
+    // Allow manual tip selection
+    window.currentTip = function (index) {
+        showTip(index);
+    };
+
+    // Initialize first tip
+    showTip(0);
 })();
 </script>
 </body>

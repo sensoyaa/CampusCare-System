@@ -1229,6 +1229,128 @@ body.theme-dark .menu-lines {
 .summary-card p {
   color: var(--text-muted);
   font-size: 14px;
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+/* Appointments & Wellness Side-by-Side Layout */
+.appointments-wellness-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.appointments-column {
+  grid-column: 1;
+}
+
+.wellness-column {
+  grid-column: 2;
+  margin: 0;
+}
+
+/* Wellness Tips Carousel Card */
+.wellness-tip-card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(25, 47, 72, 0.08);
+  position: relative;
+  height: auto;
+}
+
+.wellness-carousel {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.wellness-tip {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px;
+}
+
+.wellness-tip.active {
+  opacity: 1;
+  position: relative;
+}
+
+.tip-content {
+    font-size: 14px;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  max-width: 60%;
+}
+
+.tip-content h2 {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.9);
+  margin: 0 0 35px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tip-quote {
+  font-size: 18px;
+  font-weight: 600;
+  color: #000000;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+}
+
+.tip-text {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.593);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.wellness-dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 12px 0;
+  background: #fff;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d0d8e0;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.dot.active {
+  background: #4d8fc5;
+}
+
+.dot:hover {
+  background: #a0adbf;
+}
+
+.summary-card p {
+  color: var(--text-muted);
+  font-size: 14px;
   margin-bottom: 8px;
 }
 
