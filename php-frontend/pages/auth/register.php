@@ -9,6 +9,8 @@ $success = "";
 $step = "register";
 $frontendBaseUrl = "/campuscare-api/php-frontend";
 $projectBaseUrl = "/campuscare-api";
+$first_name = "";
+$last_name = "";
 $full_name = "";
 $email = "";
 $student_id = "";
@@ -45,6 +47,26 @@ function clearRegistrationVerificationSession(): void
         $_SESSION["registration_verification_email"],
         $_SESSION["registration_verification_requested_at"]
     );
+}
+
+function campuscare_email_has_domain(string $email, string $domain): bool
+{
+    $email = strtolower(trim($email));
+    $domain = strtolower(trim($domain));
+
+    return $email !== "" && $domain !== "" && str_ends_with($email, "@" . $domain);
+}
+
+function campuscare_role_email_allowed(string $role, string $email): bool
+{
+    $normalizedRole = strtolower(trim($role));
+
+    if ($normalizedRole === "student") {
+        return campuscare_email_has_domain($email, "student.buksu.edu.ph");
+    }
+
+    return campuscare_email_has_domain($email, "buksu.edu.ph")
+        && !campuscare_email_has_domain($email, "student.buksu.edu.ph");
 }
 
 if (($_GET["fresh"] ?? "") === "1") {
@@ -117,6 +139,9 @@ if (isset($_SESSION["oauth_error"])) {
 if ($isGoogleSignup) {
     $pendingGoogleSignup = $_SESSION["pending_google_signup"];
     $full_name = trim((string) ($pendingGoogleSignup["full_name"] ?? ""));
+    $nameParts = preg_split('/\s+/', $full_name, 2);
+    $first_name = trim((string) ($nameParts[0] ?? ""));
+    $last_name = trim((string) ($nameParts[1] ?? ""));
     $email = trim((string) ($pendingGoogleSignup["email"] ?? ""));
     $role = "Student";
 }
@@ -130,6 +155,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $error = "";
         $success = "You can now register with a different email.";
         $email = "";
+        $first_name = "";
+        $last_name = "";
         $full_name = "";
         $student_id = "";
     } elseif ($action === "google_signup") {
@@ -187,6 +214,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                                 if ($stmt->execute()) {
                                     unset($_SESSION["pending_google_signup"]);
                                     $success = "Google account linked successfully. You can now log in.";
+                                    $first_name = "";
+                                    $last_name = "";
                                     $full_name = "";
                                     $email = "";
                                     $student_id = "";
@@ -256,6 +285,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                         clearRegistrationVerificationSession();
                         $success = "Email verified successfully. Your account is now active, and you can log in.";
+                        $first_name = "";
+                        $last_name = "";
                         $full_name = "";
                         $email = "";
                         $student_id = "";
@@ -333,15 +364,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
         }
     } else {
-        $full_name = trim($_POST["full_name"] ?? "");
+        $first_name = trim((string) ($_POST["first_name"] ?? ""));
+        $last_name = trim((string) ($_POST["last_name"] ?? ""));
+        $full_name = trim($first_name . " " . $last_name);
         $email = trim($_POST["email"] ?? "");
         $student_id = trim($_POST["student_id"] ?? "");
         $role = trim($_POST["role"] ?? "Student");
         $password = $_POST["password"] ?? "";
         $confirm_password = $_POST["confirm_password"] ?? "";
 
-        if ($full_name === "" || $email === "" || $student_id === "" || $role === "" || $password === "" || $confirm_password === "") {
+        if ($first_name === "" || $last_name === "" || $email === "" || $student_id === "" || $role === "" || $password === "" || $confirm_password === "") {
             $error = "All fields are required.";
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = "Please enter a valid email address.";
+        } elseif (!campuscare_role_email_allowed($role, $email)) {
+            $error = strtolower(trim($role)) === "student"
+                ? "Student accounts must use an email ending in @student.buksu.edu.ph."
+                : "Non-student roles must use an email ending in @buksu.edu.ph.";
         } elseif ($password !== $confirm_password) {
             $error = "Password confirmation does not match.";
         } else {
@@ -419,6 +458,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
     <meta charset="UTF-8">
     <title>Register | CampusCare</title>
+    <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/logo.png">
     <link rel="stylesheet" href="<?php echo htmlspecialchars($frontendBaseUrl); ?>/assets/style.css">
 </head>
 <body class="login-page">
@@ -503,13 +543,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     <input type="hidden" name="action" value="register">
 
                     <div class="form-group">
-                        <label>Full Name</label>
-                        <input type="text" name="full_name" value="<?php echo htmlspecialchars($full_name); ?>" required>
+                        <label>First Name</label>
+                        <input type="text" name="first_name" value="<?php echo htmlspecialchars($first_name); ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Last Name</label>
+                        <input type="text" name="last_name" value="<?php echo htmlspecialchars($last_name); ?>" required>
                     </div>
 
                     <div class="form-group">
                         <label>Email</label>
-                        <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
+                        <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>" placeholder="name@student.buksu.edu.ph or name@buksu.edu.ph" required>
                     </div>
 
                     <div class="form-group">

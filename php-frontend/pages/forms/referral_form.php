@@ -9,8 +9,9 @@ $role = normalizeRole($_SESSION["role"] ?? "Student");
 $userId = intval($_SESSION["user_id"] ?? 0);
 $fullName = trim((string) ($_SESSION["full_name"] ?? ""));
 $canManageForms = campuscare_forms_can_manage($role);
+$isIframe = isset($_GET["iframe"]) && $_GET["iframe"] === "1";
 
-$allowedRoles = ["Instructor", "Facilitator", "Administrator", "Counselor"];
+$allowedRoles = ["Student", "Instructor", "Facilitator", "Administrator", "Counselor"];
 if (!in_array($role, $allowedRoles, true)) {
     header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
     exit();
@@ -226,8 +227,41 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
             <?php endif; ?>
 
-            <form method="POST" class="card" style="padding:20px;">
+            <form method="POST" class="<?php echo $isIframe ? "" : "card"; ?>" style="padding:20px;">
                 <style>
+                <?php if ($isIframe): ?>
+                body {
+                    background: #f6fbff;
+                }
+
+                .sidebar,
+                .topbar,
+                .page-title,
+                .page-subtitle,
+                .menu-toggle,
+                .topbar-user,
+                .chat-fab {
+                    display: none !important;
+                }
+
+                .app,
+                .main,
+                .content,
+                .page-shell {
+                    max-width: none !important;
+                    width: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+
+                form {
+                    background: transparent !important;
+                    border: 0 !important;
+                    box-shadow: none !important;
+                    border-radius: 0 !important;
+                }
+                <?php endif; ?>
+
                 .ref-two-col { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; }
                 .ref-reasons { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap:8px 12px; border:1px solid var(--border); border-radius:10px; padding:12px; }
                 .ref-check { display:inline-flex; align-items:center; gap:8px; margin:0; font-weight:600; font-size:14px; }
@@ -356,6 +390,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <?php endif; ?>
                 </div>
 
+                <?php if (!$isIframe): ?>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button type="submit" class="btn">Submit Referral Slip</button>
                     <?php if ($lastSubmittedId > 0): ?>
@@ -366,6 +401,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <?php endif; ?>
                     <a href="/campuscare-api/php-frontend/pages/dashboard/dashboard.php" class="btn-outline">Back to Dashboard</a>
                 </div>
+                <?php endif; ?>
             </form>
         </div>
     </div>
@@ -533,6 +569,39 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             }
         });
     }
+
+    <?php if ($success !== ""): ?>
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: "campuscare-form-saved",
+            formType: "referral",
+            message: "Referral form saved. You can now continue to schedule and review.",
+            previewUrl: <?php echo json_encode($lastSubmittedId > 0 ? "/campuscare-api/php-frontend/pages/forms/referral_form_preview.php?id=" . intval($lastSubmittedId) : ""); ?>,
+            summary: {
+                title: "Referral Slip",
+                sections: [
+                    {
+                        title: "Referral Information",
+                        entries: [
+                            { label: "Guidance Counselor", value: <?php echo json_encode($formState["referred_to_counselor_name"]); ?> },
+                            { label: "Referral Date and Time", value: <?php echo json_encode($formState["referral_datetime"]); ?> },
+                            { label: "Student Name", value: <?php echo json_encode($formState["student_name"]); ?> },
+                            { label: "Course/Year/Section", value: <?php echo json_encode($formState["course_year_section"]); ?> }
+                        ]
+                    },
+                    {
+                        title: "Reasons and Signatures",
+                        entries: [
+                            { label: "Reasons", value: <?php echo json_encode(is_array($formState["reasons"]) ? implode(", ", $formState["reasons"]) : ""); ?>, full: true },
+                            { label: "Other Reason", value: <?php echo json_encode($formState["other_reason"]); ?>, full: true },
+                            { label: "Faculty/Staff Signature", value: <?php echo json_encode($formState["faculty_signature"]); ?> }
+                        ]
+                    }
+                ]
+            }
+        }, "*");
+    }
+    <?php endif; ?>
 
     const profileMenuToggle = document.querySelector(".profile-menu-toggle");
     const profileDropdown = document.querySelector(".profile-dropdown");

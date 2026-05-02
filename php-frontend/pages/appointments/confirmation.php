@@ -36,8 +36,12 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     </span>
                 </div>
 
-                <h1 class="page-title" style="font-size: 34px; margin-bottom: 8px;">Booking Confirmed!</h1>
-                <p class="page-subtitle" style="margin-bottom: 18px;">Your appointment has been successfully scheduled.</p>
+                <h1 class="page-title" style="font-size: 34px; margin-bottom: 8px;">Booking Submitted!</h1>
+                <p class="page-subtitle" style="margin-bottom: 18px;">Your appointment request has been successfully submitted.</p>
+
+                <div class="alert alert-success" style="text-align: left; margin-bottom: 20px;">
+                    Please wait for the approval of your form or your submission.
+                </div>
 
                 <?php if ($emailStatus === "sent"): ?>
                     <div class="alert alert-success" style="text-align: left; margin-bottom: 20px;">
