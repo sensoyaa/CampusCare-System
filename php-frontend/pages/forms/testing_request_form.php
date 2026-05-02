@@ -9,6 +9,7 @@ $role = normalizeRole($_SESSION["role"] ?? "Student");
 $userId = intval($_SESSION["user_id"] ?? 0);
 $fullName = trim((string) ($_SESSION["full_name"] ?? ""));
 $canManageForms = campuscare_forms_can_manage($role);
+$isIframe = isset($_GET["iframe"]) && $_GET["iframe"] === "1";
 
 $allowedRoles = ["Student", "Instructor", "Facilitator", "Administrator", "Counselor"];
 if (!in_array($role, $allowedRoles, true)) {
@@ -157,10 +158,71 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
             <?php if ($success !== ""): ?>
                 <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+                <?php if ($isIframe): ?>
+                    <script>
+                        if (window.parent && window.parent.postMessage) {
+                            window.parent.postMessage({
+                                type: "FORM_SAVED",
+                                formType: "testing",
+                                summary: {
+                                    title: "Testing Request",
+                                    sections: [
+                                        {
+                                            title: "Request Details",
+                                            entries: [
+                                                { label: "Target Student", value: <?php echo json_encode($formState["target_student_name"]); ?> },
+                                                { label: "Date", value: <?php echo json_encode($formState["request_date"]); ?> },
+                                                { label: "Purpose", value: <?php echo json_encode($formState["purpose"]); ?> }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                previewUrl: "/campuscare-api/php-frontend/pages/forms/testing_request_preview.php?id=" + <?php echo intval($lastSubmittedId); ?>
+                            }, "*");
+                        }
+                    </script>
+                <?php endif; ?>
             <?php endif; ?>
 
-            <form method="POST" class="card" style="padding:20px;">
+            <form method="POST" class="<?php echo $isIframe ? "" : "card"; ?>" style="padding:20px;">
                 <style>
+                <?php if ($isIframe): ?>
+                body {
+                    background: #f6fbff;
+                }
+
+                .sidebar,
+                .topbar,
+                .page-title,
+                .page-subtitle,
+                .menu-toggle,
+                .topbar-user,
+                .chat-fab {
+                    display: none !important;
+                }
+
+                .app,
+                .main,
+                .content,
+                .page-shell {
+                    max-width: none !important;
+                    width: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+
+                form {
+                    background: transparent !important;
+                    border: 0 !important;
+                    box-shadow: none !important;
+                    border-radius: 0 !important;
+                }
+
+                .form-submit-container {
+                    display: none !important;
+                }
+                <?php endif; ?>
+
                 .test-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; }
                 .test-full { grid-column: 1 / -1; }
                 .sig-card { border:1px solid var(--border); border-radius:10px; padding:10px; }
@@ -244,7 +306,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <p class="page-subtitle" style="margin-bottom: 12px;">Counselor/Psychometrician fields are completed in the counselor/admin inbox.</p>
                 <?php endif; ?>
 
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <div class="form-submit-container" style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button type="submit" class="btn">Submit Testing Request</button>
                     <?php if ($lastSubmittedId > 0): ?>
                         <a href="/campuscare-api/php-frontend/pages/forms/testing_request_preview.php?id=<?php echo intval($lastSubmittedId); ?>" class="btn-outline" target="_blank" rel="noopener">Preview Printable Form</a>

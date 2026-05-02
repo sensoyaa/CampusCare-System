@@ -205,6 +205,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
     <meta charset="UTF-8">
     <title>Forgot Password | CampusCare</title>
+    <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/logo.png">
     <link rel="stylesheet" href="<?php echo htmlspecialchars($frontendBaseUrl); ?>/assets/style.css">
 </head>
 <body>

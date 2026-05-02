@@ -6,6 +6,7 @@ require_once __DIR__ . "/../../includes/db.php";
 $pageTitle = "Counseling Intake Form";
 $role = normalizeRole($_SESSION["role"] ?? "Student");
 $userId = intval($_SESSION["user_id"] ?? 0);
+$isIframe = isset($_GET["iframe"]) && $_GET["iframe"] === "1";
 
 if ($role !== "Student") {
     header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
@@ -243,8 +244,45 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
             <?php endif; ?>
 
+<<<<<<< HEAD
+            <form method="POST" class="<?php echo $isIframe ? "" : "card"; ?>" style="padding: 22px;">
+=======
             <form method="POST" class="card">
+>>>>>>> 9e50a9e3d5fc6514c6ee8c81f7a84319be930e0c
                 <style>
+                <?php if ($isIframe): ?>
+                body {
+                    background: #f6fbff;
+                }
+
+                .sidebar,
+                .topbar,
+                .page-title,
+                .page-subtitle,
+                .menu-toggle,
+                .topbar-user,
+                .chat-fab {
+                    display: none !important;
+                }
+
+                .app,
+                .main,
+                .content,
+                .page-shell {
+                    max-width: none !important;
+                    width: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+
+                form {
+                    background: transparent !important;
+                    border: 0 !important;
+                    box-shadow: none !important;
+                    border-radius: 0 !important;
+                }
+                <?php endif; ?>
+
                 .intake-form-shell {
                     
                 }
@@ -601,38 +639,24 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                         </div>
                     </div>
 
-                    <div class="signature-card">
-                        <label for="agreement_signature_counselor">Counselor Name (optional)</label>
-                        <input id="agreement_signature_counselor" name="agreement_signature_counselor" type="text" value="<?php echo htmlspecialchars(intake_value($formState, "agreement_signature_counselor")); ?>" placeholder="Counselor typed name">
-                        <p class="signature-hint" style="margin-top:8px;">Optional counselor signature:</p>
-                        <canvas id="counselorSignaturePad" class="signature-pad"></canvas>
-                        <input id="agreement_signature_counselor_drawn" name="agreement_signature_counselor_drawn" type="hidden" value="<?php echo htmlspecialchars(intake_value($formState, "agreement_signature_counselor_drawn")); ?>">
-                        <div class="signature-actions">
-                            <span class="signature-hint">Optional field.</span>
-                            <div style="display:flex; gap:8px;">
-                                <button type="button" class="btn-outline" id="undoCounselorSignature">Undo</button>
-                                <button type="button" class="btn-outline" id="clearCounselorSignature">Clear</button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <div class="grid intake-two-col" style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 10px;">
+                <div class="grid intake-two-col" style="display:grid; grid-template-columns: 1fr; gap: 14px; margin-top: 10px;">
                     <div class="form-group">
                         <label for="agreement_client_date">Client Date</label>
                         <input id="agreement_client_date" name="agreement_client_date" type="date" value="<?php echo htmlspecialchars(intake_value($formState, "agreement_client_date")); ?>" required>
                     </div>
-                    <div class="form-group">
-                        <label for="agreement_counselor_date">Counselor Date (optional)</label>
-                        <input id="agreement_counselor_date" name="agreement_counselor_date" type="date" value="<?php echo htmlspecialchars(intake_value($formState, "agreement_counselor_date")); ?>">
-                    </div>
                 </div>
 
+                <?php if (!$isIframe): ?>
                 <div style="display:flex; gap:10px; margin-top: 14px; flex-wrap: wrap;">
                     <button type="submit" class="btn">Submit Intake Form</button>
+                    <button type="button" class="btn-outline" id="intakePreviousSection">Previous</button>
+                    <button type="button" class="btn-outline" id="intakeNextSection">Next</button>
                     <a href="/campuscare-api/php-frontend/pages/appointments/counseling_intake_preview.php" class="btn-outline" target="_blank" rel="noopener">Preview Printable Form</a>
                     <a href="/campuscare-api/php-frontend/pages/appointments/book_appointment.php?service=counseling" class="btn-outline">Proceed to Book Counseling</a>
                 </div>
+                <?php endif; ?>
                 </div>
             </form>
         </div>
@@ -789,7 +813,96 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     }
 
     setupSignaturePad("clientSignaturePad", "agreement_signature_client_drawn", "clearClientSignature", "undoClientSignature");
-    setupSignaturePad("counselorSignaturePad", "agreement_signature_counselor_drawn", "clearCounselorSignature", "undoCounselorSignature");
+
+    var sectionAnchors = Array.from(document.querySelectorAll(".card-title"));
+    var currentSectionIndex = 0;
+    var previousSectionButton = document.getElementById("intakePreviousSection");
+    var nextSectionButton = document.getElementById("intakeNextSection");
+
+    function scrollToSection(index) {
+        if (!sectionAnchors.length) {
+            return;
+        }
+
+        currentSectionIndex = Math.max(0, Math.min(index, sectionAnchors.length - 1));
+        sectionAnchors[currentSectionIndex].scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    if (previousSectionButton) {
+        previousSectionButton.addEventListener("click", function () {
+            scrollToSection(currentSectionIndex - 1);
+        });
+    }
+
+    if (nextSectionButton) {
+        nextSectionButton.addEventListener("click", function () {
+            scrollToSection(currentSectionIndex + 1);
+        });
+    }
+
+    window.addEventListener("scroll", function () {
+        if (!sectionAnchors.length) {
+            return;
+        }
+
+        var bestIndex = 0;
+        var bestDistance = Number.POSITIVE_INFINITY;
+
+        sectionAnchors.forEach(function (anchor, index) {
+            var distance = Math.abs(anchor.getBoundingClientRect().top);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestIndex = index;
+            }
+        });
+
+        currentSectionIndex = bestIndex;
+    });
+
+    <?php if ($success !== ""): ?>
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: "campuscare-form-saved",
+            formType: "counseling",
+            message: "Counseling intake form saved. You can continue to schedule and review.",
+            previewUrl: "/campuscare-api/php-frontend/pages/appointments/counseling_intake_preview.php",
+            summary: {
+                title: "Counseling Intake Form",
+                sections: [
+                    {
+                        title: "Client Information",
+                        entries: [
+                            { label: "Client Name", value: <?php echo json_encode(trim(intake_value($formState, "client_first_name") . " " . intake_value($formState, "client_last_name"))); ?> },
+                            { label: "Course and Year", value: <?php echo json_encode(intake_value($formState, "course_year")); ?> },
+                            { label: "Intake Type", value: <?php echo json_encode(intake_value($formState, "intake_mode")); ?> },
+                            { label: "Email", value: <?php echo json_encode(intake_value($formState, "email")); ?> },
+                            { label: "Cell Phone", value: <?php echo json_encode(intake_value($formState, "cell_phone")); ?> },
+                            { label: "Address", value: <?php echo json_encode(trim(implode(", ", array_filter([intake_value($formState, "address_street"), intake_value($formState, "address_city"), intake_value($formState, "address_state"), intake_value($formState, "address_postal")])))); ?>, full: true }
+                        ]
+                    },
+                    {
+                        title: "Emergency and Medical",
+                        entries: [
+                            { label: "Emergency Contact", value: <?php echo json_encode(intake_value($formState, "emergency_contact_name")); ?> },
+                            { label: "Relationship", value: <?php echo json_encode(intake_value($formState, "emergency_contact_relationship")); ?> },
+                            { label: "Contact Number", value: <?php echo json_encode(intake_value($formState, "emergency_contact_number")); ?> },
+                            { label: "Medical History", value: <?php echo json_encode(is_array($formState["medical_history"]) ? implode(", ", $formState["medical_history"]) : ""); ?>, full: true }
+                        ]
+                    },
+                    {
+                        title: "Mental Health Information",
+                        entries: [
+                            { label: "Reason for Visit", value: <?php echo json_encode(intake_value($formState, "initial_visit_reason")); ?>, full: true },
+                            { label: "Session Expectation", value: <?php echo json_encode(intake_value($formState, "session_expectation")); ?>, full: true },
+                            { label: "Average Sleep Hours", value: <?php echo json_encode(intake_value($formState, "average_sleep_hours")); ?> },
+                            { label: "Seen a Mental Health Professional Before", value: <?php echo json_encode(intake_value($formState, "seen_mental_health_professional")); ?> }
+                        ]
+                    }
+                ]
+            }
+        }, "*");
+    }
+    <?php endif; ?>
 
     const profileMenuToggle = document.querySelector(".profile-menu-toggle");
     const profileDropdown = document.querySelector(".profile-dropdown");

@@ -9,7 +9,7 @@ $role = normalizeRole($_SESSION["role"] ?? "Student");
 $userId = intval($_SESSION["user_id"] ?? 0);
 $canManageForms = campuscare_forms_can_manage($role);
 
-$allowedRoles = ["Instructor", "Facilitator", "Administrator", "Counselor"];
+$allowedRoles = ["Student", "Instructor", "Facilitator", "Administrator", "Counselor"];
 if (!in_array($role, $allowedRoles, true)) {
     header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
     exit();
@@ -285,14 +285,6 @@ function safe_value(array $row, string $key): string
                                 <img class="sig-img" src="<?php echo htmlspecialchars(safe_value($record, "faculty_signature_drawn")); ?>" alt="Faculty signature">
                             <?php else: ?>
                                 <p class="muted">Typed: <?php echo htmlspecialchars(safe_value($record, "faculty_signature_typed")); ?></p>
-                            <?php endif; ?>
-                        </div>
-                        <div class="sig-box">
-                            <strong>Counselor Signature</strong>
-                            <?php if (safe_value($record, "counselor_signature_drawn") !== ""): ?>
-                                <img class="sig-img" src="<?php echo htmlspecialchars(safe_value($record, "counselor_signature_drawn")); ?>" alt="Counselor signature">
-                            <?php else: ?>
-                                <p class="muted">Typed: <?php echo htmlspecialchars(safe_value($record, "counselor_signature_typed")); ?></p>
                             <?php endif; ?>
                         </div>
                     </div>
