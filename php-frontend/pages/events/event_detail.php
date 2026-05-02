@@ -503,12 +503,12 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                     <input type="hidden" name="action" value="submit_feedback">
 
                                     <div class="form-group">
-                                        <label>How would you rate this event?</label>
-                                        <div class="rating-input">
+                                        <label> How would you rate this event?</label>
+                                        <div class="rating-stars">
                                             <?php for ($i = 1; $i <= 5; $i++): ?>
                                                 <input type="radio" name="rating" value="<?php echo $i; ?>" id="rating<?php echo $i; ?>" required>
                                                 <label for="rating<?php echo $i; ?>" class="rating-star">
-                                                    <?php echo sidebarIconSvg("star"); ?>
+                                                    <span class="rating-emoji" aria-hidden="true"><?php echo ["😞", "😐", "🙂", "😊", "🤩"][($i - 1)]; ?></span>
                                                 </label>
                                             <?php endfor; ?>
                                         </div>
@@ -652,8 +652,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <!-- Event Feedback Summary -->
                     <?php if ($hasEventEnded): ?>
                         <section class="event-detail-feedback-summary">
-                            <h2>Event Feedback Summary</h2>
-
+                            <div class="section-heading">
+                                <h2>Event Feedback Summary</h2>
+                            </div>
                             <div class="feedback-stats">
                                 <div class="feedback-stat">
                                     <span class="feedback-stat-value"><?php echo number_format($avgRating, 1); ?></span>
@@ -838,7 +839,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                             <?php for ($i = 1; $i <= 5; $i++): ?>
                                                 <input type="radio" name="rating" value="<?php echo $i; ?>" id="rating<?php echo $i; ?>" required>
                                                 <label for="rating<?php echo $i; ?>" class="rating-star">
-                                                    <?php echo sidebarIconSvg("star"); ?>
+                                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 20px; height: 20px; min-width: 20px; min-height: 20px; max-width: 20px; max-height: 20px;">
+                                                        <path d="M12 3.5L14.9 9.1L21.1 10L16.6 14.3L17.7 20.5L12 17.5L6.3 20.5L7.4 14.3L2.9 10L9.1 9.1L12 3.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                                                    </svg>
                                                 </label>
                                             <?php endfor; ?>
                                         </div>
@@ -867,7 +870,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                     </button>
                                 </form>
                             <?php else: ?>
-                                <div class="feedback-submitted">
+                                <div class="feedback-submitted" style="margin-top: 1rem;!important">
                                     <?php echo sidebarIconSvg("check-circle"); ?>
                                     <span>Thank you for your feedback!</span>
                                 </div>
@@ -912,5 +915,64 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 }
             }
         }, 60000);
+
+        // Star Rating Interaction
+        document.addEventListener('DOMContentLoaded', function() {
+            const ratingInputs = document.querySelectorAll('.rating-input input[type="radio"]');
+            const ratingLabels = document.querySelectorAll('.rating-input label');
+
+            ratingLabels.forEach(label => {
+                label.addEventListener('mouseenter', function() {
+                    const rating = parseInt(this.getAttribute('for').replace('rating', ''));
+                    highlightStars(rating);
+                });
+
+                label.addEventListener('mouseleave', function() {
+                    const checkedInput = document.querySelector('.rating-input input[type="radio"]:checked');
+                    const checkedRating = checkedInput ? parseInt(checkedInput.value) : 0;
+                    highlightStars(checkedRating);
+                });
+            });
+
+            ratingInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    const rating = parseInt(this.value);
+                    highlightStars(rating);
+                    
+                    // Add animation to selected star
+                    const selectedLabel = document.querySelector(`label[for="rating${rating}"]`);
+                    if (selectedLabel) {
+                        selectedLabel.style.animation = 'none';
+                        selectedLabel.offsetHeight; // Trigger reflow
+                        selectedLabel.style.animation = 'starPulse 0.3s ease';
+                    }
+                });
+            });
+
+            function highlightStars(rating) {
+                ratingLabels.forEach(label => {
+                    const starRating = parseInt(label.getAttribute('for').replace('rating', ''));
+                    const svg = label.querySelector('svg');
+                    
+                    if (svg) {
+                        if (starRating <= rating) {
+                            svg.style.color = 'var(--primary)';
+                            svg.style.transform = 'scale(1.1)';
+                        } else {
+                            svg.style.color = 'var(--border)';
+                            svg.style.transform = 'scale(1)';
+                        }
+                    }
+                });
+            }
+        });
     </script>
+
+    <style>
+        @keyframes starPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1.1); }
+        }
+    </style>
 </main>

@@ -92,7 +92,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             $answer1Text = $options[intval($answers[0])];
             $answer2Text = $options[intval($answers[1])];
-            $resultText = "Stress Level: " . $level . " | Reaction: " . $reactionEmoji . " | " . $message;
+            // Include numeric score in result_text so dashboard can parse and display percentage/trend
+            $resultText = "Stress Level: " . $level . " | Score: " . intval($score) . "/" . ($totalQuestions * 3) . " | Reaction: " . $reactionEmoji . " | " . $message;
 
             $stmt = $conn->prepare(
                 "INSERT INTO mental_health_tests (user_id, answer_1, answer_2, result_text)
@@ -166,21 +167,23 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     </div>
                 </div>
             <?php else: ?>
-                <div class="test-head">
-                    <span class="test-icon">M</span>
-                    <div>
-                        <h1 class="page-title" style="font-size: 40px; margin-bottom: 3px;">Mental Health Check-in</h1>
-                        <p class="page-subtitle">Quick self-assessment</p>
+                <div class="test-head-top">
+                    
+                    <div class="test-head">
+                        <div>
+                            <h1 class="page-title" style="font-size: 40px; margin-bottom: 3px;">Mental Health Check-in</h1>
+                            <p class="page-subtitle">Quick self-assessment</p>
+                        </div>
                     </div>
-                </div>
 
-                <div class="progress-info">
-                    <span>Question <?php echo $current + 1; ?> of <?php echo $totalQuestions; ?></span>
-                    <span><?php echo $answeredCount; ?> answered</span>
-                </div>
+                    <div class="progress-info" style="color: white;">
+                        <span>Question <?php echo $current + 1; ?> of <?php echo $totalQuestions; ?></span>
+                        <span><?php echo $answeredCount; ?> answered</span>
+                    </div>
 
-                <div class="progress-track">
-                    <div class="progress-fill" style="width: <?php echo $progress; ?>%;"></div>
+                    <div class="progress-track" style="color: white;">
+                        <div class="progress-fill" style="width: <?php echo $progress; ?>%;"></div>
+                    </div>
                 </div>
 
                 <form method="POST">

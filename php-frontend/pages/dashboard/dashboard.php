@@ -10,6 +10,9 @@ $userId = intval($_SESSION["user_id"] ?? 0);
 
 $pendingCount = 0;
 $upcomingAppointments = [];
+$eventsThisWeek = 0;
+$latestMentalHealthTest = null;
+$mentalHealthTestTrend = "first";
 $counselorTodaySessions = 0;
 $counselorPendingNotes = 0;
 $counselorWeekSessions = 0;
@@ -61,6 +64,104 @@ if ($role === "Student" && $userId > 0) {
     }
 
     $apptStmt->close();
+
+    // Count events this week
+    $weekStart = date("Y-m-d", strtotime("monday this week"));
+    $weekEnd = date("Y-m-d", strtotime("sunday this week"));
+    $eventsWeekStmt = $conn->prepare(
+        "SELECT COUNT(*) AS total
+         FROM events e
+         INNER JOIN event_participants ep ON e.id = ep.event_id
+         WHERE ep.user_id = ?
+           AND DATE(e.starts_at) BETWEEN ? AND ?"
+    );
+    if ($eventsWeekStmt) {
+        $eventsWeekStmt->bind_param("iss", $userId, $weekStart, $weekEnd);
+        $eventsWeekStmt->execute();
+        $eventsWeekResult = $eventsWeekStmt->get_result()->fetch_assoc();
+        $eventsThisWeek = intval($eventsWeekResult["total"] ?? 0);
+        $eventsWeekStmt->close();
+    }
+
+    // Fetch student's joined events
+    $joinedEvents = [];
+    $eventsStmt = $conn->prepare(
+        "SELECT e.id, e.title, e.starts_at, e.ends_at, e.location, e.category, e.image_url,
+                ep.joined_at,
+                (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count
+         FROM events e
+         INNER JOIN event_participants ep ON e.id = ep.event_id
+            WHERE ep.user_id = ?
+             AND (
+                 e.starts_at >= NOW()
+                 OR (DATE(e.starts_at) = CURDATE() AND (e.ends_at IS NULL OR e.ends_at >= NOW()))
+             )
+         ORDER BY e.starts_at ASC
+         LIMIT 3"
+    );
+    $eventsStmt->bind_param("i", $userId);
+    $eventsStmt->execute();
+    $eventsResult = $eventsStmt->get_result();
+
+    while ($row = $eventsResult->fetch_assoc()) {
+        $joinedEvents[] = $row;
+    }
+
+    $eventsStmt->close();
+
+    // Fetch latest mental health test (store uses result_text, not a numeric score column)
+    $testStmt = $conn->prepare(
+        "SELECT id, result_text, created_at
+         FROM mental_health_tests
+         WHERE user_id = ?
+         ORDER BY created_at DESC
+         LIMIT 2"
+    );
+    if ($testStmt) {
+        $testStmt->bind_param("i", $userId);
+        $testStmt->execute();
+        $testResult = $testStmt->get_result();
+
+        $tests = [];
+        while ($row = $testResult->fetch_assoc()) {
+            $tests[] = $row;
+        }
+        $testStmt->close();
+
+        if (!empty($tests)) {
+            // parse numeric score from stored result_text (expected format: '... Score: X/Y ...')
+            $parseScore = function ($text) {
+                if (!is_string($text) || $text === "") return null;
+                if (preg_match('/Score:\s*(\d+)\s*\/\s*(\d+)/i', $text, $m)) {
+                    $num = intval($m[1]);
+                    $den = intval($m[2]) ?: 1;
+                    return round(($num / $den) * 100);
+                }
+                return null;
+            };
+
+            // attach a computed 'score' percentage if available
+            foreach ($tests as &$t) {
+                $tScore = $parseScore($t['result_text'] ?? '');
+                $t['score'] = $tScore !== null ? $tScore : null;
+            }
+            unset($t);
+
+            $latestMentalHealthTest = $tests[0];
+
+            if (count($tests) > 1) {
+                $previousScore = intval($tests[1]['score'] ?? 0);
+                $currentScore = intval($latestMentalHealthTest['score'] ?? 0);
+                if ($currentScore > $previousScore) {
+                    $mentalHealthTestTrend = "up";
+                } elseif ($currentScore < $previousScore) {
+                    $mentalHealthTestTrend = "down";
+                } else {
+                    $mentalHealthTestTrend = "stable";
+                }
+            }
+        }
+    }
 } elseif ($role === "Counselor" && $userId > 0) {
         $todayStmt = $conn->prepare(
                 "SELECT COUNT(*) AS total
@@ -430,7 +531,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             <p>Upcoming Events</p>
                             <div class="summary-row">
                                 <h3>
-                                    <span class="big summary-primary">3</span>
+                                    <span class="big summary-primary"><?php echo $eventsThisWeek; ?></span>
                                     <span class="muted">this week</span>
                                 </h3>
                                 <span class="summary-arrow">&rarr;</span>
@@ -445,8 +546,34 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             <p>Pending Requests</p>
                             <div class="summary-row">
                                 <h3>
-                                    <span class="big summary-accent">2</span>
-                                    <span class="muted">new messages</span>
+                                    <span class="big summary-accent"><?php echo $pendingCount; ?></span>
+                                    <span class="muted">pending appointments</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
+                    </div>
+                    </article>
+                    <article class="summary-card">
+                        <span class="announcement-icon-wrap announcement-tone-sky">
+                            <?php echo sidebarIconSvg("star"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>Mental Health Test</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <?php if ($latestMentalHealthTest): ?>
+                                        <span class="big summary-primary"><?php echo intval($latestMentalHealthTest["score"] ?? 0); ?>%</span>
+                                        <span class="muted trend-<?php echo $mentalHealthTestTrend; ?>">
+                                            <?php 
+                                                if ($mentalHealthTestTrend === "up") echo "↑ Improving";
+                                                elseif ($mentalHealthTestTrend === "down") echo "↓ Declining"; 
+                                                else echo "→ Stable";
+                                            ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="big summary-muted">—</span>
+                                        <span class="muted">Not taken yet</span>
+                                    <?php endif; ?>
                                 </h3>
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
@@ -478,23 +605,43 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
                     <aside class="announcement-card">
                         <div class="announcement-head-row">
-                            <h3 class="announcement-head">Announcements</h3>
+                            <h3 class="announcement-head">Your Events</h3>
                             <a href="/campuscare-api/php-frontend/pages/events/events.php" class="announcement-view-all">View All</a>
                         </div>
 
                         <ul class="announcement-list">
-                            <?php foreach ($announcements as $item): ?>
+                            <?php if (empty($joinedEvents)): ?>
                                 <li class="announcement-item-card">
-                                    <span class="announcement-icon-wrap announcement-tone-<?php echo htmlspecialchars((string) ($item["tone"] ?? "blue")); ?>">
-                                        <?php echo sidebarIconSvg((string) ($item["icon"] ?? "calendar")); ?>
-                                    </span>
                                     <div class="announcement-body">
-                                        <strong><?php echo htmlspecialchars($item["title"]); ?></strong>
-                                        <span><?php echo htmlspecialchars($item["date"]); ?></span>
+                                        <span>No upcoming or ongoing events yet.</span>
+                                        <a href="/campuscare-api/php-frontend/pages/events/events.php" class="text-primary">Browse Events</a>
                                     </div>
-                                    <span class="announcement-chevron" aria-hidden="true">›</span>
                                 </li>
-                            <?php endforeach; ?>
+                            <?php else: ?>
+                                <?php foreach ($joinedEvents as $event): ?>
+                                    <?php
+                                        $eventDate = new DateTime($event["starts_at"]);
+                                        $eventEnd = !empty($event["ends_at"]) ? new DateTime($event["ends_at"]) : null;
+                                        $dateStr = $eventDate->format("M j");
+                                        $timeStr = $eventDate->format("g:i A");
+                                        $displayTime = $eventEnd ? $timeStr . " - " . $eventEnd->format("g:i A") : $timeStr;
+                                        $isPast = $eventDate < new DateTime();
+                                        $statusClass = $isPast ? "announcement-tone-gray" : "announcement-tone-blue";
+                                    ?>
+                                    <li>
+                                        <a href="/campuscare-api/php-frontend/pages/events/event_detail.php?id=<?php echo $event["id"]; ?>" class="announcement-item-card announcement-event-link">
+                                            <span class="announcement-icon-wrap <?php echo $statusClass; ?>">
+                                                <?php echo sidebarIconSvg("calendar"); ?>
+                                            </span>
+                                            <div class="announcement-body">
+                                                <strong><?php echo htmlspecialchars($event["title"]); ?></strong>
+                                                <span><?php echo htmlspecialchars($dateStr . " at " . $displayTime); ?></span>
+                                            </div>
+                                            <span class="announcement-chevron" aria-hidden="true">›</span>
+                                        </a>
+                                    </li>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </ul>
                     </aside>
                 </section>

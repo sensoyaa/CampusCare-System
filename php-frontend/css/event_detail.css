@@ -3,7 +3,7 @@
 .event-detail-page {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0em 1rem;
+    padding: 0em 5rem;
 }
 
 .event-back-link {
@@ -202,6 +202,7 @@
     display: flex;
     align-items: flex-start;
     gap: 0.85rem;
+    margin-bottom: 1rem;
 }
 
 .section-heading-icon {
@@ -362,12 +363,17 @@
     background: var(--success-soft);
     color: var(--success-text);
     font-weight: 700;
+
+}
+.feedback-submitted{
+margin-top: 1rem;
 }
 
 .event-detail-actions .checkin-success svg,
 .feedback-submitted svg {
     width: 18px;
     height: 18px;
+
 }
 
 .checkin-reminder {
@@ -436,8 +442,11 @@
 
 .rating-stars {
     display: flex;
-    gap: 0.25rem;
-    margin-bottom: 1rem;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0.25rem 0 1.25rem;
 }
 
 .rating-stars input[type="radio"] {
@@ -446,25 +455,48 @@
 
 .rating-stars label {
     cursor: pointer;
-    font-size: 1.5rem;
-    color: var(--border);
-    transition: color 0.2s;
+    font-size: 1rem;
+    color: var(--gold-text);
+    transition: color 0.2s ease, transform 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
 }
 
-.rating-stars {
-    display: flex;
-    flex-direction: row-reverse;
-    justify-content: flex-end;
+.rating-stars label svg {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    fill: transparent;
+    stroke: currentColor;
+    transition: fill 0.2s ease, transform 0.2s ease;
 }
 
-.rating-stars label {
-    order: 1;
-}
-
-.rating-stars input[type="radio"]:checked + label,
 .rating-stars label:hover,
-.rating-stars label:hover ~ label {
-    color: var(--primary);
+.rating-stars label:hover ~ label,
+.rating-stars input[type="radio"]:checked ~ label {
+    color: var(--gold-text);
+}
+
+.rating-stars label:hover svg,
+.rating-stars label:hover ~ label svg,
+.rating-stars input[type="radio"]:checked + label svg,
+.rating-stars input[type="radio"]:checked + label ~ label svg {
+    fill: currentColor;
+}
+
+.rating-stars label:hover {
+    transform: translateY(-1px) scale(1.05);
+}
+
+.rating-stars input[type="radio"]:focus + label {
+    outline: 2px solid var(--gold-text);
+    outline-offset: 3px;
+    border-radius: 9999px;
 }
 
 .feedback-form textarea {
@@ -475,13 +507,13 @@
     font-family: inherit;
     resize: vertical;
     min-height: 120px;
-    margin-bottom: 1rem;
 }
 
 .feedback-form textarea:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(77, 143, 197, 0.12);
+    margin-bottom: 1rem;
 }
 
 .feedback-form .form-group {
@@ -561,6 +593,7 @@
     padding: 1.25rem;
     border-radius: 20px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-top: 2rem;
     margin-bottom: 1.25rem;
 }
 
@@ -763,7 +796,10 @@
 
 .rating-stars {
     display: flex;
-    gap: 0.25rem;
+    flex-direction: row-reverse;
+    justify-content: center;
+    align-items: center;
+    gap: 1.25rem;
     margin-bottom: 1rem;
 }
 
@@ -773,31 +809,60 @@
 
 .rating-stars label {
     cursor: pointer;
-    font-size: 1.5rem;
-    color: var(--border);
-    transition: color 0.2s;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    background: #fff;
+    border: 1px solid rgba(210, 152, 24, 0.2);
+    box-shadow: 0 6px 16px rgba(20, 40, 60, 0.06);
+    color: var(--gold-text);
+    transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
 }
 
 .rating-stars label:hover,
 .rating-stars label:hover ~ label,
 .rating-stars input[type="radio"]:checked ~ label {
-    color: var(--primary);
-}
-
-.rating-stars {
-    display: flex;
-    flex-direction: row-reverse;
-    justify-content: flex-end;
+    color: var(--gold-text);
 }
 
 .rating-stars label {
     order: 1;
 }
 
-.rating-stars input[type="radio"]:checked + label,
+.rating-emoji {
+    font-size: 2rem;
+    line-height: 1;
+    transform: translateY(-1px);
+}
+
 .rating-stars label:hover,
-.rating-stars label:hover ~ label {
-    color: var(--primary);
+.rating-stars input[type="radio"]:checked + label {
+    transform: translateY(-2px) scale(1.06);
+    background: var(--primary-soft);
+    border-color: rgba(210, 152, 24, 0.4);
+    box-shadow: 0 8px 18px rgba(77, 143, 197, 0.14);
+}
+
+.rating-stars input[type="radio"]:checked + label .rating-emoji,
+.rating-stars label:hover .rating-emoji {
+    transform: translateY(-1px) scale(1.08);
+}
+
+.rating-stars input[type="radio"]:focus + label {
+    outline: 2px solid var(--gold-text);
+    outline-offset: 3px;
+    border-radius: 9999px;
+}
+
+.rating-stars label:hover ~ label,
+.rating-stars input[type="radio"]:checked ~ label {
+    background: #fff;
+    border-color: rgba(210, 152, 24, 0.2);
+    box-shadow: 0 6px 16px rgba(20, 40, 60, 0.06);
 }
 
 .comments-section {

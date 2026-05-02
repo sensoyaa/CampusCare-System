@@ -19,6 +19,22 @@ $colleges = [
     "College of Arts and Sciences",
 ];
 
+// Get event counts for each college
+$collegeEventCounts = [];
+foreach ($colleges as $college) {
+    $countStmt = $conn->prepare(
+        "SELECT COUNT(*) AS total
+         FROM events
+         WHERE college = ?
+         AND starts_at >= NOW()"
+    );
+    $countStmt->bind_param("s", $college);
+    $countStmt->execute();
+    $countResult = $countStmt->get_result()->fetch_assoc();
+    $collegeEventCounts[$college] = intval($countResult["total"] ?? 0);
+    $countStmt->close();
+}
+
 $collegeIconMap = [
     "college of technology" => "Technology.png",
     "technology" => "Technology.png",
@@ -80,6 +96,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <?php foreach ($colleges as $college): ?>
                         <?php $collegeIconUrl = collegeIconUrl($college, $collegeIconMap); ?>
                         <a href="/campuscare-api/php-frontend/pages/events/view_college_events.php?college=<?php echo urlencode($college); ?>" class="college-selector-card">
+                            <?php if (($collegeEventCounts[$college] ?? 0) > 0): ?>
+                                <span class="college-event-badge"><?php echo $collegeEventCounts[$college]; ?></span>
+                            <?php endif; ?>
                             <span class="college-selector-icon">
                                 <?php if ($collegeIconUrl !== null): ?>
                                     <img src="<?php echo htmlspecialchars($collegeIconUrl); ?>" alt="" loading="lazy">

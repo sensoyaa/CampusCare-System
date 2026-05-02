@@ -450,6 +450,20 @@ if ($canJoin) {
     $checkedInStmt->close();
 }
 
+// Separate events into upcoming and ended
+$upcomingEvents = [];
+$endedEvents = [];
+$currentTime = time();
+
+foreach ($events as $event) {
+    $eventEndTime = !empty($event["ends_at"]) ? strtotime($event["ends_at"]) : strtotime($event["starts_at"]);
+    if ($eventEndTime >= $currentTime) {
+        $upcomingEvents[] = $event;
+    } else {
+        $endedEvents[] = $event;
+    }
+}
+
 require_once __DIR__ . "/../../includes/header.php";
 require_once __DIR__ . "/../../includes/sidebar.php";
 ?>
@@ -468,7 +482,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <div class="dashboard-head">
                 <div>
                     <h1 class="page-title">Events from <?php echo htmlspecialchars($selectedCollege); ?></h1>
-                    <p class="page-subtitle">Discover all available events</p>
+                    <p class="page-subtitle" style="tab-size: 4; white-space: pre;">>Discover all available events</p>
                 </div>
                 <?php if (isset($_GET['debug_joins']) && $_GET['debug_joins'] == '1'): ?>
                     <div class="alert alert-info" style="margin-left:16px;">
@@ -496,127 +510,234 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
             <!-- Events Display Section -->
             <section class="events-section">
-                <?php if (empty($events)): ?>
+                <?php if (empty($upcomingEvents) && empty($endedEvents)): ?>
                     <div class="empty-state">
                         <p>No events available from this college yet.</p>
                     </div>
                 <?php else: ?>
-                    <div class="events-list">
-                        <?php foreach ($events as $event): ?>
-                            <?php
-                                $eventId = intval($event["id"]);
-                                $isJoined = in_array($eventId, $joinedEvents, true);
-                                $isCheckedIn = in_array($eventId, $checkedInEvents, true);
-                                $startDateTime = new DateTime($event["starts_at"]);
-                                $eventMonthLabel = $startDateTime->format("M");
-                                $eventDayLabel = $startDateTime->format("j");
-                                $dateStr = $startDateTime->format("M d, Y");
-                                $timeStr = $startDateTime->format("g:i A");
-                                $endTimeStr = !empty($event["ends_at"]) ? (new DateTime($event["ends_at"]))->format("g:i A") : "";
-                                $displayTime = $endTimeStr !== "" ? $timeStr . " - " . $endTimeStr : $timeStr;
-                                $eventCategory = trim((string) ($event["category"] ?? "")) !== "" ? (string) $event["category"] : "Event";
-                                $eventDescription = trim((string) ($event["description"] ?? ""));
-                                $hasEventStarted = time() >= strtotime($event["starts_at"]);
-                                
-                                // Debug: Add data attributes for troubleshooting
-                                $debugData = [
-                                    'isJoined' => $isJoined,
-                                    'isCheckedIn' => $isCheckedIn,
-                                    'hasEventStarted' => $hasEventStarted,
-                                    'canJoin' => $canJoin,
-                                    'currentTime' => time(),
-                                    'currentTimeFormatted' => date("Y-m-d H:i:s"),
-                                    'eventStart' => strtotime($event["starts_at"]),
-                                    'eventStartFormatted' => $event["starts_at"],
-                                    'eventTitle' => $event["title"]
-                                ];
-                            ?>
-                            <article class="event-card" 
-                                onclick="window.location.href='/campuscare-api/php-frontend/pages/events/event_detail.php?id=<?php echo $eventId; ?>'" 
-                                data-debug="<?php echo htmlspecialchars(json_encode($debugData)); ?>"
-                                data-event-start="<?php echo htmlspecialchars(date("c", strtotime($event["starts_at"]))); ?>"
-                                data-event-end="<?php echo !empty($event["ends_at"]) ? htmlspecialchars(date("c", strtotime($event["ends_at"]))) : ""; ?>"
-                                data-event-id="<?php echo $eventId; ?>"
-                                data-joined="<?php echo $isJoined ? '1' : '0'; ?>"
-                                data-checkedin="<?php echo $isCheckedIn ? '1' : '0'; ?>">
-                                <div class="event-card-date">
-                                    <span class="event-card-date-month"><?php echo htmlspecialchars($eventMonthLabel); ?></span>
-                                    <span class="event-card-date-day"><?php echo htmlspecialchars($eventDayLabel); ?></span>
-                                </div>
-                                <div class="event-card-main">
-                                    <div class="event-card-header">
-                                        <h3><?php echo htmlspecialchars($event["title"]); ?></h3>
-                                        <span class="event-category"><?php echo htmlspecialchars($eventCategory); ?></span>
-                                    </div>
-                                    <div class="event-card-meta">
-                                        <span><?php echo sidebarIconSvg("clock"); ?> <?php echo htmlspecialchars($displayTime); ?></span>
-                                        <span><?php echo sidebarIconSvg("pin"); ?> <?php echo htmlspecialchars($event["location"]); ?></span>
-                                    </div>
-                                </div>
-                                <div class="event-card-footer" onclick="event.stopPropagation()">
-                                    <div class="event-card-action-stack">
-                                        <?php if ($canJoin): ?>
-                                            <div class="event-card-actions-row">
-                                                <?php if ($isJoined): ?>
-                                                    <?php if ($isCheckedIn): ?>
-                                                        <div class="checkin-status-card">
-                                                            <span class="checkin-icon">✓</span>
-                                                            <span>Checked In</span>
-                                                        </div>
-                                                    <?php else: ?>
-                                                        <form method="POST" class="event-card-action-form">
-                                                            <input type="hidden" name="action" value="checkin">
-                                                            <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
-                                                            <button type="submit" class="btn btn-primary event-checkin-btn" style="display: none;">Check In</button>
-                                                        </form>
-                                                    <?php endif; ?>
+                    <?php if (!empty($upcomingEvents)): ?>
+                        <div class="events-subsection">
+                            <h3 class="events-subsection-title">Upcoming</h3>
+                            <div class="events-list">
+                                <?php foreach ($upcomingEvents as $event): ?>
+                                    <?php
+                                        $eventId = intval($event["id"]);
+                                        $isJoined = in_array($eventId, $joinedEvents, true);
+                                        $isCheckedIn = in_array($eventId, $checkedInEvents, true);
+                                        $startDateTime = new DateTime($event["starts_at"]);
+                                        $eventMonthLabel = $startDateTime->format("M");
+                                        $eventDayLabel = $startDateTime->format("j");
+                                        $dateStr = $startDateTime->format("M d, Y");
+                                        $timeStr = $startDateTime->format("g:i A");
+                                        $endTimeStr = !empty($event["ends_at"]) ? (new DateTime($event["ends_at"]))->format("g:i A") : "";
+                                        $displayTime = $endTimeStr !== "" ? $timeStr . " - " . $endTimeStr : $timeStr;
+                                        $eventCategory = trim((string) ($event["category"] ?? "")) !== "" ? (string) $event["category"] : "Event";
+                                        $eventDescription = trim((string) ($event["description"] ?? ""));
+                                        $hasEventStarted = time() >= strtotime($event["starts_at"]);
+                                        
+                                        // Debug: Add data attributes for troubleshooting
+                                        $debugData = [
+                                            'isJoined' => $isJoined,
+                                            'isCheckedIn' => $isCheckedIn,
+                                            'hasEventStarted' => $hasEventStarted,
+                                            'canJoin' => $canJoin,
+                                            'currentTime' => time(),
+                                            'currentTimeFormatted' => date("Y-m-d H:i:s"),
+                                            'eventStart' => strtotime($event["starts_at"]),
+                                            'eventStartFormatted' => $event["starts_at"],
+                                            'eventTitle' => $event["title"]
+                                        ];
+                                    ?>
+                                    <article class="event-card"
+                                        onclick="window.location.href='/campuscare-api/php-frontend/pages/events/event_detail.php?id=<?php echo $eventId; ?>'"
+                                        data-debug="<?php echo htmlspecialchars(json_encode($debugData)); ?>"
+                                        data-event-start="<?php echo htmlspecialchars(date("c", strtotime($event["starts_at"]))); ?>"
+                                        data-event-end="<?php echo !empty($event["ends_at"]) ? htmlspecialchars(date("c", strtotime($event["ends_at"]))) : ""; ?>"
+                                        data-event-id="<?php echo $eventId; ?>"
+                                        data-joined="<?php echo $isJoined ? '1' : '0'; ?>"
+                                        data-checkedin="<?php echo $isCheckedIn ? '1' : '0'; ?>">
+                                        <div class="event-card-date">
+                                            <span class="event-card-date-month"><?php echo htmlspecialchars($eventMonthLabel); ?></span>
+                                            <span class="event-card-date-day"><?php echo htmlspecialchars($eventDayLabel); ?></span>
+                                        </div>
+                                        <div class="event-card-main">
+                                            <div class="event-card-header">
+                                                <h3><?php echo htmlspecialchars($event["title"]); ?></h3>
+                                                <span class="event-category"><?php echo htmlspecialchars($eventCategory); ?></span>
+                                            </div>
+                                            <div class="event-card-meta">
+                                                <span class="meta-item"><?php echo sidebarIconSvg("clock"); ?> <?php echo htmlspecialchars($displayTime); ?></span>
+                                                <span class="meta-item"><?php echo sidebarIconSvg("pin"); ?> <?php echo htmlspecialchars($event["location"]); ?></span>
+                                            </div>
+                                        </div>
+                                        <div class="event-card-footer" onclick="event.stopPropagation()">
+                                            <div class="event-card-action-stack">
+                                                <?php if ($canJoin): ?>
+                                                    <div class="event-card-actions-row">
+                                                        <?php if ($isJoined): ?>
+                                                            <?php if ($isCheckedIn): ?>
+                                                                <div class="checkin-status-card">
+                                                                    <span class="checkin-icon">✓</span>
+                                                                    <span>Checked In</span>
+                                                                </div>
+                                                            <?php else: ?>
+                                                                <form method="POST" class="event-card-action-form">
+                                                                    <input type="hidden" name="action" value="checkin">
+                                                                    <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
+                                                                    <button type="submit" class="btn btn-primary event-checkin-btn" style="display: none;">Check In</button>
+                                                                </form>
+                                                            <?php endif; ?>
 
-                                                    <?php if (!$hasEventStarted): ?>
-                                                        <form method="POST" class="event-card-action-form">
-                                                            <input type="hidden" name="action" value="unjoin">
+                                                            <?php if (!$hasEventStarted): ?>
+                                                                <form method="POST" class="event-card-action-form">
+                                                                    <input type="hidden" name="action" value="unjoin">
+                                                                    <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
+                                                                    <button type="submit" class="btn btn-outline event-join-btn event-unjoin-btn">Unjoin</button>
+                                                                </form>
+                                                            <?php else: ?>
+                                                                <button type="button" class="btn joined-btn" disabled>Joined</button>
+                                                            <?php endif; ?>
+                                                        <?php else: ?>
+                                                            <form method="POST" class="event-card-action-form">
+                                                                <input type="hidden" name="action" value="join">
+                                                                <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
+                                                                <button type="submit" class="btn event-join-btn">Join</button>
+                                                            </form>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php elseif ($canCreateEvents): ?>
+                                                    <div class="event-manage-actions">
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-outline event-manage-btn"
+                                                            data-edit-event
+                                                            data-event-id="<?php echo $eventId; ?>"
+                                                            data-title="<?php echo htmlspecialchars((string) ($event["title"] ?? ""), ENT_QUOTES); ?>"
+                                                            data-category="<?php echo htmlspecialchars($eventCategory, ENT_QUOTES); ?>"
+                                                            data-description="<?php echo htmlspecialchars($eventDescription, ENT_QUOTES); ?>"
+                                                            data-location="<?php echo htmlspecialchars((string) ($event["location"] ?? ""), ENT_QUOTES); ?>"
+                                                            data-starts-at="<?php echo htmlspecialchars(date("Y-m-d\\TH:i", strtotime((string) ($event["starts_at"] ?? ""))), ENT_QUOTES); ?>"
+                                                            data-ends-at="<?php echo !empty($event["ends_at"]) ? htmlspecialchars(date("Y-m-d\\TH:i", strtotime((string) $event["ends_at"])), ENT_QUOTES) : ""; ?>"
+                                                        >Edit</button>
+                                                        <form method="POST" class="event-card-action-form" data-confirm-title="Delete event" data-confirm-message="Delete this event permanently?" data-confirm-button="Delete Event" data-confirm-variant="danger">
+                                                            <input type="hidden" name="action" value="delete">
                                                             <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
-                                                            <button type="submit" class="btn btn-outline event-join-btn event-unjoin-btn">Unjoin</button>
+                                                            <button type="submit" class="btn btn-outline event-manage-btn">Delete</button>
                                                         </form>
-                                                    <?php else: ?>
-                                                        <button type="button" class="btn joined-btn" disabled>Joined</button>
-                                                    <?php endif; ?>
+                                                    </div>
                                                 <?php else: ?>
-                                                    <form method="POST" class="event-card-action-form">
-                                                        <input type="hidden" name="action" value="join">
-                                                        <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
-                                                        <button type="submit" class="btn event-join-btn">Join</button>
-                                                    </form>
+                                                    <span class="status-badge available">View Details</span>
                                                 <?php endif; ?>
                                             </div>
-                                        <?php elseif ($canCreateEvents): ?>
-                                            <div class="event-manage-actions">
-                                                <button
-                                                    type="button"
-                                                    class="btn btn-outline event-manage-btn"
-                                                    data-edit-event
-                                                    data-event-id="<?php echo $eventId; ?>"
-                                                    data-title="<?php echo htmlspecialchars((string) ($event["title"] ?? ""), ENT_QUOTES); ?>"
-                                                    data-category="<?php echo htmlspecialchars($eventCategory, ENT_QUOTES); ?>"
-                                                    data-description="<?php echo htmlspecialchars($eventDescription, ENT_QUOTES); ?>"
-                                                    data-location="<?php echo htmlspecialchars((string) ($event["location"] ?? ""), ENT_QUOTES); ?>"
-                                                    data-starts-at="<?php echo htmlspecialchars(date("Y-m-d\\TH:i", strtotime((string) ($event["starts_at"] ?? ""))), ENT_QUOTES); ?>"
-                                                    data-ends-at="<?php echo !empty($event["ends_at"]) ? htmlspecialchars(date("Y-m-d\\TH:i", strtotime((string) $event["ends_at"])), ENT_QUOTES) : ""; ?>"
-                                                >Edit</button>
-                                                <form method="POST" class="event-card-action-form" data-confirm-title="Delete event" data-confirm-message="Delete this event permanently?" data-confirm-button="Delete Event" data-confirm-variant="danger">
-                                                    <input type="hidden" name="action" value="delete">
-                                                    <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
-                                                    <button type="submit" class="btn btn-outline event-manage-btn">Delete</button>
-                                                </form>
-                                            </div>
-                                        <?php else: ?>
-                                            <span class="status-badge available">View Details</span>
-                                        <?php endif; ?>
-                                    </div>
-                                    <span class="event-card-attendees"><?php echo sidebarIconSvg("users"); ?> <?php echo intval($event["participant_count"]); ?> joined</span>
-                                </div>
-                            </article>
+                                            <span class="event-card-attendees"><?php echo sidebarIconSvg("users"); ?> <?php echo intval($event["participant_count"]); ?> joined</span>
+                                        </div>
+                                    </article>
                         <?php endforeach; ?>
-                    </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($endedEvents)): ?>
+                        <div class="events-subsection">
+                            <h3 class="events-subsection-title">Ended</h3>
+                            <div class="events-list">
+                                <?php foreach ($endedEvents as $event): ?>
+                                    <?php
+                                        $eventId = intval($event["id"]);
+                                        $isJoined = in_array($eventId, $joinedEvents, true);
+                                        $isCheckedIn = in_array($eventId, $checkedInEvents, true);
+                                        $startDateTime = new DateTime($event["starts_at"]);
+                                        $eventMonthLabel = $startDateTime->format("M");
+                                        $eventDayLabel = $startDateTime->format("j");
+                                        $dateStr = $startDateTime->format("M d, Y");
+                                        $timeStr = $startDateTime->format("g:i A");
+                                        $endTimeStr = !empty($event["ends_at"]) ? (new DateTime($event["ends_at"]))->format("g:i A") : "";
+                                        $displayTime = $endTimeStr !== "" ? $timeStr . " - " . $endTimeStr : $timeStr;
+                                        $eventCategory = trim((string) ($event["category"] ?? "")) !== "" ? (string) $event["category"] : "Event";
+                                        $eventDescription = trim((string) ($event["description"] ?? ""));
+                                        $hasEventStarted = time() >= strtotime($event["starts_at"]);
+                                        
+                                        // Debug: Add data attributes for troubleshooting
+                                        $debugData = [
+                                            'isJoined' => $isJoined,
+                                            'isCheckedIn' => $isCheckedIn,
+                                            'hasEventStarted' => $hasEventStarted,
+                                            'canJoin' => $canJoin,
+                                            'currentTime' => time(),
+                                            'currentTimeFormatted' => date("Y-m-d H:i:s"),
+                                            'eventStart' => strtotime($event["starts_at"]),
+                                            'eventStartFormatted' => $event["starts_at"],
+                                            'eventTitle' => $event["title"]
+                                        ];
+                                    ?>
+                                    <article class="event-card"
+                                        onclick="window.location.href='/campuscare-api/php-frontend/pages/events/event_detail.php?id=<?php echo $eventId; ?>'"
+                                        data-debug="<?php echo htmlspecialchars(json_encode($debugData)); ?>"
+                                        data-event-start="<?php echo htmlspecialchars(date("c", strtotime($event["starts_at"]))); ?>"
+                                        data-event-end="<?php echo !empty($event["ends_at"]) ? htmlspecialchars(date("c", strtotime($event["ends_at"]))) : ""; ?>"
+                                        data-event-id="<?php echo $eventId; ?>"
+                                        data-joined="<?php echo $isJoined ? '1' : '0'; ?>"
+                                        data-checkedin="<?php echo $isCheckedIn ? '1' : '0'; ?>">
+                                        <div class="event-card-date">
+                                            <span class="event-card-date-month"><?php echo htmlspecialchars($eventMonthLabel); ?></span>
+                                            <span class="event-card-date-day"><?php echo htmlspecialchars($eventDayLabel); ?></span>
+                                        </div>
+                                        <div class="event-card-main">
+                                            <div class="event-card-header">
+                                                <h3><?php echo htmlspecialchars($event["title"]); ?></h3>
+                                                <span class="event-category"><?php echo htmlspecialchars($eventCategory); ?></span>
+                                            </div>
+                                            <div class="event-card-meta">
+                                                <span class="meta-item"><?php echo sidebarIconSvg("clock"); ?> <?php echo htmlspecialchars($displayTime); ?></span>
+                                                <span class="meta-item"><?php echo sidebarIconSvg("pin"); ?> <?php echo htmlspecialchars($event["location"]); ?></span>
+                                            </div>
+                                        </div>
+                                        <div class="event-card-footer" onclick="event.stopPropagation()">
+                                            <div class="event-card-action-stack">
+                                                <?php if ($canJoin): ?>
+                                                    <div class="event-card-actions-row">
+                                                        <?php if ($isCheckedIn): ?>
+                                                            <div class="checkin-status-card">
+                                                                <span class="checkin-icon">✓</span>
+                                                                <span>Checked In</span>
+                                                            </div>
+                                                        <?php elseif ($isJoined): ?>
+                                                            <button type="button" class="btn joined-btn" disabled>Attended</button>
+                                                        <?php else: ?>
+                                                            <span class="status-badge muted">Event Ended</span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php elseif ($canCreateEvents): ?>
+                                                    <div class="event-manage-actions">
+                                                        <button
+                                                            type="button"
+                                                            class="btn btn-outline event-manage-btn"
+                                                            data-edit-event
+                                                            data-event-id="<?php echo $eventId; ?>"
+                                                            data-title="<?php echo htmlspecialchars((string) ($event["title"] ?? ""), ENT_QUOTES); ?>"
+                                                            data-category="<?php echo htmlspecialchars($eventCategory, ENT_QUOTES); ?>"
+                                                            data-description="<?php echo htmlspecialchars($eventDescription, ENT_QUOTES); ?>"
+                                                            data-location="<?php echo htmlspecialchars((string) ($event["location"] ?? ""), ENT_QUOTES); ?>"
+                                                            data-starts-at="<?php echo htmlspecialchars(date("Y-m-d\\TH:i", strtotime((string) ($event["starts_at"] ?? ""))), ENT_QUOTES); ?>"
+                                                            data-ends-at="<?php echo !empty($event["ends_at"]) ? htmlspecialchars(date("Y-m-d\\TH:i", strtotime((string) $event["ends_at"])), ENT_QUOTES) : ""; ?>"
+                                                        >Edit</button>
+                                                        <form method="POST" class="event-card-action-form" data-confirm-title="Delete event" data-confirm-message="Delete this event permanently?" data-confirm-button="Delete Event" data-confirm-variant="danger">
+                                                            <input type="hidden" name="action" value="delete">
+                                                            <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
+                                                            <button type="submit" class="btn btn-outline event-manage-btn">Delete</button>
+                                                        </form>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="status-badge muted">Event Ended</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <span class="event-card-attendees"><?php echo sidebarIconSvg("users"); ?> <?php echo intval($event["participant_count"]); ?> joined</span>
+                                        </div>
+                                    </article>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
             </section>
         </div>
