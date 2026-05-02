@@ -14,14 +14,13 @@ $projectBaseUrl = "/campuscare-api";
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #294c7b; /* BukSU Blue */
-            --primary-dark: #1d3658;
-            --secondary: #eab308; /* BukSU Gold/Yellow Accent */
-            --bg-color: #f3f6fa;
-            --text-main: #1e2f40;
-            --text-muted: #5e6f80;
+            --primary: #0f4a86;
+            --primary-dark: #0c3a6a;
+            --bg-soft: #eef4fb;
+            --text-main: #121b2b;
+            --text-muted: #4f5f72;
             --card-bg: #ffffff;
-            --transition: all 0.3s ease;
+            --transition: all 0.25s ease;
         }
 
         * {
@@ -32,19 +31,20 @@ $projectBaseUrl = "/campuscare-api";
         }
 
         body {
-            background-color: var(--bg-color);
+            background: #ffffff;
             color: var(--text-main);
-            line-height: 1.6;
+            line-height: 1.5;
             scroll-behavior: smooth;
         }
 
         header {
-            background: var(--card-bg);
-            padding: 15px 5%;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            background: #ffffff;
+            padding: 14px 26px;
+            border-bottom: 1px solid #dfe6ef;
+            box-shadow: 0 1px 6px rgba(16, 41, 74, 0.06);
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -53,53 +53,58 @@ $projectBaseUrl = "/campuscare-api";
         .logo {
             display: flex;
             align-items: center;
-            gap: 15px;
-        }
-        
-        .logo-imgs {
-            display: flex;
-            align-items: center;
             gap: 10px;
         }
 
+        .logo-imgs {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+
         .logo-imgs img {
-            height: 50px;
+            height: 46px;
             width: auto;
             object-fit: contain;
+        }
+
+        .logo-imgs img:nth-child(2) {
+            display: none;
         }
 
         .logo-text {
             display: flex;
             flex-direction: column;
-            line-height: 1.1;
+            line-height: 1.15;
         }
 
         .logo-text .title {
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--primary);
-            text-transform: uppercase;
+            font-size: 18px;
+            font-weight: 700;
+            color: #123f6b;
+            letter-spacing: -0.2px;
+            text-transform: none;
         }
 
         .logo-text .subtitle {
-            color: var(--text-muted);
             font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+            color: #4c647b;
+            font-weight: 500;
+            text-transform: none;
+            letter-spacing: 0;
         }
 
         .nav-links {
             display: flex;
-            gap: 25px;
             align-items: center;
+            gap: 34px;
         }
 
         .nav-links a {
             text-decoration: none;
-            color: var(--text-main);
-            font-weight: 500;
+            color: #1d2430;
             font-size: 15px;
+            font-weight: 500;
             transition: var(--transition);
         }
 
@@ -108,406 +113,507 @@ $projectBaseUrl = "/campuscare-api";
         }
 
         .btn {
-            padding: 10px 24px;
-            border-radius: 8px;
+            border-radius: 12px;
+            padding: 12px 22px;
+            font-size: 15px;
             font-weight: 600;
             text-decoration: none;
-            transition: var(--transition);
             display: inline-block;
+            transition: var(--transition);
         }
 
         .btn-outline {
-            border: 2px solid var(--primary);
-            color: var(--primary);
-            background: transparent;
+            background: linear-gradient(180deg, #185290 0%, #0f467f 100%);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 4px 10px rgba(13, 63, 114, 0.22);
         }
 
         .btn-outline:hover {
-            background: var(--primary);
-            color: white;
+            background: linear-gradient(180deg, #205d9d 0%, #14518c 100%);
+            color: #ffffff;
+            transform: translateY(-1px);
         }
 
         .btn-primary {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 4px 10px rgba(41, 76, 123, 0.3);
+            background: linear-gradient(180deg, #185290 0%, #0f467f 100%);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 4px 12px rgba(13, 63, 114, 0.24);
         }
 
         .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
+            background: linear-gradient(180deg, #205d9d 0%, #14518c 100%);
+            transform: translateY(-1px);
         }
 
-        /* Hero Section */
         .hero {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 80px 5% 60px;
-            gap: 40px;
-            background: linear-gradient(135deg, rgba(243,246,250,1) 0%, rgba(225,234,244,1) 100%);
-        }
-
-        .hero-content {
-            flex: 1;
-            max-width: 650px;
-        }
-
-        .hero-tag {
-            color: var(--primary);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-size: 14px;
-            margin-bottom: 10px;
+            text-align: center;
+            padding: 40px 16px 20px;
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0) 65%, #ffffff 100%),
+                url("<?php echo $projectBaseUrl; ?>/php-frontend/assets/images/bg/Landingheader.png") center top / cover no-repeat,
+                linear-gradient(90deg, #dbeef8 0%, #fde9ec 100%);
+            min-height: 420px;
             display: block;
         }
 
+        .hero-content {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        .hero-tag {
+            display: none;
+        }
+
         .hero h1 {
-            font-size: 56px;
-            line-height: 1.15;
-            margin-bottom: 20px;
-            color: var(--text-main);
-            font-weight: 800;
+            font-size: clamp(38px, 4.5vw, 58px);
+            line-height: 1.18;
+            font-weight: 700;
+            color: #101722;
+            margin-bottom: 16px;
         }
 
         .hero h1 span {
-            color: var(--primary);
+            color: inherit;
         }
 
         .hero p {
-            font-size: 17px;
-            color: var(--text-muted);
-            margin-bottom: 30px;
-            max-width: 580px;
+            font-size: 15px;
+            line-height: 1.45;
+            max-width: 900px;
+            margin: 0 auto 22px;
+            color: #182433;
         }
 
         .hero-actions {
             display: flex;
-            gap: 15px;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .hero-actions .btn-outline {
+            display: none;
         }
 
         .hero-image {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: none;
         }
 
-        .hero-image img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-            animation: float 6s ease-in-out infinite;
-        }
-
-        /* Core Values Section (Mission/Vision) */
         .about {
-            padding: 80px 5%;
-            background: var(--card-bg);
+            padding: 56px 24px;
+            background: #ffffff;
+        }
+
+        .about .features-header {
+            display: block;
+            max-width: 920px;
+            margin: 0 auto 28px;
             text-align: center;
         }
-        
+
+        .about .features-header h2 {
+            font-size: 34px;
+            font-weight: 700;
+            color: #142235;
+            margin-bottom: 8px;
+        }
+
+        .about .features-header p {
+            font-size: 14px;
+            color: #4f5f72;
+        }
+
         .about-grid {
+            max-width: 1140px;
+            margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin-top: 40px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
         }
 
         .about-card {
-            padding: 40px 30px;
-            background: var(--bg-color);
+            background: #f7fbff;
+            border: 1px solid #dce8f5;
             border-radius: 16px;
-            border-top: 4px solid var(--secondary);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.03);
-            text-align: left;
+            padding: 20px 18px;
+            box-shadow: 0 6px 16px rgba(24, 58, 102, 0.08);
         }
 
         .about-card h3 {
-            font-size: 22px;
-            color: var(--primary);
-            margin-bottom: 15px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            font-size: 20px;
+            color: #123f6b;
+            margin-bottom: 8px;
         }
 
         .about-card p {
-            color: var(--text-muted);
-            font-size: 15px;
+            font-size: 13px;
+            color: #2a3f57;
+            line-height: 1.5;
         }
 
-        /* Features/Services Section */
         .features {
-            padding: 80px 5%;
-            background: var(--bg-color);
-            text-align: center;
+            padding: 10px 24px 44px;
+            background: #ffffff;
         }
 
         .features-header {
-            margin-bottom: 50px;
-        }
-
-        .features-header h2 {
-            font-size: 36px;
-            color: var(--text-main);
-            margin-bottom: 15px;
-        }
-
-        .features-header p {
-            color: var(--text-muted);
-            max-width: 700px;
-            margin: 0 auto;
-            font-size: 16px;
+            display: none;
         }
 
         .features-grid {
+            max-width: 1140px;
+            margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            text-align: left;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 18px;
         }
 
         .feature-card {
-            padding: 40px 30px;
-            background: var(--card-bg);
             border-radius: 16px;
+            border: 1px solid #e6edf5;
+            background: #f6fbff;
+            box-shadow: 0 8px 24px rgba(29, 49, 83, 0.12);
+            padding: 20px 18px 18px;
+            text-align: center;
             transition: var(--transition);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
-            position: relative;
             overflow: hidden;
+            min-height: 294px;
+            position: relative;
         }
 
         .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+            transform: translateY(-4px);
+            box-shadow: 0 14px 28px rgba(29, 49, 83, 0.16);
+        }
+
+        .feature-card:nth-child(1) {
+            background: url("<?php echo $projectBaseUrl; ?>/php-frontend/assets/images/bg/containe1bg.png") center/cover no-repeat;
+        }
+
+        .feature-card:nth-child(2) {
+            background: url("<?php echo $projectBaseUrl; ?>/php-frontend/assets/images/bg/container-2-bg.png") center/cover no-repeat;
+        }
+
+        .feature-card:nth-child(3) {
+            background: url("<?php echo $projectBaseUrl; ?>/php-frontend/assets/images/bg/bg3.png") center/cover no-repeat;
+        }
+
+        .feature-card:nth-child(4) {
+            background: url("<?php echo $projectBaseUrl; ?>/php-frontend/assets/images/bg/bg4.png") center/cover no-repeat;
+        }
+
+        .feature-card:nth-child(n+5) {
+            display: none;
         }
 
         .feature-icon {
-            width: 60px;
-            height: 60px;
-            background: rgba(41, 76, 123, 0.1);
-            color: var(--primary);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-            font-size: 28px;
+            width: 128px;
+            height: 96px;
+            margin: 0 auto 8px;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: contain;
         }
 
         .feature-icon svg {
-            width: 30px;
-            height: 30px;
+            display: none;
+        }
+
+        .feature-card:nth-child(1) .feature-icon {
+            background-image: url("<?php echo $projectBaseUrl; ?>/php-frontend/assets/images/icons/counseling.png");
+        }
+
+        .feature-card:nth-child(2) .feature-icon {
+            background-image: url("<?php echo $projectBaseUrl; ?>/php-frontend/assets/images/icons/workshop.png");
+        }
+
+        .feature-card:nth-child(3) .feature-icon {
+            background-image: url("<?php echo $projectBaseUrl; ?>/php-frontend/assets/images/icons/Mental-Test.png");
+        }
+
+        .feature-card:nth-child(4) .feature-icon {
+            background-image: url("<?php echo $projectBaseUrl; ?>/php-frontend/assets/images/icons/sched.png");
         }
 
         .feature-card h3 {
-            font-size: 20px;
-            margin-bottom: 12px;
-            color: var(--text-main);
+            font-size: 17px;
+            line-height: 1.1;
+            margin-bottom: 8px;
+            color: #111a29;
+            font-weight: 700;
         }
 
         .feature-card p {
-            color: var(--text-muted);
-            font-size: 14.5px;
-            line-height: 1.6;
+            font-size: 12px;
+            line-height: 1.45;
+            color: #172434;
+            max-width: 260px;
+            margin: 0 auto;
         }
 
         .service-list {
-            margin-top: 15px;
-            list-style: none;
-            padding-left: 0;
-            font-size: 14px;
-            color: var(--text-muted);
-        }
-        .service-list li {
-            position: relative;
-            padding-left: 20px;
-            margin-bottom: 6px;
-        }
-        .service-list li::before {
-            content: "•";
-            position: absolute;
-            left: 0;
-            color: var(--secondary);
-            font-weight: bold;
-            font-size: 18px;
-            line-height: 1;
+            display: none;
         }
 
-        /* Footer */
-        footer {
-            background: var(--primary-dark);
-            color: white;
-            padding: 60px 5% 30px;
-        }
-
-        .footer-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 40px;
-            margin-bottom: 40px;
-        }
-
-        .footer-col h4 {
-            font-size: 20px;
-            margin-bottom: 20px;
-            color: #fff;
-        }
-
-        .footer-col p {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 15px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-        
-        .footer-col p svg {
-            width: 18px;
-            height: 18px;
-            flex-shrink: 0;
-            margin-top: 3px;
-        }
-
-        .footer-col a {
-            color: rgba(255, 255, 255, 0.8);
-            text-decoration: none;
-            transition: var(--transition);
-        }
-
-        .footer-col a:hover {
-            color: var(--secondary);
-        }
-
-        .footer-bottom {
-            text-align: center;
-            padding-top: 30px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
-        }
-
-        /* Reach Out / Team Section */
         .team-section {
-            padding: 80px 5%;
-            background: var(--card-bg);
+            padding: 56px 24px;
+            background: #f8fbff;
+        }
+
+        .team-section .features-header {
+            display: block;
+            max-width: 920px;
+            margin: 0 auto 28px;
             text-align: center;
+        }
+
+        .team-section .features-header h2 {
+            font-size: 34px;
+            font-weight: 700;
+            color: #142235;
+            margin-bottom: 8px;
+        }
+
+        .team-section .features-header p {
+            font-size: 14px;
+            color: #4f5f72;
         }
 
         .team-grid {
+            max-width: 1140px;
+            margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 25px;
-            margin-top: 40px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
         }
 
         .team-member {
-            background: var(--bg-color);
-            padding: 25px 20px;
-            border-radius: 12px;
             display: flex;
             align-items: center;
-            gap: 20px;
-            text-align: left;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-            border: 1px solid rgba(0,0,0,0.02);
+            gap: 12px;
+            padding: 14px;
+            background: #ffffff;
+            border: 1px solid #dbe6f3;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(24, 58, 102, 0.06);
             transition: var(--transition);
         }
 
         .team-member:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(41, 76, 123, 0.08);
-            border-color: rgba(41, 76, 123, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(24, 58, 102, 0.11);
         }
 
         .team-avatar {
-            width: 70px;
-            height: 70px;
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
             border-radius: 50%;
-            background: #e2e8f0;
+            background: #dfeeff;
+            border: 1px solid #c6dfff;
+            color: #123f6b;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--primary);
-            font-size: 24px;
+            font-size: 14px;
             font-weight: 700;
-            border: 2px solid var(--secondary);
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-
-        .team-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
         }
 
         .team-info h4 {
-            color: var(--primary-dark);
-            font-size: 16px;
+            font-size: 14px;
+            line-height: 1.35;
+            color: #18324e;
             margin-bottom: 2px;
-            line-height: 1.3;
         }
 
         .team-info p {
-            color: var(--text-muted);
-            font-size: 13px;
-            margin: 0;
-            line-height: 1.4;
+            font-size: 12px;
+            color: #5a6e84;
         }
 
         .peer-facilitators {
             grid-column: 1 / -1;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
+            background: linear-gradient(180deg, #185290 0%, #0f467f 100%);
+            border-color: #185290;
+            color: #ffffff;
+            justify-content: center;
             text-align: center;
-            padding: 30px;
-            border-radius: 12px;
-            margin-top: 15px;
+            padding: 16px;
         }
 
-        .peer-facilitators h4 {
-            font-size: 20px;
-            margin-bottom: 5px;
-            color: white;
+        .peer-facilitators .team-info h4,
+        .peer-facilitators .team-info p {
+            color: #ffffff;
+            margin: 0;
         }
 
-        .peer-facilitators p {
-            font-size: 14px;
-            color: rgba(255,255,255,0.8);
+        footer {
+            background: #eaf0f8;
+            border-top: 1px solid #d9e1ec;
+            padding: 10px 24px;
+            color: #172332;
         }
 
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0px); }
+        .footer-grid {
+            max-width: 1140px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1fr 1fr;
+            gap: 24px;
+            align-items: center;
         }
 
-        @media (max-width: 900px) {
-            .hero {
-                flex-direction: column;
-                text-align: center;
-                padding-top: 40px;
+        .footer-col {
+            min-height: 56px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .footer-col h4 {
+            font-size: 12px;
+            color: #1a2e48;
+            font-weight: 700;
+            margin: 0 0 6px;
+            letter-spacing: 0.2px;
+        }
+
+        .footer-col p {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.35;
+            color: #22364d;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-col p svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            color: #4b6078;
+        }
+
+        .footer-col a {
+            color: #22364d;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+
+        .footer-col a:hover {
+            color: var(--primary);
+        }
+
+        .footer-col:last-child {
+            align-items: flex-end;
+            text-align: right;
+        }
+
+        .footer-bottom {
+            max-width: 1140px;
+            margin: 6px auto 0;
+            border-top: 1px solid #d5deea;
+            padding-top: 8px;
+            text-align: center;
+            font-size: 11px;
+            color: #3f536d;
+        }
+
+        @media (max-width: 1024px) {
+            .nav-links {
+                gap: 18px;
             }
-            .hero h1 {
-                font-size: 42px;
+
+            .nav-links a {
+                font-size: 14px;
             }
-            .hero-content {
-                margin: 0 auto;
+
+            .features-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
-            .hero p {
-                margin-left: auto;
-                margin-right: auto;
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
             }
-            .hero-actions {
-                justify-content: center;
+
+            .footer-col:last-child {
+                justify-content: flex-start;
             }
+
+            .about-grid,
+            .team-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 12px 14px;
+            }
+
+            .logo-text .title {
+                font-size: 22px;
+            }
+
+            .logo-text .subtitle {
+                font-size: 8px;
+            }
+
             .nav-links {
                 display: none;
+            }
+
+            .hero {
+                padding: 28px 14px 14px;
+                min-height: 340px;
+            }
+
+            .hero p {
+                font-size: 15px;
+            }
+
+            .features {
+                padding: 8px 14px 28px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .about,
+            .team-section {
+                padding: 40px 14px;
+            }
+
+            .about-grid,
+            .team-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-card {
+                min-height: 250px;
+            }
+
+            .feature-card h3 {
+                font-size: 18px;
+            }
+
+            .feature-card p {
+                font-size: 12px;
+            }
+
+            footer {
+                padding: 10px 14px;
             }
         }
     </style>
@@ -527,21 +633,21 @@ $projectBaseUrl = "/campuscare-api";
             </div>
         </div>
         <nav class="nav-links">
-            <a href="#about">About</a>
+            <a href="#about">About Us</a>
             <a href="#services">Services</a>
-            <a href="#team">Reach Out</a>
-            <a href="#contact">Contact</a>
-            <a href="<?php echo $projectBaseUrl; ?>/php-frontend/pages/auth/index.php" class="btn btn-outline">Portal Login</a>
+            <a href="#team">Workshops</a>
+            <a href="#contact">Resources</a>
+            <a href="<?php echo $projectBaseUrl; ?>/php-frontend/pages/auth/index.php" class="btn btn-outline">Login to Dashboard</a>
         </nav>
     </header>
 
     <section class="hero">
         <div class="hero-content">
             <span class="hero-tag">Bukidnon State University</span>
-            <h1>Student Welfare & <span>Engagement Unit</span></h1>
-            <p>Welcome to SWEU, a vital component of the University's student services dedicated to ensuring the overall well-being and engagement of students through academic, personal, and social support.</p>
+            <h1>Your Path to a Balanced, Supported,<br>and Thriving Campus Life</h1>
+            <p>CampusCare provides confidential mental health services, engaging workshops, and campus-wide support, all personalized for students.</p>
             <div class="hero-actions">
-                <a href="<?php echo $projectBaseUrl; ?>/php-frontend/pages/auth/index.php" class="btn btn-primary">Access CampusCare</a>
+                <a href="#services" class="btn btn-primary">Explore Resources</a>
                 <a href="#services" class="btn btn-outline">Explore Services</a>
             </div>
         </div>
@@ -590,17 +696,17 @@ $projectBaseUrl = "/campuscare-api";
                 <div class="feature-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                 </div>
-                <h3>1. Info & Orientation</h3>
-                <p>Vital to student welfare at BukSU, providing essential resources and activities to help students naturally adjust to university life.</p>
+                <h3>Personal Counseling</h3>
+                <p>Our 1-on-1 counseling services help students navigate stress, anxiety, and personal challenges with compassionate support.</p>
             </div>
             
-            <div class="feature-card" style="grid-column: span 2;">
+            <div class="feature-card">
                 <div class="feature-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 </div>
-                <h3>2. Guidance & Counseling</h3>
-                <p>We provide a confidential space to address personal and psychological challenges, facilitating positive change.</p>
-                <ul class="service-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+                <h3>Growth Workshops</h3>
+                <p>Highlights upcoming workshops for resilience, study habits, communication, and personal development.</p>
+                <ul class="service-list">
                     <li><strong>Counseling:</strong> Direct emotional support space.</li>
                     <li><strong>Psychological Testing:</strong> Data collection to understand strengths & potential.</li>
                     <li><strong>Follow-up Services:</strong> Systematic monitoring post-counseling.</li>
@@ -612,16 +718,16 @@ $projectBaseUrl = "/campuscare-api";
                 <div class="feature-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
                 </div>
-                <h3>3. Career & Placement</h3>
-                <p>Assistance provided for vocational and occupational fitness. Our resources aim to help individuals in their pursuit of suitable employment opportunities.</p>
+                <h3>Mental Health Tools</h3>
+                <p>Self-assessments and practical guides to help students understand needs and access timely support.</p>
             </div>
 
             <div class="feature-card">
                 <div class="feature-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
                 </div>
-                <h3>4. Economic Enterprise</h3>
-                <p>Programs catering to the economic needs of students, including student cooperatives, entrepreneurial projects, income-generating plans, and savings.</p>
+                <h3>Event Calendar</h3>
+                <p>Stay updated with key dates, wellness events, consultation schedules, and student support activities.</p>
             </div>
             
             <div class="feature-card">
@@ -724,28 +830,37 @@ $projectBaseUrl = "/campuscare-api";
     <footer id="contact">
         <div class="footer-grid">
             <div class="footer-col">
-                <h4>Bukidnon State University</h4>
+                <h4>WELLNESS TIP</h4>
+                <p>"Small steps every day create a stronger, healthier you."</p>
+            </div>
+            <div class="footer-col">
+                <h4>Featured Announcements</h4>
                 <p>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                    Fortich Street, Malaybalay City, Bukidnon
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    Wellbeing Fair
+                </p>
+                <p>Apr 28 - 7AM</p>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <p>
+                    <a href="#about">About Us</a>
+                    <a href="#services">Services</a>
+                </p>
+                <p>
+                    <a href="#team">Workshops</a>
+                    <a href="#contact">Resources</a>
                 </p>
             </div>
             <div class="footer-col">
-                <h4>Contact SWEU</h4>
+                <h4>Connect</h4>
                 <p>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                    <a href="mailto:guidancecenter@buksu.edu.ph">guidancecenter@buksu.edu.ph</a>
+                    <a href="https://www.facebook.com/profile.php?id=100064439169420" target="_blank">Facebook</a>
+                    <a href="#">Twitter</a>
+                    <a href="#">Instagram</a>
                 </p>
                 <p>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                    <a href="mailto:testingcenter@buksu.edu.ph">testingcenter@buksu.edu.ph</a>
-                </p>
-            </div>
-            <div class="footer-col">
-                <h4>Connect With Us</h4>
-                <p>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-                    <a href="https://www.facebook.com/profile.php?id=100064439169420" target="_blank">BukSU - University Guidance Center</a>
+                    <img src="<?php echo $projectBaseUrl; ?>/php-frontend/assets/images/buksulogo.png" alt="CampusCare Logo" style="height: 28px; width: auto;">
                 </p>
             </div>
         </div>

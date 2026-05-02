@@ -244,7 +244,11 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
             <?php endif; ?>
 
+<<<<<<< HEAD
             <form method="POST" class="<?php echo $isIframe ? "" : "card"; ?>" style="padding: 22px;">
+=======
+            <form method="POST" class="card">
+>>>>>>> 9e50a9e3d5fc6514c6ee8c81f7a84319be930e0c
                 <style>
                 <?php if ($isIframe): ?>
                 body {
@@ -280,9 +284,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <?php endif; ?>
 
                 .intake-form-shell {
-                    border: 1px solid var(--border);
-                    border-radius: 20px;
-                    background: linear-gradient(180deg, rgba(77, 143, 197, 0.08) 0%, rgba(255, 255, 255, 0) 180px), var(--card-bg);
+                    
                 }
 
                 .intake-section {
