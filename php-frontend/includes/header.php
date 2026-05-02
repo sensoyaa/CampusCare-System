@@ -17,7 +17,9 @@ $darkModeEnabled = in_array($darkModeCookie, ["true", "1", "yes", "on"], true);
     <link rel="icon" type="image/png" href="/campuscare-api/php-frontend/assets/images/logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/campuscare-api/php-frontend/assets/style.css">
-    <link rel="stylesheet" href="/campuscare-api/php-frontend/assets/compact.css">
+    <?php if (basename($_SERVER["PHP_SELF"]) === "event_detail.php"): ?>
+    <link rel="stylesheet" href="/campuscare-api/php-frontend/css/event_detail.css">
+    <?php endif; ?>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Enhanced Alert System -->

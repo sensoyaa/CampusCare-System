@@ -532,7 +532,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 ];
                             ?>
                             <article class="event-card" 
-                                onclick="openEventModal(<?php echo $eventId; ?>)" 
+                                onclick="window.location.href='/campuscare-api/php-frontend/pages/events/event_detail.php?id=<?php echo $eventId; ?>'" 
                                 data-debug="<?php echo htmlspecialchars(json_encode($debugData)); ?>"
                                 data-event-start="<?php echo htmlspecialchars(date("c", strtotime($event["starts_at"]))); ?>"
                                 data-event-end="<?php echo !empty($event["ends_at"]) ? htmlspecialchars(date("c", strtotime($event["ends_at"]))) : ""; ?>"
