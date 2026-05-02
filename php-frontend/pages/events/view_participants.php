@@ -23,10 +23,12 @@ $sql = "
         e.event_time,
         u.id AS user_id,
         u.full_name,
-        u.student_id
+        u.student_id,
+        CASE WHEN ec.id IS NOT NULL THEN 1 ELSE 0 END AS is_checked_in
     FROM events e
     LEFT JOIN event_participants ep ON e.id = ep.event_id
     LEFT JOIN users u ON ep.user_id = u.id
+    LEFT JOIN event_checkins ec ON e.id = ec.event_id AND u.id = ec.user_id
     ORDER BY e.event_date ASC, e.event_time ASC, e.title ASC
 ";
 
@@ -50,6 +52,7 @@ while ($row = $result->fetch_assoc()) {
         $events[$eventId]["participants"][] = [
             "name" => (string) ($row["full_name"] ?? "Student"),
             "id" => (string) (($row["student_id"] ?? "") !== "" ? $row["student_id"] : "N/A"),
+            "is_checked_in" => (bool) ($row["is_checked_in"] ?? 0),
         ];
     }
 }
@@ -145,12 +148,16 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                             <?php
                                                 $participantName = (string) ($participant["name"] ?? "Student");
                                                 $participantId = (string) ($participant["id"] ?? "N/A");
+                                                $isCheckedIn = (bool) ($participant["is_checked_in"] ?? false);
                                             ?>
 
-                                            <div class="facilitator-participant-row">
+                                            <div class="facilitator-participant-row" data-checkedin="<?php echo $isCheckedIn ? '1' : '0'; ?>" data-student-id="<?php echo htmlspecialchars($participantId); ?>">
                                                 <span class="facilitator-participant-avatar"><?php echo strtoupper(substr($participantName, 0, 1)); ?></span>
                                                 <span class="facilitator-participant-name"><?php echo htmlspecialchars($participantName); ?></span>
                                                 <span class="facilitator-participant-id"><?php echo htmlspecialchars($participantId); ?></span>
+                                                <?php if ($isCheckedIn): ?>
+                                                    <span class="checkin-badge">Checked In</span>
+                                                <?php endif; ?>
                                             </div>
                                         <?php endforeach; ?>
                                     </div>

@@ -2547,11 +2547,20 @@ body.theme-dark .announcement-chevron {
 .modal-card {
   width: 100%;
   max-width: 510px;
+  max-height: 85vh;
   background: #fff;
   border-radius: 14px;
   border: 1px solid var(--border);
   box-shadow: 0 18px 40px rgba(20, 37, 56, 0.35);
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-card > *:not(.modal-head):not(.modal-header):not(.modal-actions):not(.event-modal-head):not(.event-modal-footer) {
+  overflow-y: auto;
+  flex: 1;
 }
 
 .modal-head {
@@ -2573,6 +2582,18 @@ body.theme-dark .announcement-chevron {
   width: 28px;
   height: 28px;
   border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  position: relative;
+  z-index: 10;
+}
+
+.modal-close::-webkit-scrollbar {
+  display: none;
 }
 
 .modal-close:hover {
@@ -2832,6 +2853,15 @@ textarea:focus {
     color 0.2s ease,
     box-shadow 0.2s ease,
     transform 0.06s ease;
+  gap: 8px;
+}
+
+.btn svg,
+.btn-primary svg,
+.btn-outline svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .btn,
@@ -2868,9 +2898,9 @@ textarea:focus {
 }
 
 .btn-outline:hover {
-  background: #edf4fb;
+  background: ##2f6d9f;
   border-color: #9eb9d3;
-  color: #2f6d9f;
+  color: #fff;
 }
 
 .btn-outline:active {
@@ -4355,12 +4385,17 @@ textarea:focus {
 }
 
 .modal-card {
+  margin: 0 auto;
   background: white;
   border-radius: 22px;
   padding: 26px;
   width: 100%;
   max-width: 480px;
+  max-height: 85vh;
   box-shadow: 0 20px 50px rgba(20, 40, 60, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .modal-header {
@@ -4378,6 +4413,18 @@ textarea:focus {
   border-radius: 10px;
   cursor: pointer;
   font-size: 22px;
+  overflow: hidden;
+  flex-shrink: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  position: relative;
+  z-index: 10;
+}
+
+.modal-close::-webkit-scrollbar {
+  display: none;
 }
 
 .empty-row {
@@ -4964,6 +5011,60 @@ textarea:focus {
   font-family: Consolas, "Courier New", monospace;
 }
 
+.checkin-badge {
+  background: #2f8d57;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.joined-status {
+  background: #e5f1fb;
+  color: #2f6d9f;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: default;
+  pointer-events: none;
+}
+
+.joined-btn {
+  background: #e5f1fb;
+  color: #2f6d9f;
+  border: 1px solid #d0e1f0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.joined-btn:hover {
+  background: #e5f1fb;
+  color: #2f6d9f;
+  border-color: #d0e1f0;
+  cursor: not-allowed;
+}
+
+/* Disabled joined button should match joined-status appearance */
+.joined-btn[disabled] {
+  background: #e5f1fb;
+  color: #2f6d9f;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: default;
+  pointer-events: none;
+  border: none;
+}
+
 .chat-fab-icon svg {
   width: 24px;
   height: 24px;
@@ -5455,6 +5556,17 @@ textarea:focus {
   gap: 16px;
 }
 
+#openCreateModal{
+  font-size: 14px;
+  background: #4b8fc4;
+  border-color: #4b8fc4;
+  color: #fff;
+  border-radius: 14px;
+  padding: 10px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .event-card {
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -5470,7 +5582,6 @@ textarea:focus {
 
 .event-card:hover {
   box-shadow: 0 4px 16px rgba(77, 143, 197, 0.15);
-  border-color: var(--primary);
   transform: translateY(-2px);
 }
 
@@ -5565,8 +5676,8 @@ textarea:focus {
 
 .event-card-footer {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
   min-width: 150px;
   margin-left: auto;
 }
@@ -5580,6 +5691,10 @@ textarea:focus {
 
 .event-card-action-form {
   margin: 0;
+}
+
+.event-card-actions-row .event-card-action-form {
+  display: inline-block;
 }
 
 .event-manage-actions {
@@ -5596,12 +5711,15 @@ textarea:focus {
 }
 
 .event-join-btn {
+  padding: 8px 16px;
+  font-size: 13px;
   min-width: 96px;
   min-height: 38px;
   justify-content: center;
 }
 
 .event-card-attendees {
+  margin-top: 12px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -5651,6 +5769,199 @@ textarea:focus {
 /* Event Details Modal */
 .event-details-modal {
   max-width: 500px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.event-details-modal .event-modal-body {
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Check-in Styles */
+.checkin-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #e5f7eb;
+  color: #2f8d57;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.checkin-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: #2f8d57;
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+}
+
+.checkin-btn {
+  background: #2f8d57;
+  border-color: #2f8d57;
+}
+
+.checkin-btn:hover {
+  background: #267a4a;
+  border-color: #267a4a;
+}
+
+/* Event Card Check-in Styles */
+.event-card-actions-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.event-card-actions-row .event-card-action-form {
+  display: flex;
+  align-items: center;
+}
+
+.event-card-actions-row .event-checkin-btn {
+  flex-shrink: 0;
+}
+
+.checkin-status-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #e5f7eb;
+  color: #2f8d57;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.checkin-status-card .checkin-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+}
+
+.event-checkin-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  background: #2f8d57;
+  border-color: #2f8d57;
+}
+
+.event-checkin-btn:hover {
+  background: white;
+  color: #2f8d57;
+  border-color: #2f8d57;
+}
+
+/* Event Join/Unjoin Button Styles */
+.event-join-btn {
+  background: white;
+  color: #2f8d57;
+  border-color: #2f8d57;
+  transition: all 0.2s ease;
+}
+
+.event-join-btn:hover {
+  background: #2f8d57;
+  color: white;
+  border-color: #2f8d57;
+}
+
+.event-join-btn.btn-outline {
+  background: white;
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.event-join-btn.btn-outline:hover {
+  background: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+/* Participants Styles */
+.participants-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.participants-info p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.participants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.participant-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.participant-item.checked-in {
+  background: #e5f7eb;
+  border-color: #c3e6cb;
+}
+
+.participant-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.participant-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-main);
+}
+
+.participant-role {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.checkin-badge {
+  padding: 4px 12px;
+  background: #2f8d57;
+  color: white;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.not-checked-in {
+  padding: 4px 12px;
+  background: #f8f9fa;
+  color: var(--text-muted);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.no-participants {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 24px;
 }
 
 .event-modal-head {
@@ -5759,9 +6070,13 @@ textarea:focus {
     justify-content: stretch;
   }
 
-  .event-manage-actions .btn,
-  .events-head-actions .btn {
+  .event-manage-actions .btn {
     flex: 1;
+    justify-content: center;
+  }
+
+  .events-head-actions .btn {
+    flex: 0 1 auto;
     justify-content: center;
   }
 

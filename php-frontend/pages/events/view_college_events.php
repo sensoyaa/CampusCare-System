@@ -112,6 +112,19 @@ if (!$eventsHasCategory) {
     $eventsHasCategory = eventColumnExists($conn, "category");
 }
 
+// Create event_checkins table if it doesn't exist
+$conn->query("
+    CREATE TABLE IF NOT EXISTS event_checkins (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        event_id INT NOT NULL,
+        user_id INT NOT NULL,
+        checked_in_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_event_user (event_id, user_id),
+        FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+");
+
 if ($eventsHasStartsAt && $eventsHasEventDate && $eventsHasEventTime) {
     $conn->query("UPDATE events SET starts_at = TIMESTAMP(event_date, event_time) WHERE starts_at IS NULL AND event_date IS NOT NULL AND event_time IS NOT NULL");
 }
@@ -291,6 +304,84 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $stmt->close();
         }
     }
+
+    if ($action === "checkin" && $canJoin) {
+        $event_id = intval($_POST["event_id"] ?? 0);
+
+        if ($event_id <= 0) {
+            $error = "Invalid event ID.";
+        } else {
+            // Check if user has joined the event
+            $checkJoinStmt = $conn->prepare("SELECT event_id FROM event_participants WHERE event_id = ? AND user_id = ?");
+            $checkJoinStmt->bind_param("ii", $event_id, $userId);
+            $checkJoinStmt->execute();
+            $joinResult = $checkJoinStmt->get_result();
+            
+            if ($joinResult->num_rows === 0) {
+                $error = "You must join the event before checking in.";
+            } else {
+                // Check if check-in window is valid (event has started)
+                $eventStmt = $conn->prepare("SELECT starts_at, ends_at FROM events WHERE id = ?");
+                $eventStmt->bind_param("i", $event_id);
+                $eventStmt->execute();
+                $eventResult = $eventStmt->get_result();
+                $eventRow = $eventResult->fetch_assoc();
+                
+                if ($eventRow) {
+                    $eventStart = strtotime($eventRow["starts_at"]);
+                    $eventEnd = !empty($eventRow["ends_at"]) ? strtotime($eventRow["ends_at"]) : ($eventStart + (2 * 60 * 60)); // 2 hours after start if no end time
+                    $currentTime = time();
+                    $checkInStart = $eventStart - (20 * 60); // 20 minutes before
+                    $checkInEnd = $eventEnd;
+                    
+                    // Debug logging
+                    error_log("Check-in Debug - Event Start: " . date("Y-m-d H:i:s", $eventStart));
+                    error_log("Check-in Debug - Event End: " . date("Y-m-d H:i:s", $eventEnd));
+                    error_log("Check-in Debug - Current Time: " . date("Y-m-d H:i:s", $currentTime));
+                    error_log("Check-in Debug - Check-in Window: " . date("Y-m-d H:i:s", $checkInStart) . " to " . date("Y-m-d H:i:s", $checkInEnd));
+                    error_log("Check-in Debug - Is Check-in Window: " . ($currentTime >= $checkInStart && $currentTime <= $checkInEnd ? "Yes" : "No"));
+                    
+                    if ($currentTime < $checkInStart) {
+                        $error = "Check-in will be available 20 minutes before the event starts.";
+                    } elseif ($currentTime > $checkInEnd) {
+                        $error = "Check-in is no longer available for this event.";
+                    } else {
+                        // Check if already checked in
+                        $checkCheckinStmt = $conn->prepare("SELECT id FROM event_checkins WHERE event_id = ? AND user_id = ?");
+                        $checkCheckinStmt->bind_param("ii", $event_id, $userId);
+                        $checkCheckinStmt->execute();
+                        $checkinResult = $checkCheckinStmt->get_result();
+                        
+                        if ($checkinResult->num_rows > 0) {
+                            $error = "You have already checked in to this event.";
+                        } else {
+                            // Perform check-in
+                            $checkinStmt = $conn->prepare("INSERT INTO event_checkins (event_id, user_id) VALUES (?, ?)");
+                            $checkinStmt->bind_param("ii", $event_id, $userId);
+                            
+                            if ($checkinStmt->execute()) {
+                                $success = "You have successfully checked in to the event.";
+                                header("Refresh:0");
+                                exit;
+                            } else {
+                                $error = "Failed to check in to the event.";
+                            }
+                            
+                            $checkinStmt->close();
+                        }
+                        
+                        $checkCheckinStmt->close();
+                    }
+                } else {
+                    $error = "Event not found.";
+                }
+                
+                $eventStmt->close();
+            }
+            
+            $checkJoinStmt->close();
+        }
+    }
 }
 
 // Get events from selected college
@@ -309,7 +400,8 @@ $stmt = $conn->prepare("
         e.created_by_user_id,
         u.full_name AS created_by_name,
         {$collegeSelect} AS college,
-        (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) AS participant_count
+        (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) AS participant_count,
+        (SELECT COUNT(*) FROM event_checkins WHERE event_id = e.id) AS checkin_count
     FROM events e
     LEFT JOIN users u ON e.created_by_user_id = u.id
     WHERE {$eventCollegeWhere}
@@ -343,6 +435,21 @@ if ($canJoin) {
     $joinedStmt->close();
 }
 
+// Get user's checked-in events
+$checkedInEvents = [];
+if ($canJoin) {
+    $checkedInStmt = $conn->prepare("SELECT event_id FROM event_checkins WHERE user_id = ?");
+    $checkedInStmt->bind_param("i", $userId);
+    $checkedInStmt->execute();
+    $checkedInResult = $checkedInStmt->get_result();
+
+    while ($row = $checkedInResult->fetch_assoc()) {
+        $checkedInEvents[] = intval($row["event_id"]);
+    }
+
+    $checkedInStmt->close();
+}
+
 require_once __DIR__ . "/../../includes/header.php";
 require_once __DIR__ . "/../../includes/sidebar.php";
 ?>
@@ -363,6 +470,11 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <h1 class="page-title">Events from <?php echo htmlspecialchars($selectedCollege); ?></h1>
                     <p class="page-subtitle">Discover all available events</p>
                 </div>
+                <?php if (isset($_GET['debug_joins']) && $_GET['debug_joins'] == '1'): ?>
+                    <div class="alert alert-info" style="margin-left:16px;">
+                        <strong>Debug:</strong> Joined events for current user (id <?php echo intval($userId); ?>): <?php echo htmlspecialchars(implode(', ', $joinedEvents) ?: 'none'); ?>. Checked-in: <?php echo htmlspecialchars(implode(', ', $checkedInEvents) ?: 'none'); ?>.
+                    </div>
+                <?php endif; ?>
                 <div class="events-head-actions">
                     <?php if ($canCreateEvents): ?>
                         <button type="button" class="btn" id="openCreateModal">
@@ -394,6 +506,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             <?php
                                 $eventId = intval($event["id"]);
                                 $isJoined = in_array($eventId, $joinedEvents, true);
+                                $isCheckedIn = in_array($eventId, $checkedInEvents, true);
                                 $startDateTime = new DateTime($event["starts_at"]);
                                 $eventMonthLabel = $startDateTime->format("M");
                                 $eventDayLabel = $startDateTime->format("j");
@@ -403,8 +516,29 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 $displayTime = $endTimeStr !== "" ? $timeStr . " - " . $endTimeStr : $timeStr;
                                 $eventCategory = trim((string) ($event["category"] ?? "")) !== "" ? (string) $event["category"] : "Event";
                                 $eventDescription = trim((string) ($event["description"] ?? ""));
+                                $hasEventStarted = time() >= strtotime($event["starts_at"]);
+                                
+                                // Debug: Add data attributes for troubleshooting
+                                $debugData = [
+                                    'isJoined' => $isJoined,
+                                    'isCheckedIn' => $isCheckedIn,
+                                    'hasEventStarted' => $hasEventStarted,
+                                    'canJoin' => $canJoin,
+                                    'currentTime' => time(),
+                                    'currentTimeFormatted' => date("Y-m-d H:i:s"),
+                                    'eventStart' => strtotime($event["starts_at"]),
+                                    'eventStartFormatted' => $event["starts_at"],
+                                    'eventTitle' => $event["title"]
+                                ];
                             ?>
-                            <article class="event-card" onclick="openEventModal(<?php echo $eventId; ?>)">
+                            <article class="event-card" 
+                                onclick="openEventModal(<?php echo $eventId; ?>)" 
+                                data-debug="<?php echo htmlspecialchars(json_encode($debugData)); ?>"
+                                data-event-start="<?php echo htmlspecialchars(date("c", strtotime($event["starts_at"]))); ?>"
+                                data-event-end="<?php echo !empty($event["ends_at"]) ? htmlspecialchars(date("c", strtotime($event["ends_at"]))) : ""; ?>"
+                                data-event-id="<?php echo $eventId; ?>"
+                                data-joined="<?php echo $isJoined ? '1' : '0'; ?>"
+                                data-checkedin="<?php echo $isCheckedIn ? '1' : '0'; ?>">
                                 <div class="event-card-date">
                                     <span class="event-card-date-month"><?php echo htmlspecialchars($eventMonthLabel); ?></span>
                                     <span class="event-card-date-day"><?php echo htmlspecialchars($eventDayLabel); ?></span>
@@ -417,27 +551,43 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                     <div class="event-card-meta">
                                         <span><?php echo sidebarIconSvg("clock"); ?> <?php echo htmlspecialchars($displayTime); ?></span>
                                         <span><?php echo sidebarIconSvg("pin"); ?> <?php echo htmlspecialchars($event["location"]); ?></span>
-                                        <?php if ($eventDescription !== ""): ?>
-                                            <span><?php echo sidebarIconSvg("message"); ?> <?php echo htmlspecialchars($eventDescription); ?></span>
-                                        <?php endif; ?>
                                     </div>
                                 </div>
                                 <div class="event-card-footer" onclick="event.stopPropagation()">
                                     <div class="event-card-action-stack">
                                         <?php if ($canJoin): ?>
-                                            <?php if ($isJoined): ?>
-                                                <form method="POST" class="event-card-action-form">
-                                                    <input type="hidden" name="action" value="unjoin">
-                                                    <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
-                                                    <button type="submit" class="btn btn-outline event-join-btn">Unjoin</button>
-                                                </form>
-                                            <?php else: ?>
-                                                <form method="POST" class="event-card-action-form">
-                                                    <input type="hidden" name="action" value="join">
-                                                    <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
-                                                    <button type="submit" class="btn event-join-btn">Join</button>
-                                                </form>
-                                            <?php endif; ?>
+                                            <div class="event-card-actions-row">
+                                                <?php if ($isJoined): ?>
+                                                    <?php if ($isCheckedIn): ?>
+                                                        <div class="checkin-status-card">
+                                                            <span class="checkin-icon">✓</span>
+                                                            <span>Checked In</span>
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <form method="POST" class="event-card-action-form">
+                                                            <input type="hidden" name="action" value="checkin">
+                                                            <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
+                                                            <button type="submit" class="btn btn-primary event-checkin-btn" style="display: none;">Check In</button>
+                                                        </form>
+                                                    <?php endif; ?>
+
+                                                    <?php if (!$hasEventStarted): ?>
+                                                        <form method="POST" class="event-card-action-form">
+                                                            <input type="hidden" name="action" value="unjoin">
+                                                            <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
+                                                            <button type="submit" class="btn btn-outline event-join-btn event-unjoin-btn">Unjoin</button>
+                                                        </form>
+                                                    <?php else: ?>
+                                                        <button type="button" class="btn joined-btn" disabled>Joined</button>
+                                                    <?php endif; ?>
+                                                <?php else: ?>
+                                                    <form method="POST" class="event-card-action-form">
+                                                        <input type="hidden" name="action" value="join">
+                                                        <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">
+                                                        <button type="submit" class="btn event-join-btn">Join</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </div>
                                         <?php elseif ($canCreateEvents): ?>
                                             <div class="event-manage-actions">
                                                 <button
@@ -461,8 +611,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                         <?php else: ?>
                                             <span class="status-badge available">View Details</span>
                                         <?php endif; ?>
-                                        <span class="event-card-attendees"><?php echo sidebarIconSvg("users"); ?> <?php echo intval($event["participant_count"]); ?> joined</span>
                                     </div>
+                                    <span class="event-card-attendees"><?php echo sidebarIconSvg("users"); ?> <?php echo intval($event["participant_count"]); ?> joined</span>
                                 </div>
                             </article>
                         <?php endforeach; ?>
@@ -535,12 +685,28 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     </div>
 </div>
 
+<!-- Participants Modal -->
+<div id="participantsModal" class="modal-overlay">
+    <div class="modal-card event-details-modal">
+        <button class="modal-close" type="button" onclick="closeParticipantsModal()">&times;</button>
+        <div class="event-modal-head">
+            <h2>Event Participants</h2>
+        </div>
+        <div id="participantsModalContent" class="event-modal-body">
+            <!-- Populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
 <script>
 (function () {
     const allEvents = <?php echo json_encode($events); ?>;
     const joinedEvents = <?php echo json_encode($joinedEvents); ?>;
+    const checkedInEvents = <?php echo json_encode($checkedInEvents); ?>;
     const canJoin = <?php echo json_encode($canJoin); ?>;
     const userId = <?php echo json_encode($userId); ?>;
+    const canCreateEvents = <?php echo json_encode($canCreateEvents); ?>;
+    const userRole = <?php echo json_encode($role); ?>;
     const createModal = document.getElementById('createModal');
     const openCreateButton = document.getElementById('openCreateModal');
     const eventFormTitle = document.getElementById('eventFormTitle');
@@ -609,6 +775,18 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     window.openEventModal = function (eventId) {
         const event = allEvents.find(e => parseInt(e.id) === eventId);
         if (!event) return;
+        
+        // Debug: Log event card debug data
+        const eventCard = document.querySelector(`.event-card[data-event-id="${eventId}"]`) || 
+                         document.querySelector(`.event-card[onclick*="${eventId}"]`);
+        if (eventCard && eventCard.dataset.debug) {
+            try {
+                const debugData = JSON.parse(eventCard.dataset.debug);
+                console.log('Event Card Debug Data:', debugData);
+            } catch (e) {
+                console.error('Error parsing debug data:', e);
+            }
+        }
 
         const startDate = new Date(event.starts_at);
         const endDate = event.ends_at ? new Date(event.ends_at) : null;
@@ -618,23 +796,53 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         const endTimeStr = endDate ? endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'TBA';
 
         const isJoined = joinedEvents.includes(parseInt(event.id));
+        const isCheckedIn = checkedInEvents.includes(parseInt(event.id));
 
-        let joinButton = '';
+        // Calculate check-in window (align with server rules)
+        const eventStart = new Date(event.starts_at).getTime();
+        const currentTime = Date.now();
+        const checkInStart = eventStart - (20 * 60 * 1000); // 20 minutes before
+        const eventEnd = event.ends_at ? new Date(event.ends_at).getTime() : (eventStart + (2 * 60 * 60 * 1000));
+        const isCheckInWindow = currentTime >= checkInStart && currentTime <= eventEnd;
+        const hasEventStarted = currentTime >= eventStart;
+
+        let actionButtons = '';
         if (canJoin) {
-            if (isJoined) {
-                joinButton = `
+            if (isCheckedIn) {
+                actionButtons = `
+                    <div class="checkin-status checked-in">
+                        <span class="checkin-icon">✓</span>
+                        <span>You have checked in</span>
+                    </div>
+                `;
+            } else if (isJoined && isCheckInWindow) {
+                actionButtons = `
+                    <form method="POST" class="modal-form">
+                        <input type="hidden" name="action" value="checkin">
+                        <input type="hidden" name="event_id" value="${event.id}">
+                        <button type="submit" class="btn btn-primary checkin-btn">Check In</button>
+                    </form>
+                `;
+            }
+
+            if (isJoined && !hasEventStarted) {
+                actionButtons += `
                     <form method="POST" class="modal-form">
                         <input type="hidden" name="action" value="unjoin">
                         <input type="hidden" name="event_id" value="${event.id}">
-                        <button type="submit" class="btn btn-outline">Unjoin Event</button>
+                        <button type="submit" class="btn btn-outline event-join-btn">Unjoin Event</button>
                     </form>
                 `;
+            } else if (isJoined && hasEventStarted) {
+                actionButtons += `
+                    <button type="button" class="btn joined-btn" disabled>Joined</button>
+                `;
             } else {
-                joinButton = `
+                actionButtons += `
                     <form method="POST" class="modal-form">
                         <input type="hidden" name="action" value="join">
                         <input type="hidden" name="event_id" value="${event.id}">
-                        <button type="submit" class="btn btn-primary">Join Event</button>
+                        <button type="submit" class="btn event-join-btn">Join Event</button>
                     </form>
                 `;
             }
@@ -671,16 +879,72 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 </div>
                 <div class="event-detail-group">
                     <label>Participants</label>
-                    <p>${event.participant_count} people joined</p>
+                    ${canCreateEvents ? `
+                        <div class="participants-info">
+                            <p>${event.participant_count} joined, ${event.checkin_count || 0} checked in</p>
+                            <button type="button" class="btn btn-sm btn-outline view-participants-btn" data-event-id="${event.id}">View Participants</button>
+                        </div>
+                    ` : `<p>${event.participant_count} people joined</p>`}
                 </div>
             </div>
             <div class="event-modal-footer">
-                ${joinButton}
+                ${actionButtons}
             </div>
         `;
 
         document.getElementById('eventModalContent').innerHTML = content;
         document.getElementById('eventModal').classList.add('open');
+
+        // Add event listener for view participants button
+        const viewParticipantsBtn = document.querySelector('.view-participants-btn');
+        if (viewParticipantsBtn) {
+            viewParticipantsBtn.addEventListener('click', function() {
+                const eventId = this.getAttribute('data-event-id');
+                loadParticipants(eventId);
+            });
+        }
+    };
+
+    window.loadParticipants = function(eventId) {
+        fetch(`/campuscare-api/php-frontend/api/get_event_participants.php?event_id=${eventId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const participants = data.participants || [];
+                    let content = '';
+                    
+                    if (participants.length === 0) {
+                        content = `<p class="no-participants">No participants yet.</p>`;
+                    } else {
+                        content = `<div class="participants-list">`;
+                        participants.forEach(participant => {
+                            content += `
+                                <div class="participant-item ${participant.checked_in ? 'checked-in' : ''}">
+                                    <div class="participant-info">
+                                        <span class="participant-name">${participant.full_name}</span>
+                                        <span class="participant-role">${participant.role}</span>
+                                    </div>
+                                    ${participant.checked_in ? '<span class="checkin-badge">Checked In</span>' : '<span class="not-checked-in">Not Checked In</span>'}
+                                </div>
+                            `;
+                        });
+                        content += `</div>`;
+                    }
+                    
+                    document.getElementById('participantsModalContent').innerHTML = content;
+                    document.getElementById('participantsModal').classList.add('open');
+                } else {
+                    alert('Failed to load participants: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error loading participants:', error);
+                alert('Failed to load participants. Please try again.');
+            });
+    };
+
+    window.closeParticipantsModal = function() {
+        document.getElementById('participantsModal').classList.remove('open');
     };
 
     window.closeEventModal = function () {
@@ -701,6 +965,84 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             }
         }
     });
+
+    // Update check-in buttons based on browser time
+    function updateCheckInButtons() {
+        const currentTime = Date.now();
+        const eventCards = document.querySelectorAll('.event-card');
+
+        eventCards.forEach((card, index) => {
+            const eventStart = card.getAttribute('data-event-start');
+            if (!eventStart) return;
+
+            console.log(`Card ${index} - Event start string:`, eventStart);
+            const eventStartTime = new Date(eventStart).getTime();
+            console.log(`Card ${index} - Event start timestamp:`, eventStartTime, new Date(eventStartTime));
+            const eventEndAttr = card.getAttribute('data-event-end');
+            const eventEndTime = eventEndAttr ? new Date(eventEndAttr).getTime() : (eventStartTime + (2 * 60 * 60 * 1000));
+            console.log(`Card ${index} - Event end timestamp:`, eventEndTime, new Date(eventEndTime));
+
+            const checkInStart = eventStartTime - (20 * 60 * 1000); // 20 minutes before
+            const checkInEnd = eventEndTime; // until event ends
+            const isCheckInWindow = currentTime >= checkInStart && currentTime <= checkInEnd;
+            const hasEventStarted = currentTime >= eventStartTime;
+            console.log(`Card ${index} - Current time:`, currentTime, new Date(currentTime));
+            console.log(`Card ${index} - Check-in window:`, new Date(checkInStart), 'to', new Date(checkInEnd));
+            console.log(`Card ${index} - Is check-in window:`, isCheckInWindow);
+            console.log(`Card ${index} - Has event started:`, hasEventStarted);
+
+            const joined = card.getAttribute('data-joined') === '1';
+            const checkedIn = card.getAttribute('data-checkedin') === '1';
+
+            // Buttons/elements
+            const checkInBtn = card.querySelector('.event-checkin-btn');
+            const checkInStatus = card.querySelector('.checkin-status-card');
+            const joinBtn = card.querySelector('.event-join-btn');
+            const actionStack = card.querySelector('.event-card-action-stack');
+
+            // Show check-in button only when user joined and within window and not already checked in
+            if (checkInBtn) {
+                if (joined && !checkedIn && isCheckInWindow) {
+                    checkInBtn.style.display = 'inline-block';
+                } else {
+                    checkInBtn.style.display = 'none';
+                }
+            }
+
+            // If user already checked in, show the checkin status card
+            if (checkInStatus) {
+                checkInStatus.style.display = checkedIn ? 'flex' : 'none';
+            }
+
+            // Do not append a fake "Joined" marker. Only reflect server-side state.
+            if (joinBtn) {
+                // Only hide the Join button, not the Unjoin button or Joined button
+                // Unjoin button has the "event-unjoin-btn" class
+                // Joined button has the "joined-btn" class
+                if (!joinBtn.classList.contains('event-unjoin-btn') && !joinBtn.classList.contains('joined-btn')) {
+                    joinBtn.style.display = joined ? 'none' : 'inline-flex';
+                }
+            }
+
+            // Ensure joined-status element (server-rendered) visibility is consistent
+            // The joined-btn is only rendered by the server when the event has started
+            // The joined-status is only rendered by the server when the event has started and user has checked in
+            const joinedBtnElement = card.querySelector('.joined-btn');
+            const joinedStatusElement = card.querySelector('.joined-status');
+            
+            // Don't hide the joined-btn - it's already conditionally rendered by the server
+            // Only manage the joined-status element
+            if (joinedStatusElement) {
+                joinedStatusElement.style.display = joined ? 'inline-block' : 'none';
+            }
+        });
+    }
+    
+    // Run on page load
+    updateCheckInButtons();
+    
+    // Update every 30 seconds
+    setInterval(updateCheckInButtons, 30000);
 })();
 </script>
 
