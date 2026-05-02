@@ -99,10 +99,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <body class="login-page">
 <div class="form-page login-form-page">
     <div class="form-left login-hero">
-        <img
+         <img
             class="login-hero-image"
-            src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/LoginCover.png"
-            alt="CampusCare login cover"
+            src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/forgot_cover.png"
+            alt="CampusCare password reset cover"
             loading="eager"
             decoding="async"
         >

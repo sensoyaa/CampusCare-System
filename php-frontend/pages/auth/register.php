@@ -561,8 +561,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <div class="form-left login-hero">
         <img
             class="login-hero-image"
-            src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/Signin_cover.png"
-            alt="CampusCare registration cover"
+            src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/forgot_cover.png"
+            alt="CampusCare password reset cover"
             loading="eager"
             decoding="async"
         >
