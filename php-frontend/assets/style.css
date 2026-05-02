@@ -1428,6 +1428,16 @@ body.theme-dark .menu-lines {
   text-decoration: none;
   color: inherit;
   overflow: hidden;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.quick-card:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 18px 40px rgba(20, 45, 85, 0.08);
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
 .quick-card img {
