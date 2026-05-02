@@ -208,18 +208,34 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/logo.png">
     <link rel="stylesheet" href="<?php echo htmlspecialchars($frontendBaseUrl); ?>/assets/style.css">
 </head>
-<body>
-<div class="form-page">
-    <div class="form-left">
-        <div>
-            <img src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/logo.png" alt="CampusCare">
+<body class="login-page">
+<div class="form-page login-form-page">
+    <div class="form-left login-hero">
+        <img
+            class="login-hero-image"
+            src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/forgot_cover.png"
+            alt="CampusCare password reset cover"
+            loading="eager"
+            decoding="async"
+        >
+        <div class="login-hero-content">
             <h1>CampusCare</h1>
             <p>Your university mental health and wellness companion</p>
         </div>
     </div>
 
     <div class="form-right">
-        <div class="form-box">
+        <div class="form-box-forgot">
+            <div class="login-brand-row">
+                <p> Campus<span class="brand-second-c">C</span>are</p>
+                <img
+                    class="login-heartbeat"
+                    src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/Heartbeat.png"
+                    alt="Heartbeat icon"
+                    loading="eager"
+                    decoding="async"
+                >
+            </div>
             <h2>Forgot Password</h2>
             <p>
                 <?php echo $step === "verify" ? "Enter the 6-digit code we sent to your email" : "Enter your email to receive a reset code"; ?>
@@ -237,12 +253,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <form method="POST">
                     <input type="hidden" name="action" value="verify_code">
 
-                    <div class="form-group">
+                    <div class="form-group" style="margin: 10px 0;">
                         <label>Email</label>
                         <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" style="margin: 10px 0;">
                         <label>Verification Code</label>
                         <input type="text" name="reset_code" inputmode="numeric" maxlength="6" pattern="\d{6}" placeholder="Enter 6-digit code" required>
                     </div>

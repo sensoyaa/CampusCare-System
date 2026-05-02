@@ -1193,37 +1193,37 @@ body.theme-dark .menu-lines {
 }
 
 .summary-card {
-    background: #fff;
-    border-radius: 16px;
-    border: 1px solid var(--border);
-    padding: 18px 20px;
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  padding: 18px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
 }
 
 .summary-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    object-fit: contain;
-    flex-shrink: 0;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 /* Summary card icon badges (reuse announcement styles) */
 .summary-card .announcement-icon-wrap {
-    width: 52px;
-    height: 52px;
+  width: 52px;
+  height: 52px;
 }
 
 .summary-card .announcement-icon-wrap svg {
-    width: 30px;
-    height: 30px;
-    stroke-width: 1.8;
+  width: 30px;
+  height: 30px;
+  stroke-width: 1.8;
 }
 
 .summary-content {
-    flex: 1;
+  flex: 1;
 }
 
 .summary-card p {
@@ -1293,7 +1293,7 @@ body.theme-dark .menu-lines {
 }
 
 .tip-content {
-    font-size: 14px;
+  font-size: 14px;
   color: #fff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   max-width: 60%;
@@ -1428,6 +1428,16 @@ body.theme-dark .menu-lines {
   text-decoration: none;
   color: inherit;
   overflow: hidden;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.quick-card:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 18px 40px rgba(20, 45, 85, 0.08);
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
 .quick-card img {
@@ -2092,7 +2102,7 @@ body.theme-dark .menu-lines {
   border-radius: 18px;
   padding: 18px;
   box-shadow: 0 8px 20px rgba(25, 47, 72, 0.05);
-  height:auto;
+  height: auto;
 }
 
 .announcement-head-row {
@@ -2604,7 +2614,10 @@ body.theme-dark .announcement-chevron {
   overflow: hidden;
 }
 
-.modal-card > *:not(.modal-head):not(.modal-header):not(.modal-actions):not(.event-modal-head):not(.event-modal-footer) {
+.modal-card
+  > *:not(.modal-head):not(.modal-header):not(.modal-actions):not(
+    .event-modal-head
+  ):not(.event-modal-footer) {
   overflow-y: auto;
   flex: 1;
 }
@@ -2944,7 +2957,7 @@ textarea:focus {
 }
 
 .btn-outline:hover {
-  background: ##2f6d9f;
+  background: #2f6d9f;
   border-color: #9eb9d3;
   color: #fff;
 }
@@ -3609,6 +3622,25 @@ textarea:focus {
   justify-content: center;
   padding: 30px;
 }
+.form-box-forgot h2 {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.login-brand-row {
+  font-size: 50px;
+  font-weight: bolder;
+}
+
+.form-box-forgot {
+  width: 100%;
+  max-width: 460px;
+  text-align: center;
+}
+
+.login-page .form-box-forgot .form-group {
+  margin: 22px 0;
+}
 
 .form-box {
   width: 100%;
@@ -3651,6 +3683,25 @@ textarea:focus {
   padding: clamp(36px, 4vw, 70px) clamp(42px, 4.5vw, 70px)
     clamp(24px, 3vw, 50px);
   overflow: hidden;
+}
+.form-left_forgot-left {
+  width: 50%;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.forgot_cp {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  image-rendering: auto;
+  transform: translateZ(0);
 }
 
 .login-page .login-hero-image {
@@ -5613,7 +5664,7 @@ textarea:focus {
 
 .college-selector-card h4 {
   text-align: center;
-    display: flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   font-size: 17px;
@@ -5629,6 +5680,7 @@ textarea:focus {
   gap: 16px;
 }
 
+<<<<<<< HEAD
 /* Events Subsection */
 .events-subsection {
   margin-bottom: 32px;
@@ -5645,6 +5697,9 @@ textarea:focus {
 #openCreateModal{
 
 #openCreateModal{
+=======
+#openCreateModal {
+>>>>>>> c70d232b5357689a065471db87b8a1efdbe963dc
   font-size: 14px;
   background: #4b8fc4;
   border-color: #4b8fc4;
