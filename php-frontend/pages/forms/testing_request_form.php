@@ -29,13 +29,21 @@ function testing_request_summary(array $formState): array
         "title" => "Testing Request",
         "sections" => [
             [
-                "title" => "Request Details",
+                "title" => "Applicant Section",
                 "entries" => [
                     ["label" => "Target Student", "value" => (string) ($formState["target_student_name"] ?? "")],
                     ["label" => "Date", "value" => (string) ($formState["request_date"] ?? "")],
-                    ["label" => "Purpose", "value" => (string) ($formState["purpose"] ?? ""), "full" => true],
                     ["label" => "Organization/Office", "value" => (string) ($formState["organization_office"] ?? "")],
+                    ["label" => "Address", "value" => (string) ($formState["address"] ?? ""), "full" => true],
+                    ["label" => "Purpose", "value" => (string) ($formState["purpose"] ?? ""), "full" => true],
                     ["label" => "Applicant Signature", "value" => (string) ($formState["applicant_name_signature_typed"] ?? ""), "signature" => (string) ($formState["applicant_name_signature_drawn"] ?? "")],
+                ],
+            ],
+            [
+                "title" => "Counselor/Psychometrician Section",
+                "entries" => [
+                    ["label" => "Type of Tests", "value" => (string) ($formState["counselor_type_of_tests"] ?? ""), "full" => true],
+                    ["label" => "Counselor Notes", "value" => (string) ($formState["counselor_notes"] ?? ""), "full" => true],
                 ],
             ],
         ],
@@ -520,8 +528,145 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         });
     }
 
+    var embeddedFormElement = document.querySelector("form");
+    var embeddedFormDraftKey = "campuscare_form_draft_testing_<?php echo intval($userId); ?>";
+
+    function normalizeDraftFieldName(name) {
+        return name.slice(-2) === "[]" ? name.slice(0, -2) : name;
+    }
+
+    function readDraftState() {
+        try {
+            var raw = sessionStorage.getItem(embeddedFormDraftKey);
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function hasMeaningfulDraftValue(value) {
+        if (Array.isArray(value)) {
+            return value.some(hasMeaningfulDraftValue);
+        }
+
+        return String(value || "").trim() !== "";
+    }
+
+    function applyDraftState(draft) {
+        if (!draft || typeof draft !== "object" || !embeddedFormElement || embeddedFormIsViewMode) {
+            return false;
+        }
+
+        Array.prototype.forEach.call(embeddedFormElement.elements, function (field) {
+            if (!field || !field.name) {
+                return;
+            }
+
+            var normalizedName = normalizeDraftFieldName(field.name);
+            if (!Object.prototype.hasOwnProperty.call(draft, normalizedName)) {
+                return;
+            }
+
+            var savedValue = draft[normalizedName];
+
+            if (field.type === "checkbox") {
+                if (Array.isArray(savedValue)) {
+                    field.checked = savedValue.indexOf(field.value) !== -1;
+                } else {
+                    field.checked = !!savedValue;
+                }
+                return;
+            }
+
+            if (field.type === "radio") {
+                field.checked = String(savedValue) === String(field.value);
+                return;
+            }
+
+            if (field.type !== "file") {
+                field.value = Array.isArray(savedValue) ? (savedValue[0] || "") : savedValue;
+            }
+        });
+
+        return true;
+    }
+
+    function collectDraftState() {
+        if (!embeddedFormElement) {
+            return {};
+        }
+
+        var state = {};
+
+        Array.prototype.forEach.call(embeddedFormElement.elements, function (field) {
+            if (!field || !field.name || field.disabled || field.type === "file") {
+                return;
+            }
+
+            var normalizedName = normalizeDraftFieldName(field.name);
+
+            if (field.type === "checkbox") {
+                if (field.name.slice(-2) === "[]") {
+                    if (!Array.isArray(state[normalizedName])) {
+                        state[normalizedName] = [];
+                    }
+                    if (field.checked) {
+                        state[normalizedName].push(field.value);
+                    }
+                } else {
+                    state[normalizedName] = field.checked;
+                }
+                return;
+            }
+
+            if (field.type === "radio") {
+                if (field.checked) {
+                    state[normalizedName] = field.value;
+                }
+                return;
+            }
+
+            state[normalizedName] = field.value;
+        });
+
+        return state;
+    }
+
+    function persistDraftState() {
+        if (embeddedFormIsViewMode) {
+            return;
+        }
+
+        var state = collectDraftState();
+        var hasDraftData = Object.keys(state).some(function (key) {
+            return hasMeaningfulDraftValue(state[key]);
+        });
+
+        try {
+            if (hasDraftData) {
+                sessionStorage.setItem(embeddedFormDraftKey, JSON.stringify(state));
+            } else {
+                sessionStorage.removeItem(embeddedFormDraftKey);
+            }
+        } catch (error) {}
+    }
+
+    function clearDraftState() {
+        try {
+            sessionStorage.removeItem(embeddedFormDraftKey);
+        } catch (error) {}
+    }
+
+    var restoredDraftState = readDraftState();
+    var hasRestoredDraft = applyDraftState(restoredDraftState);
+
     setupSignaturePad("applicantSignaturePad", "applicant_name_signature_drawn", "clearApplicantSignature", "undoApplicantSignature");
     applyEmbeddedFormMode();
+
+    if (embeddedFormElement && !embeddedFormIsViewMode) {
+        embeddedFormElement.addEventListener("input", persistDraftState);
+        embeddedFormElement.addEventListener("change", persistDraftState);
+    }
 
     var studentSelect = document.getElementById("target_student_user_id");
     var studentName = document.getElementById("target_student_name");
@@ -543,6 +688,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             formType: "testing",
             isViewMode: <?php echo $isViewMode ? "true" : "false"; ?>,
             hasSavedData: <?php echo $hasExistingSubmission ? "true" : "false"; ?>,
+            hasDraftData: hasRestoredDraft,
             message: <?php echo json_encode($hasExistingSubmission ? "Your latest testing request form is loaded." : "Fill out the testing request form to continue."); ?>,
             previewUrl: <?php echo json_encode($lastSubmittedId > 0 ? "/campuscare-api/php-frontend/pages/forms/testing_request_preview.php?id=" . intval($lastSubmittedId) : ""); ?>,
             summary: <?php echo json_encode($hasExistingSubmission ? testing_request_summary($formState) : null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
@@ -551,6 +697,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     <?php endif; ?>
 
     <?php if ($success !== ""): ?>
+    clearDraftState();
     if (window.parent && window.parent !== window) {
         window.parent.postMessage({
             type: "campuscare-form-saved",

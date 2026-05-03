@@ -46,6 +46,12 @@ function preview_value(array $payload, string $key): string
     return trim((string) ($payload[$key] ?? ""));
 }
 
+function preview_display(array $payload, string $key): string
+{
+    $value = preview_value($payload, $key);
+    return $value !== "" ? $value : "-";
+}
+
 function preview_yes_no(array $payload, string $key): string
 {
     $value = preview_value($payload, $key);
@@ -452,10 +458,20 @@ $addressLabel = !empty($addressParts) ? implode(", ", $addressParts) : "-";
                     <section class="panel">
                         <h2>Emergency and Medical</h2>
                         <div class="field-grid">
-                            <div class="field"><strong>Emergency Contact</strong><div><?php echo htmlspecialchars(preview_value($payload, "emergency_contact_name")); ?></div></div>
-                            <div class="field"><strong>Relationship</strong><div><?php echo htmlspecialchars(preview_value($payload, "emergency_contact_relationship")); ?></div></div>
-                            <div class="field full"><strong>Contact Number</strong><div><?php echo htmlspecialchars(preview_value($payload, "emergency_contact_number")); ?></div></div>
+                            <div class="field"><strong>Emergency Contact</strong><div><?php echo htmlspecialchars(preview_display($payload, "emergency_contact_name")); ?></div></div>
+                            <div class="field"><strong>Relationship</strong><div><?php echo htmlspecialchars(preview_display($payload, "emergency_contact_relationship")); ?></div></div>
+                            <div class="field full"><strong>Contact Number</strong><div><?php echo htmlspecialchars(preview_display($payload, "emergency_contact_number")); ?></div></div>
                             <div class="field full"><strong>Medical History</strong><div><?php echo htmlspecialchars(!empty($medicalHistory) ? implode(", ", $medicalHistory) : "-"); ?></div></div>
+                            <div class="field full"><strong>Other Medical Details</strong><div><?php echo nl2br(htmlspecialchars(preview_display($payload, "medical_history_other"))); ?></div></div>
+                            <div class="field full"><strong>Family Medical History</strong><div><?php echo nl2br(htmlspecialchars(preview_display($payload, "family_medical_history"))); ?></div></div>
+                            <div class="field"><strong>Tobacco Use</strong><div><?php echo htmlspecialchars(preview_yes_no($payload, "tobacco_use")); ?></div></div>
+                            <div class="field"><strong>Alcohol Use</strong><div><?php echo htmlspecialchars(preview_yes_no($payload, "alcohol_use")); ?></div></div>
+                            <div class="field"><strong>Caffeine Use</strong><div><?php echo htmlspecialchars(preview_yes_no($payload, "caffeine_use")); ?></div></div>
+                            <div class="field"><strong>Drug Use</strong><div><?php echo htmlspecialchars(preview_yes_no($payload, "drug_use")); ?></div></div>
+                            <div class="field"><strong>Prescription Medication</strong><div><?php echo htmlspecialchars(preview_yes_no($payload, "takes_prescription_medication")); ?></div></div>
+                            <div class="field full"><strong>Prescription Details</strong><div><?php echo nl2br(htmlspecialchars(preview_display($payload, "prescription_details"))); ?></div></div>
+                            <div class="field"><strong>Surgeries in Past 5 Years</strong><div><?php echo htmlspecialchars(preview_yes_no($payload, "surgeries_past_5_years")); ?></div></div>
+                            <div class="field full"><strong>Surgery Details</strong><div><?php echo nl2br(htmlspecialchars(preview_display($payload, "surgeries_details"))); ?></div></div>
                         </div>
                     </section>
 

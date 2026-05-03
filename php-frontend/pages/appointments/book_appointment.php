@@ -139,21 +139,24 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         * { box-sizing: border-box; }
 
         .booking-shell {
-            max-width: 1120px;
-            margin: 28px auto 40px;
-            background: rgba(255, 255, 255, 0.86);
-            backdrop-filter: blur(14px);
-            border: 1px solid rgba(255, 255, 255, 0.75);
-            border-radius: 28px;
-            box-shadow: 0 24px 70px rgba(23, 59, 94, 0.16);
-            overflow: hidden;
+            max-width: 1160px;
+            margin: 0 auto 40px;
+            padding: 0 16px;
         }
 
         .booking-head {
+<<<<<<< HEAD
+            padding: 1.75rem 1.75rem 1.6rem;
+            background: linear-gradient(135deg, var(--primary) 0%, #5f99ca 100%);
+=======
             border-radius: 22px 22px 0 0;
             padding: 30px 34px 20px;
             background: var(--primary);
+>>>>>>> 4ddbe41e7dd058218afb228d232b60598ce6a767
             color: #fff;
+            border-radius: 22px;
+            margin-bottom: 1rem;
+            box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
         }
 
         .booking-head h1 {
@@ -186,6 +189,11 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }
 
         .booking-body {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.75);
+            border-radius: 22px;
+            box-shadow: 0 24px 70px rgba(23, 59, 94, 0.16);
             padding: 34px;
         }
 
@@ -1263,18 +1271,41 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
             .review-document-header,
             .review-document-meta,
-            .review-document-fields,
-            .review-document-fields.three-col,
             .review-document-footer {
                 break-inside: avoid;
             }
 
             .summary-section {
                 border-radius: 12px;
-                break-inside: avoid;
+                break-inside: auto;
+                page-break-inside: auto;
                 border-color: #111;
                 background: #fff;
                 box-shadow: none;
+                overflow: visible;
+            }
+
+            .review-document-fields,
+            .review-document-fields.three-col {
+                display: block;
+                break-inside: auto;
+                page-break-inside: auto;
+            }
+
+            .review-document-field {
+                display: block;
+                min-height: 0;
+                margin-bottom: 10px;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .review-document-field:last-child {
+                margin-bottom: 0;
+            }
+
+            .review-document-field.full {
+                grid-column: auto;
             }
 
             .summary-actions,
@@ -1753,7 +1784,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             persistBookingState();
         }
 
-        function setSelectedService(service) {
+        function setSelectedService(service, options = {}) {
+            const restoreStep = Number(options.restoreStep || 0);
+            const shouldRestoreStep = Number.isFinite(restoreStep) && restoreStep > 0;
+
             selectedService = service;
             resetEmbeddedFormState();
 
@@ -1775,7 +1809,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             }
 
             setEmbeddedFormMode("view");
-            currentStep = 2;
+            currentStep = shouldRestoreStep ? restoreStep : 2;
+            reviewEditActive = !!options.reviewEditActive;
             persistBookingState();
             updateStepUi();
         }
@@ -1912,6 +1947,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             }
 
             const documentTitle = String(embeddedFormSummary.title || "Counseling Intake Form").toUpperCase();
+            const renderedSections = embeddedFormSummary.sections.filter((section) => Array.isArray(section.entries) && section.entries.length > 0);
             formSummaryContent.innerHTML = `<div class="review-sheet">
                 <div class="review-sheet review-document">
                     <div class="review-document-header">
@@ -1953,11 +1989,11 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             </div>
                         </div>
                     </section>
-                    ${embeddedFormSummary.sections.map((section) => {
+                    ${renderedSections.map((section, sectionIndex) => {
                 const entries = Array.isArray(section.entries) ? section.entries : [];
                 return `
                     <section class="summary-section">
-                        <h4>${escapeHtml(section.title || "")}</h4>
+                        <h4>${escapeHtml(section.title || `Section ${sectionIndex + 1}`)}</h4>
                         <div class="review-document-fields">
                             ${entries.map((entry) => `
                                 <div class="review-document-field ${entry.full ? "full" : ""}">
@@ -1974,7 +2010,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                         <div>Document Code: GCS-F-016</div>
                         <div>Revision No: 0</div>
                         <div>Issue Date: February 18, 2025</div>
-                        <div>Page 1 of 3</div>
+                        <div>${renderedSections.length} Section${renderedSections.length === 1 ? "" : "s"} Included</div>
                     </div>
                 </div>
             </div>`;
@@ -2212,6 +2248,11 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     formSaveStatus.textContent = "Form saved";
                     formSaveStatus.className = "status-badge saved";
                     formEditToolbar.classList.add("visible");
+                } else if (event.data.hasDraftData) {
+                    embeddedFormSaved = false;
+                    formSaveStatus.textContent = "Draft restored";
+                    formSaveStatus.className = "status-badge";
+                    formEditToolbar.classList.remove("visible");
                 } else {
                     embeddedFormSaved = false;
                     formSaveStatus.textContent = "Waiting for form";
@@ -2227,10 +2268,14 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     ? "Form saved. Your information is currently read-only."
                     : "Edit mode is on. Update your information, then save to lock it again.";
 
+                if (event.data.summary) {
+                    embeddedFormSummary = event.data.summary;
+                }
+
                 if (currentStep === 4) {
                     renderReview();
                 }
-                if (pendingRestoreStep !== null && event.data.hasSavedData) {
+                if (pendingRestoreStep !== null && (event.data.hasSavedData || event.data.hasDraftData || currentFormMode === "edit")) {
                     currentStep = pendingRestoreStep;
                     pendingRestoreStep = null;
                 }
@@ -2348,7 +2393,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             pendingRestoreStep = Number(savedBookingState.step || 2);
             reviewEditActive = !!savedBookingState.reviewEditActive;
             returnStepAfterSave = pendingRestoreStep === 4 ? 4 : 3;
-            setSelectedService(String(savedBookingState.service));
+            setSelectedService(String(savedBookingState.service), {
+                restoreStep: pendingRestoreStep,
+                reviewEditActive: reviewEditActive
+            });
             if (savedBookingState.currentFormMode === "edit") {
                 setEmbeddedFormMode("edit");
             }
