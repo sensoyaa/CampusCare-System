@@ -1113,7 +1113,9 @@ body.theme-dark .menu-lines {
 }
 
 .page-subtitle {
-  color: white;
+  tab-size: 4; 
+  white-space: pre;
+  color: rgb(0, 0, 0);
   font-size: 14px;
   line-height: 1.45;
 }
@@ -2396,6 +2398,25 @@ body.theme-dark .announcement-chevron {
   gap: 14px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 28px;
+}
+
+/* Center ID / Joined / Check-in Time / Status columns in participants tables */
+.participants-header span:nth-child(2),
+.participants-row span:nth-child(2),
+.participants-header span:nth-child(3),
+.participants-row span:nth-child(3),
+.participants-header span:nth-child(4),
+.participants-row span:nth-child(4),
+.participants-header span:nth-child(5),
+.participants-row span:nth-child(5) {
+  justify-self: center;
+  text-align: center;
+}
+
+/* Ensure the status badge column is centered */
+.participant-status {
+  justify-self: center;
+  text-align: center;
 }
 
 .counselor-quick-card {
@@ -6111,6 +6132,116 @@ body.theme-dark .status-badge.muted {
   text-align: center;
   color: var(--text-muted);
   padding: 24px;
+}
+
+/* Event Detail Participants Table */
+.event-detail-participants {
+  margin-top: 32px;
+  margin-bottom: 32px;
+}
+
+.event-detail-participants h2 {
+  font-size: 1.5em;
+  color: var(--text-main);
+  margin-bottom: 20px;
+}
+
+.participants-table {
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+}
+
+.participants-header {
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  grid-template-columns: 2fr 1fr 1.2fr 1.5fr 1fr;
+  padding: 14px 18px;
+  background: #f8fafb;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  gap: 12px;
+}
+
+.participants-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.2fr 1.5fr 1fr;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  gap: 12px;
+  transition: background-color 0.15s ease;
+}
+
+.participants-row:hover {
+  background-color: #fafbfc;
+}
+
+.participants-row:last-child {
+  border-bottom: none;
+}
+
+.participant-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-main);
+}
+
+.participant-id {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-family: "Courier New", monospace;
+}
+
+.participant-joined {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.participant-checkin-time {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.participant-status {
+  text-align: right;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.status-checked-in {
+  background: var(--success-soft);
+  color: var(--success-text);
+}
+
+.status-not-checked-in {
+  background: #f5f6f7;
+  color: var(--text-muted);
+}
+
+/* Dark mode adjustments */
+body.theme-dark .participants-header {
+  background: #1a2637;
+}
+
+body.theme-dark .participants-row:hover {
+  background-color: #151e2a;
 }
 
 .event-modal-head {

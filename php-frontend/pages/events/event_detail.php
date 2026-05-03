@@ -292,9 +292,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
-// Get participants list for admin/facilitator
+// Get participants list for admin/facilitator/counselor
 $participants = [];
-if (in_array($role, ["Administrator", "Facilitator"], true)) {
+if (in_array($role, ["Administrator", "Facilitator", "Counselor"], true)) {
     $participantsStmt = $conn->prepare("
         SELECT u.id, u.full_name, u.student_id, u.email, u.role,
                ep.joined_at,
@@ -549,8 +549,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <?php if ($isJoined): ?>
                         <section class="event-detail-comments">
                             <div class="section-heading">
-                                <span class="section-heading-icon"><?php echo sidebarIconSvg("message"); ?></span  >
-                            <h2>Comments & Discussion</h2>
+                                <span class="section-heading-icon"><?php echo sidebarIconSvg("message"); ?></span>
+                                <h2>Comments & Discussion</h2>
                             </div>
                             <!-- Add Comment Form -->
                             <form method="POST" class="comment-form">
@@ -595,23 +595,19 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                         </section>
                     <?php endif; ?>
 
-                <!-- Administrator/Facilitator View -->
-                <?php elseif (in_array($role, ["Administrator", "Facilitator"], true)): ?>
+                <!-- Administrator/Facilitator/Counselor View -->
+                <?php elseif (in_array($role, ["Administrator", "Facilitator", "Counselor"], true)): ?>
                     <!-- Event Management Actions -->
                     <section class="event-detail-admin-actions">
                         <a href="/campuscare-api/php-frontend/pages/events/events.php?edit=<?php echo $eventId; ?>" class="btn btn-outline">
                             <?php echo sidebarIconSvg("edit"); ?>
                             Edit Event
                         </a>
-                        <a href="/campuscare-api/php-frontend/pages/events/view_participants.php?id=<?php echo $eventId; ?>" class="btn btn-outline">
-                            <?php echo sidebarIconSvg("users"); ?>
-                            View Participants
-                        </a>
                     </section>
 
                     <!-- Participants List -->
                     <section class="event-detail-participants">
-                        <h2>Event Participants (<?php echo count($participants); ?>)</h2>
+                        <h2>Event Participants</h2>
 
                         <?php if (empty($participants)): ?>
                             <div class="no-participants">
@@ -623,6 +619,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                     <span>Name</span>
                                     <span>ID</span>
                                     <span>Joined</span>
+                                    <span>Check-in Time</span>
                                     <span>Status</span>
                                 </div>
                                 <?php foreach ($participants as $participant): ?>
@@ -635,6 +632,13 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                         </span>
                                         <span class="participant-joined">
                                             <?php echo date("M j, Y", strtotime($participant["joined_at"])); ?>
+                                        </span>
+                                        <span class="participant-checkin-time">
+                                            <?php if ($participant["checked_in_at"]): ?>
+                                                <?php echo date("M j, Y g:i A", strtotime($participant["checked_in_at"])); ?>
+                                            <?php else: ?>
+                                                -
+                                            <?php endif; ?>
                                         </span>
                                         <span class="participant-status">
                                             <?php if ($participant["checked_in_at"]): ?>

@@ -34,6 +34,10 @@ $navItems = [
         ],
         ["View Appointments", "schedule.php", "calendar"],
         ["Manage Schedule", "manage_schedule.php", "clock"],
+        "Events" => [
+            ["Manage Events", "events.php", "users"],
+            ["View Participants", "view_participants.php", "eye"]
+        ],
         ["Session Feedback", "session_feedback.php", "message"],
     ],
     "Facilitator" => [
@@ -43,7 +47,6 @@ $navItems = [
             ["Request Testing", "testing_request_form.php", "report"]
         ],
         ["Manage Events", "events.php", "users"],
-        ["View Participants", "view_participants.php", "eye"],
     ],
     "Instructor" => [
         ["Dashboard", "dashboard.php", "dashboard"],
@@ -75,7 +78,6 @@ function sidebarPageUrl($fileName)
         "reports.php" => "/campuscare-api/php-frontend/pages/reports/reports.php",
         "manage_schedule.php" => "/campuscare-api/php-frontend/pages/appointments/manage_schedule.php",
         "session_feedback.php" => "/campuscare-api/php-frontend/pages/reports/session_feedback.php",
-        "view_participants.php" => "/campuscare-api/php-frontend/pages/events/view_participants.php",
         "student_status.php" => "/campuscare-api/php-frontend/pages/users/student_status.php",
     ];
 

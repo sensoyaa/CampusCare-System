@@ -445,12 +445,6 @@ $facilitatorQuickActions = [
         "iconClass" => "blue",
     ],
     [
-        "title" => "View Participants",
-        "path" => "/campuscare-api/php-frontend/pages/events/view_participants.php",
-        "icon" => "users",
-        "iconClass" => "blue",
-    ],
-    [
         "title" => "Create Session",
         "path" => "/campuscare-api/php-frontend/pages/events/events.php?open=create",
         "icon" => "plus",

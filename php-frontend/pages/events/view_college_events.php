@@ -86,6 +86,7 @@ $eventsHasCreatedBy = eventColumnExists($conn, "created_by_user_id");
 $eventsHasEventDate = eventColumnExists($conn, "event_date");
 $eventsHasEventTime = eventColumnExists($conn, "event_time");
 $eventsHasCategory = eventColumnExists($conn, "category");
+$eventsHasParticipantLimit = eventColumnExists($conn, "participant_limit");
 
 if (!$eventsHasStartsAt) {
     $conn->query("ALTER TABLE events ADD COLUMN starts_at DATETIME DEFAULT NULL AFTER description");
@@ -110,6 +111,11 @@ if (!$eventsHasCollege) {
 if (!$eventsHasCategory) {
     $conn->query("ALTER TABLE events ADD COLUMN category VARCHAR(100) DEFAULT NULL AFTER description");
     $eventsHasCategory = eventColumnExists($conn, "category");
+}
+
+if (!$eventsHasParticipantLimit) {
+    $conn->query("ALTER TABLE events ADD COLUMN participant_limit INT(11) DEFAULT NULL AFTER college");
+    $eventsHasParticipantLimit = eventColumnExists($conn, "participant_limit");
 }
 
 // Create event_checkins table if it doesn't exist
@@ -144,6 +150,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $location = trim((string) ($_POST["location"] ?? ""));
         $startsAt = eventDateTimeFromInput((string) ($_POST["starts_at"] ?? ""));
         $endsAt = eventDateTimeFromInput((string) ($_POST["ends_at"] ?? ""));
+        $participantLimit = !empty($_POST["participant_limit"]) ? intval($_POST["participant_limit"]) : null;
         $eventDate = $startsAt !== null ? substr($startsAt, 0, 10) : null;
         $eventTime = $startsAt !== null ? substr($startsAt, 11, 8) : null;
         $openCreateModal = true;
@@ -155,21 +162,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } elseif ($eventsHasCollege && $eventsHasStartsAt && $eventsHasCreatedBy) {
             if ($eventsHasEventDate && $eventsHasEventTime) {
                 $stmt = $conn->prepare("
-                    INSERT INTO events (title, event_date, event_time, location, description, category, starts_at, ends_at, created_by_user_id, college)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO events (title, event_date, event_time, location, description, category, starts_at, ends_at, created_by_user_id, college, participant_limit)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
             } else {
                 $stmt = $conn->prepare("
-                    INSERT INTO events (title, description, category, location, starts_at, ends_at, created_by_user_id, college)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO events (title, description, category, location, starts_at, ends_at, created_by_user_id, college, participant_limit)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
             }
 
             if ($stmt) {
                 if ($eventsHasEventDate && $eventsHasEventTime) {
-                    $stmt->bind_param("ssssssssis", $title, $eventDate, $eventTime, $location, $description, $category, $startsAt, $endsAt, $userId, $selectedCollege);
+                    $stmt->bind_param("ssssssssisi", $title, $eventDate, $eventTime, $location, $description, $category, $startsAt, $endsAt, $userId, $selectedCollege, $participantLimit);
                 } else {
-                    $stmt->bind_param("ssssssis", $title, $description, $category, $location, $startsAt, $endsAt, $userId, $selectedCollege);
+                    $stmt->bind_param("ssssssisi", $title, $description, $category, $location, $startsAt, $endsAt, $userId, $selectedCollege, $participantLimit);
                 }
 
                 if ($stmt->execute()) {
@@ -195,6 +202,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $location = trim((string) ($_POST["location"] ?? ""));
         $startsAt = eventDateTimeFromInput((string) ($_POST["starts_at"] ?? ""));
         $endsAt = eventDateTimeFromInput((string) ($_POST["ends_at"] ?? ""));
+        $participantLimit = !empty($_POST["participant_limit"]) ? intval($_POST["participant_limit"]) : null;
         $eventDate = $startsAt !== null ? substr($startsAt, 0, 10) : null;
         $eventTime = $startsAt !== null ? substr($startsAt, 11, 8) : null;
 
@@ -207,12 +215,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } elseif ($eventsHasEventDate && $eventsHasEventTime) {
             $stmt = $conn->prepare("
                 UPDATE events
-                SET title = ?, event_date = ?, event_time = ?, location = ?, description = ?, category = ?, starts_at = ?, ends_at = ?, college = ?
+                SET title = ?, event_date = ?, event_time = ?, location = ?, description = ?, category = ?, starts_at = ?, ends_at = ?, college = ?, participant_limit = ?
                 WHERE id = ?
             ");
 
             if ($stmt) {
-                $stmt->bind_param("sssssssssi", $title, $eventDate, $eventTime, $location, $description, $category, $startsAt, $endsAt, $selectedCollege, $eventId);
+                $stmt->bind_param("sssssssssii", $title, $eventDate, $eventTime, $location, $description, $category, $startsAt, $endsAt, $selectedCollege, $participantLimit, $eventId);
 
                 if ($stmt->execute()) {
                     $stmt->close();
@@ -784,6 +792,11 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <div class="form-group">
                     <label for="eventEndsAt">Ends</label>
                     <input id="eventEndsAt" type="datetime-local" name="ends_at" value="<?php echo htmlspecialchars((string) ($_POST["ends_at"] ?? "")); ?>">
+                </div>
+
+                <div class="form-group">
+                    <label for="eventParticipantLimit">Participant Limit (Optional)</label>
+                    <input id="eventParticipantLimit" type="number" name="participant_limit" value="<?php echo htmlspecialchars((string) ($_POST["participant_limit"] ?? "")); ?>" placeholder="Leave empty for unlimited" min="1">
                 </div>
             </div>
 
