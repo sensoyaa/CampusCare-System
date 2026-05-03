@@ -16,7 +16,7 @@ $navItems = [
         ["Dashboard", "dashboard.php", "dashboard"],
         "Forms & Inbox" => [
             ["Intake Reviews", "counseling_intake_reviews.php", "eye"],
-            ["Referral Management", "referral_management.php", "message"],
+            ["Referral Inbox", "referral_inbox.php", "search"],
             ["Request Testing", "testing_request_form.php", "report"],
             ["Testing Inbox", "testing_requests_inbox.php", "search"]
         ],

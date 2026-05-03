@@ -321,6 +321,104 @@ if ($role === "Student" && $userId > 0) {
     if ($eventsThisMonthResult && ($row = $eventsThisMonthResult->fetch_assoc())) {
         $adminEventsThisMonth = intval($row["total"] ?? 0);
     }
+
+    // Enhanced admin data queries
+    $appointmentsByStatus = [];
+    $appointmentStatusResult = $conn->query(
+        "SELECT COALESCE(NULLIF(status, ''), 'Pending') AS status, COUNT(*) AS count
+         FROM appointments
+         GROUP BY status"
+    );
+    if ($appointmentStatusResult) {
+        while ($row = $appointmentStatusResult->fetch_assoc()) {
+            $appointmentsByStatus[] = [
+                "status" => (string) ($row["status"] ?? "Unknown"),
+                "count" => intval($row["count"] ?? 0)
+            ];
+        }
+    }
+
+    $usersByRole = [];
+    $userRoleResult = $conn->query(
+        "SELECT role, COUNT(*) AS count
+         FROM users
+         GROUP BY role"
+    );
+    if ($userRoleResult) {
+        while ($row = $userRoleResult->fetch_assoc()) {
+            $usersByRole[] = [
+                "role" => (string) ($row["role"] ?? "Unknown"),
+                "count" => intval($row["count"] ?? 0)
+            ];
+        }
+    }
+
+    $appointmentsTrend = [];
+    $trendResult = $conn->query(
+        "SELECT DATE(appointment_date) AS date, COUNT(*) AS count
+         FROM appointments
+         WHERE appointment_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+         GROUP BY DATE(appointment_date)
+         ORDER BY date ASC"
+    );
+    if ($trendResult) {
+        while ($row = $trendResult->fetch_assoc()) {
+            $appointmentsTrend[] = [
+                "date" => date("M d", strtotime((string) ($row["date"] ?? ""))),
+                "count" => intval($row["count"] ?? 0)
+            ];
+        }
+    }
+
+    $upcomingEvents = [];
+    $eventsResult = $conn->query(
+        "SELECT id, title, event_date, event_time
+         FROM events
+         WHERE event_date >= CURDATE()
+         ORDER BY event_date ASC, event_time ASC
+         LIMIT 10"
+    );
+    if ($eventsResult) {
+        while ($row = $eventsResult->fetch_assoc()) {
+            $upcomingEvents[] = [
+                "id" => intval($row["id"] ?? 0),
+                "title" => (string) ($row["title"] ?? "Event"),
+                "date" => date("M j, Y", strtotime((string) ($row["event_date"] ?? ""))),
+                "time" => date("g:i A", strtotime((string) ($row["event_time"] ?? "")))
+            ];
+        }
+    }
+
+    // Comprehensive reporting data
+    $activeUsers = 0;
+    $activeUsersResult = $conn->query(
+        "SELECT COUNT(DISTINCT user_id) AS total
+         FROM appointments
+         WHERE appointment_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
+    );
+    if ($activeUsersResult && ($row = $activeUsersResult->fetch_assoc())) {
+        $activeUsers = intval($row["total"] ?? 0);
+    }
+
+    $approvedAppointments = 0;
+    $approvedResult = $conn->query(
+        "SELECT COUNT(*) AS total
+         FROM appointments
+         WHERE COALESCE(NULLIF(status, ''), 'Pending') = 'Approved'"
+    );
+    if ($approvedResult && ($row = $approvedResult->fetch_assoc())) {
+        $approvedAppointments = intval($row["total"] ?? 0);
+    }
+
+    $cancelledAppointments = 0;
+    $cancelledResult = $conn->query(
+        "SELECT COUNT(*) AS total
+         FROM appointments
+         WHERE COALESCE(NULLIF(status, ''), 'Pending') = 'Cancelled'"
+    );
+    if ($cancelledResult && ($row = $cancelledResult->fetch_assoc())) {
+        $cancelledAppointments = intval($row["total"] ?? 0);
+    }
 } elseif ($role === "Facilitator") {
     $monthStart = date("Y-m-01");
     $monthEnd = date("Y-m-t");
@@ -809,51 +907,304 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 </section>
                 
             <?php elseif ($role === "Administrator"): ?>
-                <section class="admin-stats">
-                    <article class="admin-stat-card">
-                        <div class="admin-stat-top">
-                            <span class="admin-stat-icon text-blue"><?php echo sidebarIconSvg("users"); ?></span>
+                <section class="summary-grid">
+                    <article class="summary-card">
+                        <span class="announcement-icon-wrap announcement-tone-blue">
+                            <?php echo sidebarIconSvg("users"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>Total Users</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-primary"><?php echo number_format($adminTotalUsers); ?></span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
                         </div>
-                        <p class="admin-stat-value text-blue"><?php echo number_format($adminTotalUsers); ?></p>
-                        <p class="admin-stat-label">Total Users</p>
                     </article>
-
-                    <article class="admin-stat-card">
-                        <div class="admin-stat-top">
-                            <span class="admin-stat-icon text-blue"><?php echo sidebarIconSvg("calendar"); ?></span>
+                    <article class="summary-card">
+                        <span class="announcement-icon-wrap announcement-tone-blue">
+                            <?php echo sidebarIconSvg("calendar"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>Today's Appointments</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-primary"><?php echo number_format($adminTodayAppointments); ?></span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
                         </div>
-                        <p class="admin-stat-value text-blue"><?php echo number_format($adminTodayAppointments); ?></p>
-                        <p class="admin-stat-label">Today's Appointments</p>
                     </article>
-
-                    <article class="admin-stat-card">
-                        <div class="admin-stat-top">
-                            <span class="admin-stat-icon text-gold"><?php echo sidebarIconSvg("settings"); ?></span>
+                    <article class="summary-card">
+                        <span class="announcement-icon-wrap announcement-tone-gold">
+                            <?php echo sidebarIconSvg("settings"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>Pending Approvals</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-accent"><?php echo number_format($adminPendingApprovals); ?></span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
                         </div>
-                        <p class="admin-stat-value text-gold"><?php echo number_format($adminPendingApprovals); ?></p>
-                        <p class="admin-stat-label">Pending Approvals</p>
                     </article>
-
-                    <article class="admin-stat-card">
-                        <div class="admin-stat-top">
-                            <span class="admin-stat-icon text-blue"><?php echo sidebarIconSvg("report"); ?></span>
+                    <article class="summary-card">
+                        <span class="announcement-icon-wrap announcement-tone-blue">
+                            <?php echo sidebarIconSvg("report"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>Events This Month</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-primary"><?php echo number_format($adminEventsThisMonth); ?></span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
                         </div>
-                        <p class="admin-stat-value text-blue"><?php echo number_format($adminEventsThisMonth); ?></p>
-                        <p class="admin-stat-label">Events This Month</p>
                     </article>
                 </section>
 
-                <section>
-                    <h2 class="quick-title">Quick Actions</h2>
-                    <div class="admin-quick-grid">
-                        <?php foreach ($adminQuickActions as $action): ?>
-                            <a href="<?php echo htmlspecialchars($action["path"]); ?>" class="admin-quick-card">
-                                <span class="quick-icon <?php echo htmlspecialchars($action["iconClass"]); ?>"><?php echo sidebarIconSvg($action["icon"]); ?></span>
-                                <h3><?php echo htmlspecialchars($action["title"]); ?></h3>
-                            </a>
-                        <?php endforeach; ?>
+                <!-- Charts Section -->
+                <section class="admin-charts-grid">
+                    <div class="chart-card announcement-card">
+                        <h3 class="chart-title">Appointments by Status</h3>
+                        <div class="chart-container">
+                            <canvas id="appointmentStatusChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card announcement-card">
+                        <h3 class="chart-title">Users by Role</h3>
+                        <div class="chart-container">
+                            <canvas id="userRoleChart"></canvas>
+                        </div>
                     </div>
                 </section>
+
+                <!-- Appointments Trend Chart -->
+                <section class="announcement-card admin-trend-section">
+                    <h3 class="chart-title">Appointments Trend (Last 7 Days)</h3>
+                    <div class="chart-container-full">
+                        <canvas id="appointmentsTrendChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- Advanced Filtering & Reporting -->
+                <section class="admin-reporting-section">
+                    <div class="announcement-card">
+                        <div class="reporting-head">
+                            <h2 class="quick-title">Advanced Reporting</h2>
+                            <div class="reporting-filters">
+                                <select class="filter-select" id="filterDateRange">
+                                    <option value="today">Today</option>
+                                    <option value="week">This Week</option>
+                                    <option value="month" selected>This Month</option>
+                                    <option value="all">All Time</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="reporting-stats">
+                            <div class="reporting-stat-item">
+                                <div class="reporting-stat-icon blue">
+                                    <?php echo sidebarIconSvg("calendar"); ?>
+                                </div>
+                                <div class="reporting-stat-content">
+                                    <p class="reporting-stat-label">Approved Appointments</p>
+                                    <h3 class="reporting-stat-value"><?php echo number_format($approvedAppointments); ?></h3>
+                                </div>
+                            </div>
+
+                            <div class="reporting-stat-item">
+                                <div class="reporting-stat-icon red">
+                                    <?php echo sidebarIconSvg("settings"); ?>
+                                </div>
+                                <div class="reporting-stat-content">
+                                    <p class="reporting-stat-label">Cancelled Appointments</p>
+                                    <h3 class="reporting-stat-value"><?php echo number_format($cancelledAppointments); ?></h3>
+                                </div>
+                            </div>
+
+                            <div class="reporting-stat-item">
+                                <div class="reporting-stat-icon green">
+                                    <?php echo sidebarIconSvg("users"); ?>
+                                </div>
+                                <div class="reporting-stat-content">
+                                    <p class="reporting-stat-label">Active Users (30 days)</p>
+                                    <h3 class="reporting-stat-value"><?php echo number_format($activeUsers); ?></h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Event Calendar View -->
+                <section class="admin-calendar-section">
+                    <div class="announcement-card">
+                        <div class="calendar-head">
+                            <h2 class="quick-title">Event Calendar</h2>
+                            <a href="/campuscare-api/php-frontend/pages/events/events.php" class="announcement-view-all">Manage Events</a>
+                        </div>
+
+                        <div class="calendar-events-list">
+                            <?php if (empty($upcomingEvents)): ?>
+                                <p class="empty-state">No upcoming events scheduled.</p>
+                            <?php else: ?>
+                                <?php foreach ($upcomingEvents as $event): ?>
+                                    <div class="calendar-event-item">
+                                        <div class="calendar-event-date">
+                                            <span class="event-date"><?php echo htmlspecialchars($event["date"]); ?></span>
+                                            <span class="event-time"><?php echo htmlspecialchars($event["time"]); ?></span>
+                                        </div>
+                                        <div class="calendar-event-details">
+                                            <h4 class="calendar-event-title"><?php echo htmlspecialchars($event["title"]); ?></h4>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="admin-quick-layout">
+                    <div class="announcement-card">
+                        <h2 class="quick-title">Quick Access</h2>
+
+                        <div class="admin-quick-card-grid">
+                            <?php foreach ($adminQuickActions as $action): ?>
+                                <a href="<?php echo htmlspecialchars($action["path"]); ?>" class="admin-quick-card-modern">
+                                    <span class="admin-quick-icon <?php echo htmlspecialchars($action["iconClass"]); ?>">
+                                        <?php echo sidebarIconSvg($action["icon"]); ?>
+                                    </span>
+                                    <h4><?php echo htmlspecialchars($action["title"]); ?></h4>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </section>
+
+                <script>
+                    // Appointments by Status Chart
+                    const statusCtx = document.getElementById('appointmentStatusChart')?.getContext('2d');
+                    if (statusCtx) {
+                        const statusData = <?php echo json_encode($appointmentsByStatus); ?>;
+                        const statusLabels = statusData.map(s => s.status);
+                        const statusCounts = statusData.map(s => s.count);
+                        
+                        new Chart(statusCtx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: statusLabels,
+                                datasets: [{
+                                    data: statusCounts,
+                                    backgroundColor: [
+                                        '#4d8fc5',
+                                        '#52c88a',
+                                        '#e8a835',
+                                        '#e85d75'
+                                    ],
+                                    borderColor: '#fff',
+                                    borderWidth: 2
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: true,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: {
+                                            font: { size: 12, family: "'Segoe UI', sans-serif" },
+                                            padding: 15
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // Users by Role Chart
+                    const roleCtx = document.getElementById('userRoleChart')?.getContext('2d');
+                    if (roleCtx) {
+                        const roleData = <?php echo json_encode($usersByRole); ?>;
+                        const roleLabels = roleData.map(r => r.role);
+                        const roleCounts = roleData.map(r => r.count);
+                        
+                        new Chart(roleCtx, {
+                            type: 'bar',
+                            data: {
+                                labels: roleLabels,
+                                datasets: [{
+                                    label: 'User Count',
+                                    data: roleCounts,
+                                    backgroundColor: '#4d8fc5',
+                                    borderColor: '#2f6d9f',
+                                    borderWidth: 1,
+                                    borderRadius: 6
+                                }]
+                            },
+                            options: {
+                                indexAxis: 'y',
+                                responsive: true,
+                                maintainAspectRatio: true,
+                                plugins: {
+                                    legend: { display: false }
+                                },
+                                scales: {
+                                    x: { beginAtZero: true }
+                                }
+                            }
+                        });
+                    }
+
+                    // Appointments Trend Chart
+                    const trendCtx = document.getElementById('appointmentsTrendChart')?.getContext('2d');
+                    if (trendCtx) {
+                        const trendData = <?php echo json_encode($appointmentsTrend); ?>;
+                        const trendDates = trendData.map(t => t.date);
+                        const trendCounts = trendData.map(t => t.count);
+                        
+                        new Chart(trendCtx, {
+                            type: 'line',
+                            data: {
+                                labels: trendDates,
+                                datasets: [{
+                                    label: 'Appointments',
+                                    data: trendCounts,
+                                    borderColor: '#4d8fc5',
+                                    backgroundColor: 'rgba(77, 143, 197, 0.1)',
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointBackgroundColor: '#4d8fc5',
+                                    pointBorderColor: '#fff',
+                                    pointBorderWidth: 2,
+                                    pointRadius: 5
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        labels: {
+                                            font: { size: 12, family: "'Segoe UI', sans-serif" }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    y: { beginAtZero: true }
+                                }
+                            }
+                        });
+                    }
+
+                    // Filter handler
+                    document.getElementById('filterDateRange')?.addEventListener('change', function() {
+                        // This can be used to filter data dynamically
+                        console.log('Selected filter:', this.value);
+                    });
+                </script>
             <?php elseif ($role === "Counselor"): ?>
                 <section class="summary-grid">
                     <article class="summary-card">
