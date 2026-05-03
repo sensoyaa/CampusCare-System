@@ -19,16 +19,36 @@ $colleges = [
     "College of Arts and Sciences",
 ];
 
+function collegeAliases(string $college): array
+{
+    static $aliasMap = [
+        "College of Technology" => ["college of technology", "technology"],
+        "College of Public Administration and Governance" => ["college of public administration and governance", "public administration and governance"],
+        "College of Nursing" => ["college of nursing", "nursing"],
+        "College of Medicine" => ["college of medicine", "medicine"],
+        "College of Law" => ["college of law", "law"],
+        "College of Education" => ["college of education", "education"],
+        "College of Business" => ["college of business", "business"],
+        "College of Arts and Sciences" => ["college of arts and sciences", "college of art and sciences", "arts and sciences", "art and sciences"],
+    ];
+
+    return $aliasMap[$college] ?? [strtolower(trim($college))];
+}
+
 // Get event counts for each college
 $collegeEventCounts = [];
 foreach ($colleges as $college) {
+    $aliases = collegeAliases($college);
+    $placeholders = implode(", ", array_fill(0, count($aliases), "?"));
+    $types = str_repeat("s", count($aliases));
     $countStmt = $conn->prepare(
         "SELECT COUNT(*) AS total
-         FROM events
-         WHERE college = ?
-         AND starts_at >= NOW()"
+         FROM events e
+         LEFT JOIN users creator ON creator.id = e.created_by_user_id
+         WHERE LOWER(TRIM(COALESCE(NULLIF(e.college, ''), creator.college, ''))) IN ({$placeholders})
+           AND e.starts_at >= NOW()"
     );
-    $countStmt->bind_param("s", $college);
+    $countStmt->bind_param($types, ...$aliases);
     $countStmt->execute();
     $countResult = $countStmt->get_result()->fetch_assoc();
     $collegeEventCounts[$college] = intval($countResult["total"] ?? 0);

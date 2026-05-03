@@ -79,6 +79,22 @@ function eventDateTimeFromInput(string $value): ?string
     return $dateTime->format("Y-m-d H:i:s");
 }
 
+function collegeAliases(string $college): array
+{
+    static $aliasMap = [
+        "College of Technology" => ["college of technology", "technology"],
+        "College of Public Administration and Governance" => ["college of public administration and governance", "public administration and governance"],
+        "College of Nursing" => ["college of nursing", "nursing"],
+        "College of Medicine" => ["college of medicine", "medicine"],
+        "College of Law" => ["college of law", "law"],
+        "College of Education" => ["college of education", "education"],
+        "College of Business" => ["college of business", "business"],
+        "College of Arts and Sciences" => ["college of arts and sciences", "college of art and sciences", "arts and sciences", "art and sciences"],
+    ];
+
+    return $aliasMap[$college] ?? [strtolower(trim($college))];
+}
+
 $eventsHasCollege = tableColumnExists($conn, "events", "college");
 $eventsHasStartsAt = tableColumnExists($conn, "events", "starts_at");
 $eventsHasEndsAt = tableColumnExists($conn, "events", "ends_at");
@@ -397,16 +413,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 $events = [];
 $collegeSelect = "''";
 $eventCollegeWhere = "1 = 0";
+$selectedCollegeAliases = collegeAliases($selectedCollege);
+$aliasPlaceholders = implode(", ", array_fill(0, count($selectedCollegeAliases), "?"));
 
 if ($eventsHasCollege && $usersHasCollege) {
     $collegeSelect = "COALESCE(NULLIF(e.college, ''), u.college)";
-    $eventCollegeWhere = "COALESCE(NULLIF(e.college, ''), u.college) = ?";
+    $eventCollegeWhere = "LOWER(TRIM(COALESCE(NULLIF(e.college, ''), u.college, ''))) IN ({$aliasPlaceholders})";
 } elseif ($eventsHasCollege) {
     $collegeSelect = "e.college";
-    $eventCollegeWhere = "e.college = ?";
+    $eventCollegeWhere = "LOWER(TRIM(COALESCE(NULLIF(e.college, ''), ''))) IN ({$aliasPlaceholders})";
 } elseif ($usersHasCollege) {
     $collegeSelect = "u.college";
-    $eventCollegeWhere = "u.college = ?";
+    $eventCollegeWhere = "LOWER(TRIM(COALESCE(NULLIF(u.college, ''), ''))) IN ({$aliasPlaceholders})";
 }
 $stmt = $conn->prepare("
     SELECT 
@@ -429,7 +447,7 @@ $stmt = $conn->prepare("
 ");
 
 if ($stmt) {
-    $stmt->bind_param("s", $selectedCollege);
+    $stmt->bind_param(str_repeat("s", count($selectedCollegeAliases)), ...$selectedCollegeAliases);
     $stmt->execute();
     $eventResult = $stmt->get_result();
 
