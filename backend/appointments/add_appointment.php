@@ -6,17 +6,21 @@ require_once __DIR__ . "/../config/mail.php";
 $data = json_decode(file_get_contents("php://input"), true);
 
 $user_id = intval($data["user_id"] ?? 0);
-$counselor_id = intval($data["counselor_id"] ?? 0);
+$counselor_id = isset($data["counselor_id"]) && intval($data["counselor_id"]) > 0 ? intval($data["counselor_id"]) : null;
 $service = trim($data["service"] ?? "");
 $counselor = trim($data["counselor"] ?? "");
+
+if ($counselor_id === null || $counselor === "") {
+    $counselor = "Unassigned";
+    $counselor_id = null;
+}
+
 $appointment_date = trim($data["appointment_date"] ?? "");
 $appointment_time = trim($data["appointment_time"] ?? "");
 
 if (
     $user_id <= 0 ||
-    $counselor_id <= 0 ||
     $service === "" ||
-    $counselor === "" ||
     $appointment_date === "" ||
     $appointment_time === ""
 ) {
@@ -50,58 +54,66 @@ if (!$student) {
     exit();
 }
 
-$counselorStmt = $conn->prepare("SELECT full_name, email FROM users WHERE id = ? LIMIT 1");
+$counselorUser = null;
 
-if (!$counselorStmt) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Unable to load counselor information."
-    ]);
-    exit();
+if ($counselor_id !== null) {
+    $counselorStmt = $conn->prepare("SELECT full_name, email FROM users WHERE id = ? LIMIT 1");
+
+    if (!$counselorStmt) {
+        echo json_encode([
+            "success" => false,
+            "message" => "Unable to load counselor information."
+        ]);
+        exit();
+    }
+
+    $counselorStmt->bind_param("i", $counselor_id);
+    $counselorStmt->execute();
+    $counselorUser = $counselorStmt->get_result()->fetch_assoc();
+    $counselorStmt->close();
+
+    if (!$counselorUser) {
+        echo json_encode([
+            "success" => false,
+            "message" => "Counselor account not found."
+        ]);
+        exit();
+    }
 }
 
-$counselorStmt->bind_param("i", $counselor_id);
-$counselorStmt->execute();
-$counselorUser = $counselorStmt->get_result()->fetch_assoc();
-$counselorStmt->close();
+$slotAlreadyBooked = false;
 
-if (!$counselorUser) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Counselor account not found."
-    ]);
-    exit();
-}
+if ($counselor_id !== null) {
+    $slotCheckStmt = $conn->prepare("
+        SELECT id
+        FROM appointments
+        WHERE counselor_id = ?
+          AND appointment_date = ?
+          AND appointment_time = ?
+          AND COALESCE(NULLIF(status, ''), 'Pending') NOT IN ('Cancelled', 'Rejected')
+        LIMIT 1
+    ");
 
-$slotCheckStmt = $conn->prepare("
-    SELECT id
-    FROM appointments
-    WHERE counselor_id = ?
-      AND appointment_date = ?
-      AND appointment_time = ?
-      AND COALESCE(NULLIF(status, ''), 'Pending') NOT IN ('Cancelled', 'Rejected')
-    LIMIT 1
-");
+    if (!$slotCheckStmt) {
+        echo json_encode([
+            "success" => false,
+            "message" => "Unable to validate appointment slot."
+        ]);
+        exit();
+    }
 
-if (!$slotCheckStmt) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Unable to validate appointment slot."
-    ]);
-    exit();
-}
+    $slotCheckStmt->bind_param("iss", $counselor_id, $appointment_date, $appointment_time);
+    $slotCheckStmt->execute();
+    $slotAlreadyBooked = $slotCheckStmt->get_result()->fetch_assoc() !== null;
+    $slotCheckStmt->close();
 
-$slotCheckStmt->bind_param("iss", $counselor_id, $appointment_date, $appointment_time);
-$slotCheckStmt->execute();
-$slotAlreadyBooked = $slotCheckStmt->get_result()->fetch_assoc() !== null;
-$slotCheckStmt->close();
-
-if ($slotAlreadyBooked) {
-    echo json_encode([
-        "success" => false,
-        "message" => "This time slot is already booked. Please choose another available time."
-    ]);
-    exit();
+    if ($slotAlreadyBooked) {
+        echo json_encode([
+            "success" => false,
+            "message" => "This time slot is already booked. Please choose another available time."
+        ]);
+        exit();
+    }
 }
 
 $stmt = $conn->prepare("

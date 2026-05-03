@@ -564,26 +564,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                     </button>
                                 <?php endif; ?>
                                 </div>
-
-                                <div class="schedule-action-group schedule-action-group-danger">
-
-                                <?php if ($status !== "Cancelled" && $status !== "Rejected"): ?>
-                                    <form
-                                        method="POST"
-                                        data-confirm-title="Cancel appointment"
-                                        data-confirm-message="Cancel this appointment?"
-                                        data-confirm-button="Cancel Appointment"
-                                        data-confirm-variant="danger"
-                                    >
-                                        <input type="hidden" name="action" value="cancel_appointment">
-                                        <input type="hidden" name="appointment_id" value="<?php echo intval($apt["id"]); ?>">
-                                        <button type="submit" class="icon-btn" aria-label="Cancel appointment">
-                                            x
-                                        </button>
-                                    </form>
-                                <?php endif; ?>
-                                </div>
-                                </div>
                             </div>
                         </article>
                     <?php endforeach; ?>

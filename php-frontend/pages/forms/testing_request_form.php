@@ -10,6 +10,7 @@ $userId = intval($_SESSION["user_id"] ?? 0);
 $fullName = trim((string) ($_SESSION["full_name"] ?? ""));
 $canManageForms = campuscare_forms_can_manage($role);
 $isIframe = isset($_GET["iframe"]) && $_GET["iframe"] === "1";
+$requestedMode = strtolower(trim((string) ($_GET["mode"] ?? "")));
 
 $allowedRoles = ["Student", "Instructor", "Facilitator", "Administrator", "Counselor"];
 if (!in_array($role, $allowedRoles, true)) {
@@ -20,6 +21,26 @@ if (!in_array($role, $allowedRoles, true)) {
 $error = "";
 $success = "";
 $lastSubmittedId = 0;
+$hasExistingSubmission = false;
+
+function testing_request_summary(array $formState): array
+{
+    return [
+        "title" => "Testing Request",
+        "sections" => [
+            [
+                "title" => "Request Details",
+                "entries" => [
+                    ["label" => "Target Student", "value" => (string) ($formState["target_student_name"] ?? "")],
+                    ["label" => "Date", "value" => (string) ($formState["request_date"] ?? "")],
+                    ["label" => "Purpose", "value" => (string) ($formState["purpose"] ?? ""), "full" => true],
+                    ["label" => "Organization/Office", "value" => (string) ($formState["organization_office"] ?? "")],
+                    ["label" => "Applicant Signature", "value" => (string) ($formState["applicant_name_signature_typed"] ?? ""), "signature" => (string) ($formState["applicant_name_signature_drawn"] ?? "")],
+                ],
+            ],
+        ],
+    ];
+}
 
 $formState = [
     "request_date" => date("Y-m-d"),
@@ -36,6 +57,39 @@ $formState = [
 
 if (!campuscare_ensure_testing_requests_table($conn)) {
     $error = "Unable to initialize testing request storage.";
+}
+
+if ($error === "") {
+    $latestStmt = $conn->prepare("
+        SELECT id, request_date, target_student_user_id, target_student_name, applicant_name_signature_typed,
+               applicant_name_signature_drawn, address, organization_office, purpose, counselor_type_of_tests, counselor_notes
+        FROM testing_requests
+        WHERE requester_user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 1
+    ");
+
+    if ($latestStmt) {
+        $latestStmt->bind_param("i", $userId);
+        $latestStmt->execute();
+        $latestRow = $latestStmt->get_result()->fetch_assoc();
+        $latestStmt->close();
+
+        if (is_array($latestRow)) {
+            $hasExistingSubmission = true;
+            $lastSubmittedId = intval($latestRow["id"] ?? 0);
+            $formState["request_date"] = trim((string) ($latestRow["request_date"] ?? ""));
+            $formState["target_student_user_id"] = trim((string) ($latestRow["target_student_user_id"] ?? ""));
+            $formState["target_student_name"] = trim((string) ($latestRow["target_student_name"] ?? ""));
+            $formState["applicant_name_signature_typed"] = trim((string) ($latestRow["applicant_name_signature_typed"] ?? ""));
+            $formState["applicant_name_signature_drawn"] = trim((string) ($latestRow["applicant_name_signature_drawn"] ?? ""));
+            $formState["address"] = trim((string) ($latestRow["address"] ?? ""));
+            $formState["organization_office"] = trim((string) ($latestRow["organization_office"] ?? ""));
+            $formState["purpose"] = trim((string) ($latestRow["purpose"] ?? ""));
+            $formState["counselor_type_of_tests"] = trim((string) ($latestRow["counselor_type_of_tests"] ?? ""));
+            $formState["counselor_notes"] = trim((string) ($latestRow["counselor_notes"] ?? ""));
+        }
+    }
 }
 
 $students = [];
@@ -127,6 +181,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
             if ($insert->execute()) {
                 $lastSubmittedId = intval($insert->insert_id);
                 $success = "Request for testing form submitted successfully.";
+                $hasExistingSubmission = true;
+                $requestedMode = "view";
+                $isViewMode = $isIframe;
             } else {
                 $error = "Failed to submit testing request form.";
             }
@@ -135,6 +192,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
         }
     }
 }
+
+$isViewMode = $isIframe && $hasExistingSubmission && $requestedMode !== "edit";
 
 require_once __DIR__ . "/../../includes/header.php";
 require_once __DIR__ . "/../../includes/sidebar.php";
@@ -158,30 +217,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
             <?php if ($success !== ""): ?>
                 <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
-                <?php if ($isIframe): ?>
-                    <script>
-                        if (window.parent && window.parent.postMessage) {
-                            window.parent.postMessage({
-                                type: "FORM_SAVED",
-                                formType: "testing",
-                                summary: {
-                                    title: "Testing Request",
-                                    sections: [
-                                        {
-                                            title: "Request Details",
-                                            entries: [
-                                                { label: "Target Student", value: <?php echo json_encode($formState["target_student_name"]); ?> },
-                                                { label: "Date", value: <?php echo json_encode($formState["request_date"]); ?> },
-                                                { label: "Purpose", value: <?php echo json_encode($formState["purpose"]); ?> }
-                                            ]
-                                        }
-                                    ]
-                                },
-                                previewUrl: "/campuscare-api/php-frontend/pages/forms/testing_request_preview.php?id=" + <?php echo intval($lastSubmittedId); ?>
-                            }, "*");
-                        }
-                    </script>
-                <?php endif; ?>
             <?php endif; ?>
 
             <form method="POST" class="<?php echo $isIframe ? "" : "card"; ?>" style="padding:20px;">
@@ -231,6 +266,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 .sig-help { margin-top:6px; color:var(--text-muted); font-size:12px; }
                 @media (max-width: 700px) { .test-grid { grid-template-columns: 1fr; } }
                 </style>
+                <fieldset id="embeddedFormFieldset" style="border:0; padding:0; margin:0;">
 
                 <p class="card-subtitle" style="margin-bottom:10px;"><strong>(To be filled up by the applicant)</strong></p>
                 <div class="test-grid">
@@ -313,6 +349,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <?php endif; ?>
                     <a href="/campuscare-api/php-frontend/pages/dashboard/dashboard.php" class="btn-outline">Back to Dashboard</a>
                 </div>
+                </fieldset>
             </form>
         </div>
     </div>
@@ -321,6 +358,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </div>
 <script>
 (function () {
+    var embeddedFormFieldset = document.getElementById("embeddedFormFieldset");
+    var embeddedFormIsViewMode = <?php echo $isViewMode ? "true" : "false"; ?>;
+
     function setupSignaturePad(canvasId, hiddenInputId, clearButtonId, undoButtonId) {
         var canvas = document.getElementById(canvasId);
         var hiddenInput = document.getElementById(hiddenInputId);
@@ -402,6 +442,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }
 
         function beginDraw(event) {
+            if (embeddedFormIsViewMode) {
+                return;
+            }
+
             drawing = true;
             var point = pointFromEvent(event);
             ctx.beginPath();
@@ -465,7 +509,19 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         resizeCanvas();
     }
 
+    function applyEmbeddedFormMode() {
+        if (embeddedFormFieldset) {
+            embeddedFormFieldset.disabled = embeddedFormIsViewMode;
+        }
+
+        document.querySelectorAll(".sig-pad").forEach(function (canvas) {
+            canvas.style.pointerEvents = embeddedFormIsViewMode ? "none" : "auto";
+            canvas.style.opacity = embeddedFormIsViewMode ? "0.72" : "1";
+        });
+    }
+
     setupSignaturePad("applicantSignaturePad", "applicant_name_signature_drawn", "clearApplicantSignature", "undoApplicantSignature");
+    applyEmbeddedFormMode();
 
     var studentSelect = document.getElementById("target_student_user_id");
     var studentName = document.getElementById("target_student_name");
@@ -479,6 +535,32 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             }
         });
     }
+
+    <?php if ($isIframe): ?>
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: "campuscare-form-loaded",
+            formType: "testing",
+            isViewMode: <?php echo $isViewMode ? "true" : "false"; ?>,
+            hasSavedData: <?php echo $hasExistingSubmission ? "true" : "false"; ?>,
+            message: <?php echo json_encode($hasExistingSubmission ? "Your latest testing request form is loaded." : "Fill out the testing request form to continue."); ?>,
+            previewUrl: <?php echo json_encode($lastSubmittedId > 0 ? "/campuscare-api/php-frontend/pages/forms/testing_request_preview.php?id=" . intval($lastSubmittedId) : ""); ?>,
+            summary: <?php echo json_encode($hasExistingSubmission ? testing_request_summary($formState) : null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+        }, "*");
+    }
+    <?php endif; ?>
+
+    <?php if ($success !== ""): ?>
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: "campuscare-form-saved",
+            formType: "testing",
+            message: "Testing request form saved. You can now continue to schedule and review.",
+            previewUrl: <?php echo json_encode($lastSubmittedId > 0 ? "/campuscare-api/php-frontend/pages/forms/testing_request_preview.php?id=" . intval($lastSubmittedId) : ""); ?>,
+            summary: <?php echo json_encode(testing_request_summary($formState), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+        }, "*");
+    }
+    <?php endif; ?>
 
     const profileMenuToggle = document.querySelector(".profile-menu-toggle");
     const profileDropdown = document.querySelector(".profile-dropdown");

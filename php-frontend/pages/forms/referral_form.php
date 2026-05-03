@@ -10,6 +10,7 @@ $userId = intval($_SESSION["user_id"] ?? 0);
 $fullName = trim((string) ($_SESSION["full_name"] ?? ""));
 $canManageForms = campuscare_forms_can_manage($role);
 $isIframe = isset($_GET["iframe"]) && $_GET["iframe"] === "1";
+$requestedMode = strtolower(trim((string) ($_GET["mode"] ?? "")));
 
 $allowedRoles = ["Student", "Instructor", "Facilitator", "Administrator", "Counselor"];
 if (!in_array($role, $allowedRoles, true)) {
@@ -20,6 +21,7 @@ if (!in_array($role, $allowedRoles, true)) {
 $error = "";
 $success = "";
 $lastSubmittedId = 0;
+$hasExistingSubmission = false;
 
 $reasonOptions = [
     "Absenteeism",
@@ -46,6 +48,32 @@ $reasonOptions = [
     "Withdrawn",
 ];
 
+function referral_summary(array $formState): array
+{
+    return [
+        "title" => "Referral Slip",
+        "sections" => [
+            [
+                "title" => "Referral Information",
+                "entries" => [
+                    ["label" => "Guidance Counselor", "value" => (string) ($formState["referred_to_counselor_name"] ?? "")],
+                    ["label" => "Referral Date and Time", "value" => (string) ($formState["referral_datetime"] ?? "")],
+                    ["label" => "Student Name", "value" => (string) ($formState["student_name"] ?? "")],
+                    ["label" => "Course/Year/Section", "value" => (string) ($formState["course_year_section"] ?? "")],
+                ],
+            ],
+            [
+                "title" => "Reasons and Signatures",
+                "entries" => [
+                    ["label" => "Reasons", "value" => is_array($formState["reasons"] ?? null) ? implode(", ", $formState["reasons"]) : "", "full" => true],
+                    ["label" => "Other Reason", "value" => (string) ($formState["other_reason"] ?? ""), "full" => true],
+                    ["label" => "Faculty/Staff Signature", "value" => (string) ($formState["faculty_signature"] ?? ""), "signature" => (string) ($formState["faculty_signature_drawn"] ?? "")],
+                ],
+            ],
+        ],
+    ];
+}
+
 $formState = [
     "referred_to_counselor_id" => "",
     "referred_to_counselor_name" => "",
@@ -70,6 +98,49 @@ $students = [];
 
 if (!campuscare_ensure_referral_forms_table($conn)) {
     $error = "Unable to initialize referral form storage.";
+}
+
+if ($error === "") {
+    $latestStmt = $conn->prepare("
+        SELECT id, referred_to_counselor_id, referred_to_counselor_name, referral_datetime, student_user_id, student_name,
+               course_year_section, date_received, received_by, reasons_json, other_reason, faculty_signature_typed,
+               faculty_signature_drawn, actions_taken, actions_datetime, counselor_signature_typed, counselor_signature_drawn
+        FROM referral_forms
+        WHERE submitted_by_user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 1
+    ");
+
+    if ($latestStmt) {
+        $latestStmt->bind_param("i", $userId);
+        $latestStmt->execute();
+        $latestRow = $latestStmt->get_result()->fetch_assoc();
+        $latestStmt->close();
+
+        if (is_array($latestRow)) {
+            $hasExistingSubmission = true;
+            $lastSubmittedId = intval($latestRow["id"] ?? 0);
+            $formState["referred_to_counselor_id"] = trim((string) ($latestRow["referred_to_counselor_id"] ?? ""));
+            $formState["referred_to_counselor_name"] = trim((string) ($latestRow["referred_to_counselor_name"] ?? ""));
+            $formState["referral_datetime"] = trim((string) ($latestRow["referral_datetime"] ?? ""));
+            $formState["student_user_id"] = trim((string) ($latestRow["student_user_id"] ?? ""));
+            $formState["student_name"] = trim((string) ($latestRow["student_name"] ?? ""));
+            $formState["course_year_section"] = trim((string) ($latestRow["course_year_section"] ?? ""));
+            $formState["date_received"] = trim((string) ($latestRow["date_received"] ?? ""));
+            $formState["received_by"] = trim((string) ($latestRow["received_by"] ?? ""));
+            $formState["reasons"] = json_decode((string) ($latestRow["reasons_json"] ?? "[]"), true);
+            if (!is_array($formState["reasons"])) {
+                $formState["reasons"] = [];
+            }
+            $formState["other_reason"] = trim((string) ($latestRow["other_reason"] ?? ""));
+            $formState["faculty_signature"] = trim((string) ($latestRow["faculty_signature_typed"] ?? ""));
+            $formState["faculty_signature_drawn"] = trim((string) ($latestRow["faculty_signature_drawn"] ?? ""));
+            $formState["actions_taken"] = trim((string) ($latestRow["actions_taken"] ?? ""));
+            $formState["actions_datetime"] = trim((string) ($latestRow["actions_datetime"] ?? ""));
+            $formState["counselor_signature"] = trim((string) ($latestRow["counselor_signature_typed"] ?? ""));
+            $formState["counselor_signature_drawn"] = trim((string) ($latestRow["counselor_signature_drawn"] ?? ""));
+        }
+    }
 }
 
 $counselorResult = $conn->query("SELECT id, full_name FROM users WHERE role IN ('Counselor', 'Counsellor', 'Counselors') AND status = 'Active' ORDER BY full_name ASC");
@@ -187,12 +258,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
                 if ($insert->execute()) {
                     $lastSubmittedId = intval($insert->insert_id);
                     $success = "Referral slip submitted successfully.";
-                    $formState["other_reason"] = "";
-                    $formState["reasons"] = [];
-                    $formState["actions_taken"] = "";
-                    $formState["actions_datetime"] = "";
-                    $formState["counselor_signature"] = "";
-                    $formState["counselor_signature_drawn"] = "";
+                    $hasExistingSubmission = true;
+                    $requestedMode = "view";
+                    $isViewMode = $isIframe;
                 } else {
                     $error = "Failed to submit referral slip.";
                 }
@@ -202,6 +270,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
         }
     }
 }
+
+$isViewMode = $isIframe && $hasExistingSubmission && $requestedMode !== "edit";
 
 require_once __DIR__ . "/../../includes/header.php";
 require_once __DIR__ . "/../../includes/sidebar.php";
@@ -234,6 +304,13 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     background: #f6fbff;
                 }
 
+                html,
+                body {
+                    height: auto !important;
+                    min-height: 0 !important;
+                    overflow-x: hidden;
+                }
+
                 .sidebar,
                 .topbar,
                 .page-title,
@@ -260,6 +337,11 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     box-shadow: none !important;
                     border-radius: 0 !important;
                 }
+
+                .content,
+                .page-shell {
+                    min-height: 0 !important;
+                }
                 <?php endif; ?>
 
                 .ref-two-col { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; }
@@ -274,6 +356,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 @media (max-width: 880px) { .ref-reasons { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
                 @media (max-width: 700px) { .ref-two-col, .ref-reasons, .sig-grid { grid-template-columns: 1fr; } }
                 </style>
+                <fieldset id="embeddedFormFieldset" style="border:0; padding:0; margin:0;">
 
                 <div class="ref-two-col">
                     <div class="form-group">
@@ -402,6 +485,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <a href="/campuscare-api/php-frontend/pages/dashboard/dashboard.php" class="btn-outline">Back to Dashboard</a>
                 </div>
                 <?php endif; ?>
+                </fieldset>
             </form>
         </div>
     </div>
@@ -410,6 +494,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </div>
 <script>
 (function () {
+    var embeddedFormFieldset = document.getElementById("embeddedFormFieldset");
+    var embeddedFormIsViewMode = <?php echo $isViewMode ? "true" : "false"; ?>;
+
     function setupSignaturePad(canvasId, hiddenInputId, clearButtonId, undoButtonId) {
         var canvas = document.getElementById(canvasId);
         var hiddenInput = document.getElementById(hiddenInputId);
@@ -491,6 +578,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }
 
         function beginDraw(event) {
+            if (embeddedFormIsViewMode) {
+                return;
+            }
+
             drawing = true;
             var point = pointFromEvent(event);
             ctx.beginPath();
@@ -554,8 +645,42 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         resizeCanvas();
     }
 
+    function applyEmbeddedFormMode() {
+        if (embeddedFormFieldset) {
+            embeddedFormFieldset.disabled = embeddedFormIsViewMode;
+        }
+
+        document.querySelectorAll(".sig-pad").forEach(function (canvas) {
+            canvas.style.pointerEvents = embeddedFormIsViewMode ? "none" : "auto";
+            canvas.style.opacity = embeddedFormIsViewMode ? "0.72" : "1";
+        });
+    }
+
+    function notifyParentHeight() {
+        if (!(window.parent && window.parent !== window)) {
+            return;
+        }
+
+        var form = document.querySelector("form");
+        var shell = document.querySelector(".page-shell");
+        var height = Math.max(
+            document.body ? document.body.scrollHeight : 0,
+            document.documentElement ? document.documentElement.scrollHeight : 0,
+            form ? Math.ceil(form.getBoundingClientRect().height) : 0,
+            shell ? Math.ceil(shell.getBoundingClientRect().height) : 0
+        );
+
+        window.parent.postMessage({
+            type: "campuscare-form-height",
+            formType: "referral",
+            height: height
+        }, "*");
+    }
+
     setupSignaturePad("facultySignaturePad", "faculty_signature_drawn", "clearFacultySignature", "undoFacultySignature");
     setupSignaturePad("counselorSignaturePad", "counselor_signature_drawn", "clearCounselorSignature", "undoCounselorSignature");
+    applyEmbeddedFormMode();
+    notifyParentHeight();
 
     var studentSelect = document.getElementById("student_user_id");
     var studentName = document.getElementById("student_name");
@@ -567,8 +692,29 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             if (name !== "") {
                 studentName.value = name;
             }
+            notifyParentHeight();
         });
     }
+
+    window.addEventListener("load", notifyParentHeight);
+    window.addEventListener("resize", notifyParentHeight);
+    setTimeout(notifyParentHeight, 150);
+    setTimeout(notifyParentHeight, 500);
+
+    <?php if ($isIframe): ?>
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: "campuscare-form-loaded",
+            formType: "referral",
+            isViewMode: <?php echo $isViewMode ? "true" : "false"; ?>,
+            hasSavedData: <?php echo $hasExistingSubmission ? "true" : "false"; ?>,
+            message: <?php echo json_encode($hasExistingSubmission ? "Your latest referral form is loaded." : "Fill out the referral form to continue."); ?>,
+            previewUrl: <?php echo json_encode($lastSubmittedId > 0 ? "/campuscare-api/php-frontend/pages/forms/referral_form_preview.php?id=" . intval($lastSubmittedId) : ""); ?>,
+            summary: <?php echo json_encode($hasExistingSubmission ? referral_summary($formState) : null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+        }, "*");
+        notifyParentHeight();
+    }
+    <?php endif; ?>
 
     <?php if ($success !== ""): ?>
     if (window.parent && window.parent !== window) {
@@ -577,29 +723,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             formType: "referral",
             message: "Referral form saved. You can now continue to schedule and review.",
             previewUrl: <?php echo json_encode($lastSubmittedId > 0 ? "/campuscare-api/php-frontend/pages/forms/referral_form_preview.php?id=" . intval($lastSubmittedId) : ""); ?>,
-            summary: {
-                title: "Referral Slip",
-                sections: [
-                    {
-                        title: "Referral Information",
-                        entries: [
-                            { label: "Guidance Counselor", value: <?php echo json_encode($formState["referred_to_counselor_name"]); ?> },
-                            { label: "Referral Date and Time", value: <?php echo json_encode($formState["referral_datetime"]); ?> },
-                            { label: "Student Name", value: <?php echo json_encode($formState["student_name"]); ?> },
-                            { label: "Course/Year/Section", value: <?php echo json_encode($formState["course_year_section"]); ?> }
-                        ]
-                    },
-                    {
-                        title: "Reasons and Signatures",
-                        entries: [
-                            { label: "Reasons", value: <?php echo json_encode(is_array($formState["reasons"]) ? implode(", ", $formState["reasons"]) : ""); ?>, full: true },
-                            { label: "Other Reason", value: <?php echo json_encode($formState["other_reason"]); ?>, full: true },
-                            { label: "Faculty/Staff Signature", value: <?php echo json_encode($formState["faculty_signature"]); ?> }
-                        ]
-                    }
-                ]
-            }
+            summary: <?php echo json_encode(referral_summary($formState), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
         }, "*");
+        notifyParentHeight();
     }
     <?php endif; ?>
 
