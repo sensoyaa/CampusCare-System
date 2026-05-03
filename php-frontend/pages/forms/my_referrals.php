@@ -68,83 +68,81 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
     <div class="content">
         <div class="page-shell">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div class="page-header">
                 <div>
                     <h1 class="page-title">My Referrals</h1>
                     <p class="page-subtitle">Track referrals you have submitted</p>
                 </div>
-                <a href="/campuscare-api/php-frontend/pages/forms/student_referral_form.php" class="btn event-join-btn btn-sm">+ New Referral</a>
+                <a href="/campuscare-api/php-frontend/pages/forms/student_referral_form.php" class="btn event-join-btn btn-sm new-referral-btn">+ New Referral</a>
             </div>
 
             <?php if (empty($referrals)): ?>
-                <div style="text-align: center; padding: 60px 20px; background: #f8f9fa; border-radius: 12px;">
-                    <div style="font-size: 48px; margin-bottom: 15px;">📝</div>
-                    <h2 style="color: #333; margin-bottom: 10px;">No Referrals Yet</h2>
-                    <p style="color: #666; margin-bottom: 20px;">You haven't submitted any referrals yet. Help support a student by submitting a referral.</p>
-                    <a href="/campuscare-api/php-frontend/pages/forms/student_referral_form.php" class="btn event-join-btn">Submit Your First Referral</a>
+                <div class="empty-card">
+                    <div class="empty-icon">
+                        <img src="/campuscare-api/php-frontend/assets/images/icons/refer%20icon.png" alt="Referral icon">
+                    </div>
+                    <h2 class="empty-title">No Referrals Yet</h2>
+                    <p class="empty-text">You haven't submitted any referrals yet. Help support a student by submitting a referral.</p>
+                    <a href="/campuscare-api/php-frontend/pages/forms/student_referral_form.php" class="btn event-join-btn primary-cta">Submit Your First Referral</a>
                 </div>
             <?php else: ?>
                 <?php foreach ($referrals as $referral): ?>
-                    <div style="background: white; border: 1px solid #ddd; border-radius: 12px; padding: 20px; margin-bottom: 20px; transition: all 0.3s;" class="referral-card">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                    <div class="referral-card">
+                        <div class="card-header">
                             <div>
-                                <p style="font-size: 16px; font-weight: 600; color: #333; margin: 0 0 5px 0;">
+                                <p class="card-title">
                                     <?php echo htmlspecialchars($referral["student_name"]); ?>
                                     <?php if ($referral["is_external_student"]): ?>
-                                        <span style="font-size: 12px; color: #999;">(External)</span>
+                                        <span class="external-tag">(External)</span>
                                     <?php endif; ?>
                                 </p>
-                                <p style="font-size: 13px; color: #999; margin: 0;">
+                                <p class="card-meta">
                                     Submitted on <?php echo date("M d, Y \a\t g:i A", strtotime($referral["referral_datetime"])); ?>
                                     <?php if ($referral["is_external_student"] && $referral["email_notification_sent"]): ?>
-                                        <span style="display: inline-block; padding: 4px 8px; background: #d1e7dd; color: #0f5132; border-radius: 4px; font-size: 11px; margin-left: 10px;">✓ Email Sent</span>
+                                        <span class="email-sent">✓ Email Sent</span>
                                     <?php endif; ?>
                                 </p>
                             </div>
-                            <span class="status-badge <?php echo getStatusBadgeClass($referral["status"]); ?>" style="display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <span class="status-badge <?php echo getStatusBadgeClass($referral["status"]); ?>">
                                 <?php echo htmlspecialchars($referral["status"]); ?>
                             </span>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 15px 0; padding: 15px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee;">
-                            <div style="font-size: 13px;">
-                                <div style="color: #999; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 5px;">Student</div>
-                                <div style="color: #333; font-weight: 500;">
+                        <div class="card-info">
+                            <div class="info-item">
+                                <div class="info-label">Student</div>
+                                <div class="info-value">
                                     <?php echo htmlspecialchars($referral["student_name"]); ?>
                                     <?php if ($referral["student_email"]): ?>
-                                        <br><span style="font-size: 12px; color: #999;"><?php echo htmlspecialchars($referral["student_email"]); ?></span>
+                                        <br><span class="muted small"><?php echo htmlspecialchars($referral["student_email"]); ?></span>
                                     <?php endif; ?>
                                 </div>
                             </div>
 
-                            <div style="font-size: 13px;">
-                                <div style="color: #999; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 5px;">Type</div>
-                                <div style="color: #333; font-weight: 500;">
-                                    <?php echo $referral["is_external_student"] ? "External Student" : "System Student"; ?>
-                                </div>
+                            <div class="info-item">
+                                <div class="info-label">Type</div>
+                                <div class="info-value"><?php echo $referral["is_external_student"] ? "External Student" : "System Student"; ?></div>
                             </div>
 
-                            <div style="font-size: 13px;">
-                                <div style="color: #999; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 5px;">Current Status</div>
-                                <div style="color: #333; font-weight: 500;"><?php echo htmlspecialchars($referral["status"]); ?></div>
+                            <div class="info-item">
+                                <div class="info-label">Current Status</div>
+                                <div class="info-value"><?php echo htmlspecialchars($referral["status"]); ?></div>
                             </div>
                         </div>
 
                         <?php if (!empty($referral["reasons"])): ?>
-                            <div>
-                                <div style="font-size: 12px; color: #999; text-transform: uppercase; font-weight: 600; margin-bottom: 8px;">Reasons</div>
-                                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            <div class="reasons-block">
+                                <div class="info-label">Reasons</div>
+                                <div class="reason-tags">
                                     <?php foreach ($referral["reasons"] as $reason): ?>
-                                        <span style="display: inline-block; padding: 4px 10px; background: #e6f2ff; color: #0066cc; border-radius: 12px; font-size: 12px; border: 1px solid #b6d4fe;">
-                                            <?php echo htmlspecialchars($reason); ?>
-                                        </span>
+                                        <span class="reason-tag"><?php echo htmlspecialchars($reason); ?></span>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
                         <?php endif; ?>
 
-                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: flex; gap: 10px;">
-                            <a href="/campuscare-api/php-frontend/pages/forms/referral_form_preview.php?id=<?php echo $referral["id"]; ?>" style="padding: 8px 16px; border: 1px solid #ddd; background: white; color: #333; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all 0.3s; text-decoration: none; display: inline-block;" class="action-btn">View Details</a>
+                        <div class="card-actions">
+                            <a href="/campuscare-api/php-frontend/pages/forms/referral_form_preview.php?id=<?php echo $referral["id"]; ?>" class="action-btn btn-secondary">View Details</a>
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -154,43 +152,79 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </main>
 
 <style>
+    /* Header */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .page-header .page-title { margin: 0; }
+    .new-referral-btn { box-shadow: 0 6px 18px rgba(0,120,60,0.06); }
+
+    /* Empty state */
+    .empty-card {
+        text-align: center;
+        padding: 48px 24px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border: 1px solid #f0f2f4;
+    }
+
+    .empty-icon { font-size: 48px; margin-bottom: 12px; display: inline-block; }
+    .empty-icon img,
+    .empty-icon svg {
+        width: 56px;
+        height: 56px;
+        display: inline-block;
+        object-fit: contain;
+    }
+    .empty-title { color: #222; margin-bottom: 8px; font-size: 20px; }
+    .empty-text { color: #666; margin-bottom: 18px; }
+    .primary-cta { box-shadow: 0 8px 24px rgba(34,139,34,0.06); }
+
+    /* Referral card */
+    .referral-card {
+        background: #fff;
+        border: 1px solid #e6eaec;
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 16px;
+        transition: transform 0.12s ease, box-shadow 0.18s ease;
+    }
+
     .referral-card:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(13,38,59,0.06);
     }
 
-    .action-btn:hover {
-        border-color: #0066cc;
-        color: #0066cc;
-    }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .card-title { font-size: 16px; font-weight: 700; color: #222; margin: 0 0 6px 0; }
+    .external-tag { font-size: 12px; color: #888; margin-left: 8px; font-weight: 600; }
+    .card-meta { font-size: 13px; color: #777; margin: 0; }
+    .email-sent { display: inline-block; padding: 4px 8px; background: #d1e7dd; color: #0f5132; border-radius: 4px; font-size: 11px; margin-left: 10px; }
 
-    .status-pending {
-        background: #fff3cd;
-        color: #856404;
-        border: 1px solid #ffeaa7;
-    }
+    .card-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 12px 0; padding: 12px 0; border-top: 1px solid #f1f3f5; border-bottom: 1px solid #f1f3f5; }
+    .info-item { font-size: 13px; }
+    .info-label { color: #999; text-transform: uppercase; font-weight: 700; font-size: 11px; margin-bottom: 6px; }
+    .info-value { color: #333; font-weight: 500; }
 
-    .status-in-review {
-        background: #cfe2ff;
-        color: #084298;
-        border: 1px solid #b6d4fe;
-    }
+    .reason-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .reason-tag { display: inline-block; padding: 6px 10px; background: #eef6ff; color: #0066cc; border-radius: 999px; font-size: 12px; border: 1px solid #cfe3ff; }
 
-    .status-scheduling {
-        background: #cff4fc;
-        color: #055160;
-        border: 1px solid #b6effb;
-    }
+    .card-actions { margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f3f5; display: flex; gap: 10px; }
+    .action-btn { padding: 8px 16px; border-radius: 6px; text-decoration: none; display: inline-block; border: 1px solid #ddd; background: #fff; color: #333; transition: all .15s; }
+    .action-btn:hover { border-color: #0066cc; color: #0066cc; transform: translateY(-1px); }
 
-    .status-completed {
-        background: #d1e7dd;
-        color: #0f5132;
-        border: 1px solid #badbcc;
-    }
+    .muted.small { color: #777; font-size: 12px; }
 
-    .status-closed {
-        background: #e2e3e5;
-        color: #41464b;
-        border: 1px solid #d3d6d8;
-    }
+    /* Status badges (kept for accessibility) */
+    .status-pending { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    .status-in-review { background: #cfe2ff; color: #084298; border: 1px solid #b6d4fe; }
+    .status-scheduling { background: #cff4fc; color: #055160; border: 1px solid #b6effb; }
+    .status-completed { background: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+    .status-closed { background: #e2e3e5; color: #41464b; border: 1px solid #d3d6d8; }
 </style>
 

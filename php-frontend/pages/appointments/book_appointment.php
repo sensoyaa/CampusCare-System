@@ -150,10 +150,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }
 
         .booking-head {
+            border-radius: 28px 28px 0 0;
             padding: 30px 34px 20px;
-            background:
-                radial-gradient(circle at top right, rgba(255,255,255,0.34), transparent 36%),
-                linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 100%);
+            background: var(--primary);
             color: #fff;
         }
 
@@ -792,15 +791,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             text-transform: uppercase;
         }
 
-        .review-sheet {
-            border: 1px solid #cfd8df;
-            border-radius: 8px;
-            padding: 24px;
-            background: #fff;
-            color: #111;
-            font-family: Georgia, "Times New Roman", serif;
-        }
-
         .review-document {
             background: #fff;
             color: #111;
@@ -874,10 +864,11 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }
 
         .review-meta-box {
-            border: 1px solid #111;
+            border: 1px solid #11111181;
             min-height: 64px;
             padding: 10px 12px;
             background: #fff;
+            border-radius: 12px;
         }
 
         .review-meta-box strong,
@@ -923,7 +914,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
         .summary-section {
             border: 1px solid #111;
-            border-radius: 0;
+            border-radius: 12px;
             padding: 16px 18px;
             background: #fff;
             margin-bottom: 14px;
@@ -955,7 +946,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             min-height: 76px;
             text-align: left;
             border: 1px solid #111;
-            border-radius: 0;
+            border-radius: 12px;
             background: #fff;
             padding: 12px 14px;
         }
@@ -1026,7 +1017,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }
 
         .btn {
-            border: 0;
             border-radius: 14px;
             padding: 13px 22px;
             font-size: 15px;
@@ -1280,6 +1270,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             }
 
             .summary-section {
+                border-radius: 12px;
                 break-inside: avoid;
                 border-color: #111;
                 background: #fff;
@@ -1431,16 +1422,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <p class="panel-subtitle">Check your details below. Once submitted, wait for the counselor's confirmation.</p>
 
                 <div id="formSummaryWrapper" class="summary-card">
-                    <div class="summary-card-head">
-                        <div>
-                            <h3>Check Information</h3>
-                            <p>Review the appointment details and your completed form before sending it for approval. You can also save a PDF copy from this final step.</p>
-                        </div>
-                        <span class="summary-badge">Final Review</span>
-                    </div>
                     <div id="formSummaryContent" class="empty-state">Form details will appear here after you fill up the form.</div>
                     <div class="summary-actions">
-                        <button id="savePdfBtn" type="button" class="btn btn-outline" style="display:none;">Save PDF</button>
+                        <button id="savePdfBtn" type="button" class="btn event-join-btn" style="display:none;">Save PDF</button>
                     </div>
                 </div>
             </section>

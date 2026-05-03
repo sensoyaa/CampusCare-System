@@ -33,9 +33,14 @@
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   background: var(--page-bg);
   color: var(--text-main);
+  overflow-x: hidden;
 }
 
 body.theme-dark {
@@ -1113,8 +1118,7 @@ body.theme-dark .menu-lines {
 }
 
 .page-subtitle {
-  tab-size: 4; 
-  white-space: pre;
+  margin: 15px 0;
   color: #000;
   font-size: 14px;
   line-height: 1.45;

@@ -58,10 +58,15 @@ $formState = [
 ];
 
 // Ensure tables exist
+$initError = "";
 if (!campuscare_ensure_referral_forms_table($conn)) {
-    $error = "Unable to initialize referral form storage.";
+    $initError = "Unable to initialize referral form storage.";
 }
-campuscare_ensure_referral_intake_forms_table($conn);
+
+// Only set error if this is not a form submission and init failed
+if ($initError !== "" && $_SERVER["REQUEST_METHOD"] !== "POST") {
+    $error = $initError;
+}
 
 // Get list of counselors
 $counselors = [];
@@ -78,7 +83,8 @@ while ($studentResult && ($row = $studentResult->fetch_assoc())) {
 }
 
 // Handle form submission
-if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    error_log("DEBUG: Form submitted. POST data: " . json_encode($_POST));
     $formState["student_type"] = trim((string) ($_POST["student_type"] ?? "in_system"));
     $formState["reasons"] = $_POST["reasons"] ?? [];
     $formState["other_reason"] = trim((string) ($_POST["other_reason"] ?? ""));
@@ -191,7 +197,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
             $status = "Pending";
 
             $insert->bind_param(
-                "issisisssissss",
+                "issississsisssis",
                 $userId,
                 $fullName,
                 $role,
@@ -215,6 +221,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
                 $insert->close();
 
                 // Send email notification if external student
+                $emailSent = false;
                 if ($isExternal && $studentEmail) {
                     $emailSent = campuscare_send_referral_notification(
                         $studentEmail,
@@ -233,7 +240,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
                     }
                 }
 
-                $success = "✓ Referral submitted successfully! The student will be contacted.";
+                $studentType = $isExternal ? "External" : "System";
+                $success = "✓ Referral submitted successfully for <strong>" . htmlspecialchars($formState["student_name"]) . "</strong> (" . $studentType . ")";
+                if ($isExternal && !$emailSent) {
+                    $success .= "<br><strong>⚠️ Note:</strong> Email notification could not be sent to " . htmlspecialchars($studentEmail) . ". Please notify them manually.";
+                } elseif ($isExternal && $emailSent) {
+                    $success .= "<br>Email notification has been sent.";
+                }
                 $formState = [
                     "referral_type" => "internal",
                     "student_type" => "in_system",
@@ -278,13 +291,14 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <?php endif; ?>
 
             <?php if ($success): ?>
-                <div style="padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; border-left: 3px solid #3c3; background: #efe; color: #3c3; font-size: 13px;">
-                    <?php echo htmlspecialchars($success); ?>
+                <div style="padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; border-left: 3px solid #080; background: #efe; color: #080; font-size: 13px;">
+                    <?php echo $success; ?>
                 </div>
             <?php endif; ?>
 
             <style>
                 .referral-form {
+                    margin-top: 20px;
                     background: #fff;
                     padding: 20px;
                     border-radius: 10px;
@@ -399,7 +413,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 }
             </style>
 
-            <form method="POST" class="referral-form">
+            <form method="POST" action="" class="referral-form" id="referral-form" onsubmit="validateForm(event)">
                 
                 <!-- Student Selection -->
                 <fieldset style="border: none; padding: 0; margin: 0 0 20px 0;">
@@ -418,7 +432,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
                     <!-- In System -->
                     <div id="in-system-section" style="display: <?php echo $formState["student_type"] === "in_system" ? "block" : "none"; ?>;">
-                        <select id="student_user_id" name="student_user_id" style="width: 100%; padding: 9px 11px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" required>
+                        <select id="student_user_id" name="student_user_id" style="width: 100%; padding: 9px 11px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
                             <option value="">Select a student...</option>
                             <?php foreach ($students as $student): ?>
                                 <option value="<?php echo htmlspecialchars($student["id"]); ?>" <?php echo intval($formState["student_user_id"]) === intval($student["id"]) ? "selected" : ""; ?>>
@@ -488,18 +502,67 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </main>
 
 <script>
+    function validateForm(event) {
+        const form = document.getElementById('referral-form');
+        const studentType = document.querySelector('input[name="student_type"]:checked')?.value || 'in_system';
+        const reasons = document.querySelectorAll('input[name="reasons[]"]:checked');
+        const otherReason = document.getElementById('other_reason').value.trim();
+        
+        let errorMsg = [];
+        
+        if (studentType === 'in_system') {
+            const studentId = document.getElementById('student_user_id').value.trim();
+            if (!studentId) {
+                errorMsg.push('Please select a student from the system.');
+            }
+        } else {
+            const studentName = document.getElementById('student_name').value.trim();
+            const studentEmail = document.getElementById('student_email').value.trim();
+            if (!studentName) {
+                errorMsg.push('Please provide the student\'s full name.');
+            }
+            if (!studentEmail) {
+                errorMsg.push('Please provide the student\'s email address.');
+            } else if (!studentEmail.includes('@')) {
+                errorMsg.push('Please provide a valid email address.');
+            }
+        }
+        
+        if (reasons.length === 0 && !otherReason) {
+            errorMsg.push('Please select at least one reason for the referral or specify other concerns.');
+        }
+        
+        if (errorMsg.length > 0) {
+            event.preventDefault();
+            alert('Please fix the following issues:\n\n' + errorMsg.join('\n'));
+            return false;
+        }
+        
+        console.log('Form validation passed, submitting...');
+        return true;
+    }
+
     function updateStudentType() {
         const checkedStudentType = document.querySelector('input[name="student_type"]:checked');
         const studentType = checkedStudentType ? checkedStudentType.value : 'in_system';
         const inSystemSection = document.getElementById('in-system-section');
         const notInSystemSection = document.getElementById('not-in-system-section');
+        const studentDropdown = document.getElementById('student_user_id');
+        const studentNameInput = document.getElementById('student_name');
+        const studentEmailInput = document.getElementById('student_email');
 
         if (studentType === 'in_system') {
             inSystemSection.style.display = 'block';
             notInSystemSection.style.display = 'none';
+            studentDropdown.required = true;
+            studentNameInput.required = false;
+            studentEmailInput.required = false;
         } else {
             inSystemSection.style.display = 'none';
             notInSystemSection.style.display = 'grid';
+            studentDropdown.required = false;
+            studentNameInput.required = true;
+            studentEmailInput.required = true;
         }
     }
 

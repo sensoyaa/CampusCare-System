@@ -15,12 +15,10 @@ if (!in_array($role, ["Counselor", "Administrator"], true)) {
 }
 
 campuscare_ensure_referral_forms_table($conn);
-campuscare_ensure_referral_intake_forms_table($conn);
 
 $error = "";
 $success = "";
 $filter = trim((string) ($_GET["status"] ?? ""));
-$view = trim((string) ($_GET["view"] ?? "referrals")); // referrals or intakes
 
 // Handle referral status update
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"])) {
@@ -47,23 +45,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"])) {
                 }
                 $update->close();
             }
-        }
-    } elseif ($action === "approve_intake") {
-        $intakeId = intval($_POST["intake_id"] ?? 0);
-        $counselorApproval = isset($_POST["counselor_approved"]) ? 1 : 0;
-        $approvalNotes = trim((string) ($_POST["approval_notes"] ?? ""));
-
-        $update = $conn->prepare("UPDATE referral_intake_forms SET counselor_approved = ?, counselor_notes = ?, approval_datetime = NOW(), reviewed_by_counselor_id = ? WHERE id = ? LIMIT 1");
-        if (!$update) {
-            $error = "Unable to update intake: " . $conn->error;
-        } else {
-            $update->bind_param("isii", $counselorApproval, $approvalNotes, $userId, $intakeId);
-            if ($update->execute()) {
-                $success = "✓ Intake form reviewed!";
-            } else {
-                $error = "Unable to update intake: " . $conn->error;
-            }
-            $update->close();
         }
     }
 }
@@ -103,17 +84,6 @@ if ($stmt) {
     $stmt->close();
 }
 
-// Get intakes
-$intakesQuery = "SELECT i.id, i.referral_id, i.student_name, i.student_email, i.intake_datetime, i.completed_by_student, i.counselor_approved, i.status, r.student_name as referral_student_name FROM referral_intake_forms i LEFT JOIN referral_forms r ON i.referral_id = r.id ORDER BY i.intake_datetime DESC LIMIT 50";
-
-$intakes = [];
-$intakesResult = $conn->query($intakesQuery);
-if ($intakesResult) {
-    while ($row = $intakesResult->fetch_assoc()) {
-        $intakes[] = $row;
-    }
-}
-
 function getStatusBadgeClass($status) {
     $classes = [
         "Pending" => "status-pending",
@@ -141,7 +111,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     <div class="content">
         <div class="page-shell">
             <h1 class="page-title">Referral Management</h1>
-            <p class="page-subtitle">Review and manage student referrals and intake forms</p>
+            <p class="page-subtitle">Review and manage student referrals</p>
 
             <?php if ($error): ?>
                 <div style="padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; border-left: 3px solid #c33; background: #fee; color: #c33; font-size: 13px;">
@@ -404,17 +374,13 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             </style>
 
             <div class="referral-tabs">
-                <button class="<?php echo $view === "referrals" ? "active" : ""; ?>" onclick="location.href='?view=referrals<?php echo $filter ? "&status=" . htmlspecialchars($filter) : ""; ?>'">
+                <button class="active">
                     📌 Referrals (<?php echo count($referrals); ?>)
-                </button>
-                <button class="<?php echo $view === "intakes" ? "active" : ""; ?>" onclick="location.href='?view=intakes'">
-                    📝 Intake Forms (<?php echo count($intakes); ?>)
                 </button>
             </div>
 
-            <?php if ($view === "referrals"): ?>
-                <div class="filter-section">
-                        <select onchange="location.href='?view=referrals&status=' + this.value;">
+            <div class="filter-section">
+                    <select onchange="location.href='?view=referrals&status=' + this.value;">
                             <option value="">All Statuses</option>
                             <?php foreach (campuscare_status_choices() as $status): ?>
                                 <option value="<?php echo htmlspecialchars($status); ?>" <?php echo $filter === $status ? "selected" : ""; ?>>
@@ -483,12 +449,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                         </div>
 
                                         <div class="button-group">
-                                        <button type="submit" class="btn-primary">Update</button>
-                                            <?php if ($ref["intake_form_id"]): ?>
-                                            <a href="/campuscare-api/php-frontend/pages/forms/pre_counseling_intake.php?intake_id=<?php echo $ref["intake_form_id"]; ?>" class="btn-secondary">View Intake</a>
-                                        <?php else: ?>
-                                            <a href="/campuscare-api/php-frontend/pages/forms/pre_counseling_intake.php?referral_id=<?php echo $ref["id"]; ?>" class="btn-secondary">Create Intake</a>
-                                            <?php endif; ?>
+                                            <button type="submit" class="btn-primary">Update</button>
                                         </div>
                                     </form>
                                 </div>
@@ -496,62 +457,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                         <?php endforeach; ?>
                     <?php endif; ?>
 
-            <?php elseif ($view === "intakes"): ?>
-                <?php if (empty($intakes)): ?>
-                    <div class="empty-state">
-                        📭 No intake forms submitted yet.
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($intakes as $intake): ?>
-                            <div class="referral-card">
-                                <div class="card-header">
-                                    <p class="card-title"><?php echo htmlspecialchars($intake["student_name"]); ?></p>
-                                    <span class="status-badge <?php echo getStatusBadgeClass($intake["status"]); ?>">
-                                        <?php echo htmlspecialchars($intake["status"]); ?>
-                                    </span>
-                                </div>
-
-                                <div class="card-info">
-                                    <div class="info-item">
-                                        <div class="info-label">Student</div>
-                                        <div class="info-value"><?php echo htmlspecialchars($intake["student_name"]); ?></div>
-                                    </div>
-                                    <div class="info-item">
-                                        <div class="info-label">Completed</div>
-                                        <div class="info-value"><?php echo $intake["completed_by_student"] ? "✓ Yes" : "✗ No"; ?></div>
-                                    </div>
-                                    <div class="info-item">
-                                        <div class="info-label">Date</div>
-                                        <div class="info-value"><?php echo date("M d, Y H:i", strtotime($intake["intake_datetime"])); ?></div>
-                                    </div>
-                                </div>
-
-                                <div class="action-form">
-                                    <form method="POST">
-                                        <input type="hidden" name="action" value="approve_intake">
-                                        <input type="hidden" name="intake_id" value="<?php echo htmlspecialchars($intake["id"]); ?>">
-
-                                        <div class="form-group">
-                                            <label for="notes_<?php echo $intake["id"]; ?>">Counselor Notes</label>
-                                            <textarea id="notes_<?php echo $intake["id"]; ?>" name="approval_notes" placeholder="Your observations and next steps..."></textarea>
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label>
-                                                <input type="checkbox" name="counselor_approved" value="1"> I approve and can proceed with counseling
-                                            </label>
-                                        </div>
-
-                                        <div class="button-group">
-                                        <button type="submit" class="btn-primary">Review Intake</button>
-                                        <a href="/campuscare-api/php-frontend/pages/forms/pre_counseling_intake.php?intake_id=<?php echo $intake["id"]; ?>" class="btn-secondary">View Full Form</a>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                <?php endif; ?>
         </div>
     </div>
 </main>

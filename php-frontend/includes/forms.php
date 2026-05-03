@@ -1,10 +1,43 @@
 <?php
 
+function campuscare_send_email(string $toEmail, string $subject, string $htmlBody, string $textBody = ""): bool
+{
+    require_once __DIR__ . "/../../backend/config/mail.php";
+    
+    if ($textBody === "") {
+        $textBody = strip_tags($htmlBody);
+    }
+    
+    // Extract name from email if possible, otherwise use email as name
+    $toName = explode("@", $toEmail)[0];
+    
+    $result = send_smtp_mail($toEmail, $toName, $subject, $htmlBody, $textBody);
+    
+    return $result["success"] ?? false;
+}
+
 function campuscare_forms_table_exists(mysqli $conn, string $tableName): bool
 {
     $safe = $conn->real_escape_string($tableName);
     $result = $conn->query("SHOW TABLES LIKE '{$safe}'");
     return $result !== false && $result->num_rows > 0;
+}
+
+function campuscare_add_column_if_missing(mysqli $conn, string $tableName, string $columnName, string $columnDefinition): bool
+{
+    $tableSafe = $conn->real_escape_string($tableName);
+    $columnSafe = $conn->real_escape_string($columnName);
+
+    $check = $conn->query("SHOW COLUMNS FROM `{$tableSafe}` LIKE '{$columnSafe}'");
+    if ($check === false) {
+        return false;
+    }
+
+    if ($check->num_rows > 0) {
+        return true;
+    }
+
+    return $conn->query("ALTER TABLE `{$tableSafe}` ADD COLUMN {$columnName} {$columnDefinition}") !== false;
 }
 
 function campuscare_ensure_referral_forms_table(mysqli $conn): bool
@@ -50,42 +83,41 @@ function campuscare_ensure_referral_forms_table(mysqli $conn): bool
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
     ";
 
-    return $conn->query($sql) !== false;
+    if ($conn->query($sql) === false) {
+        return false;
+    }
+
+    $columns = [
+        ["student_email", "VARCHAR(160) DEFAULT NULL"],
+        ["is_external_student", "BOOLEAN DEFAULT FALSE"],
+        ["description", "TEXT DEFAULT NULL"],
+        ["date_received", "DATE DEFAULT NULL"],
+        ["received_by", "VARCHAR(160) DEFAULT NULL"],
+        ["other_reason", "TEXT DEFAULT NULL"],
+        ["faculty_signature_typed", "VARCHAR(160) DEFAULT NULL"],
+        ["faculty_signature_drawn", "LONGTEXT DEFAULT NULL"],
+        ["actions_taken", "TEXT DEFAULT NULL"],
+        ["actions_datetime", "DATETIME DEFAULT NULL"],
+        ["counselor_signature_typed", "VARCHAR(160) DEFAULT NULL"],
+        ["counselor_signature_drawn", "LONGTEXT DEFAULT NULL"],
+        ["is_anonymous", "BOOLEAN DEFAULT FALSE"],
+        ["email_notification_sent", "BOOLEAN DEFAULT FALSE"],
+        ["email_notification_date", "DATETIME DEFAULT NULL"],
+        ["intake_form_id", "INT UNSIGNED DEFAULT NULL"],
+        ["status", "VARCHAR(40) NOT NULL DEFAULT 'Pending'"],
+        ["created_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"],
+        ["updated_at", "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"],
+    ];
+
+    foreach ($columns as [$columnName, $columnDefinition]) {
+        if (!campuscare_add_column_if_missing($conn, "referral_forms", $columnName, $columnDefinition)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
-function campuscare_ensure_referral_intake_forms_table(mysqli $conn): bool
-{
-    $sql = "
-        CREATE TABLE IF NOT EXISTS referral_intake_forms (
-            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-            referral_id INT UNSIGNED NOT NULL,
-            student_user_id INT UNSIGNED DEFAULT NULL,
-            student_name VARCHAR(160) NOT NULL,
-            student_email VARCHAR(160) DEFAULT NULL,
-            intake_datetime DATETIME NOT NULL,
-            why_visiting TEXT DEFAULT NULL,
-            what_concerns TEXT DEFAULT NULL,
-            how_long VARCHAR(160) DEFAULT NULL,
-            previous_counseling BOOLEAN DEFAULT FALSE,
-            emergency_contact VARCHAR(160) DEFAULT NULL,
-            completed_by_student BOOLEAN DEFAULT FALSE,
-            reviewed_by_counselor_id INT UNSIGNED DEFAULT NULL,
-            reviewed_by_counselor_name VARCHAR(160) DEFAULT NULL,
-            counselor_notes TEXT DEFAULT NULL,
-            counselor_approved BOOLEAN DEFAULT FALSE,
-            approval_datetime DATETIME DEFAULT NULL,
-            status VARCHAR(40) NOT NULL DEFAULT 'Pending',
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            KEY idx_intake_referral (referral_id),
-            KEY idx_intake_student (student_user_id),
-            KEY idx_intake_status (status)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-    ";
-
-    return $conn->query($sql) !== false;
-}
 
 function campuscare_ensure_testing_requests_table(mysqli $conn): bool
 {
@@ -137,7 +169,7 @@ function campuscare_forms_can_manage(string $role): bool
 
 function campuscare_send_referral_notification(string $studentEmail, string $studentName, string $referrerName, string $referralReason): bool
 {
-    require_once __DIR__ . "/mail.php";
+    require_once __DIR__ . "/../../backend/config/mail.php";
     
     $subject = "You've Been Referred to Student Services - Action Required";
     

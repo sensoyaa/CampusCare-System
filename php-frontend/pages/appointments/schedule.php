@@ -495,7 +495,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             $dateTime = date("D, F j \a\t g:i A", strtotime($apt["appointment_date"] . " " . $apt["appointment_time"]));
                         ?>
 
-                        <article class="schedule-item schedule-item-clean">
+                        <article class="schedule-item schedule-item-clean" onclick="window.location.href='/campuscare-api/php-frontend/pages/appointments/appointment_detail.php?id=<?php echo intval($apt["id"]); ?>';" style="cursor: pointer;">
                             <div class="schedule-main">
                                 <div class="schedule-left">
                                     <span class="schedule-icon"><?php echo $role === "Counselor" ? sidebarIconSvg("user") : sidebarIconSvg("calendar"); ?></span>
@@ -517,7 +517,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                     </div>
                                 </div>
 
-                                <div class="schedule-actions schedule-actions-clean">
+                                <div class="schedule-actions schedule-actions-clean" onclick="event.stopPropagation();">
                                 <div class="schedule-action-group schedule-action-group-primary">
 
                                 <?php if ($role === "Counselor" && $status === "Pending"): ?>
@@ -632,6 +632,18 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         <a href="#" class="chat-fab" aria-label="Open chat">?</a>
     </div>
 </main>
+
+<style>
+    .schedule-item.schedule-item-clean {
+        transition: all 0.2s ease;
+    }
+
+    .schedule-item.schedule-item-clean:hover {
+        box-shadow: 0 4px 16px rgba(0, 102, 204, 0.15) !important;
+        transform: translateY(-2px);
+        background: #f9faff;
+    }
+</style>
 
 <?php if ($role === "Counselor"): ?>
 <script>
