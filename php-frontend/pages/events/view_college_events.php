@@ -30,7 +30,7 @@ if (!$selectedCollege) {
     exit;
 }
 
-function eventColumnExists(mysqli $conn, string $columnName): bool
+function tableColumnExists(mysqli $conn, string $tableName, string $columnName): bool
 {
     $databaseResult = $conn->query("SELECT DATABASE() AS database_name");
     $databaseRow = $databaseResult ? $databaseResult->fetch_assoc() : null;
@@ -44,7 +44,7 @@ function eventColumnExists(mysqli $conn, string $columnName): bool
         SELECT 1
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_SCHEMA = ?
-          AND TABLE_NAME = 'events'
+          AND TABLE_NAME = ?
           AND COLUMN_NAME = ?
         LIMIT 1
     ");
@@ -53,7 +53,7 @@ function eventColumnExists(mysqli $conn, string $columnName): bool
         return false;
     }
 
-    $stmt->bind_param("ss", $databaseName, $columnName);
+    $stmt->bind_param("sss", $databaseName, $tableName, $columnName);
     $stmt->execute();
     $stmt->store_result();
     $exists = $stmt->num_rows > 0;
@@ -79,43 +79,44 @@ function eventDateTimeFromInput(string $value): ?string
     return $dateTime->format("Y-m-d H:i:s");
 }
 
-$eventsHasCollege = eventColumnExists($conn, "college");
-$eventsHasStartsAt = eventColumnExists($conn, "starts_at");
-$eventsHasEndsAt = eventColumnExists($conn, "ends_at");
-$eventsHasCreatedBy = eventColumnExists($conn, "created_by_user_id");
-$eventsHasEventDate = eventColumnExists($conn, "event_date");
-$eventsHasEventTime = eventColumnExists($conn, "event_time");
-$eventsHasCategory = eventColumnExists($conn, "category");
-$eventsHasParticipantLimit = eventColumnExists($conn, "participant_limit");
+$eventsHasCollege = tableColumnExists($conn, "events", "college");
+$eventsHasStartsAt = tableColumnExists($conn, "events", "starts_at");
+$eventsHasEndsAt = tableColumnExists($conn, "events", "ends_at");
+$eventsHasCreatedBy = tableColumnExists($conn, "events", "created_by_user_id");
+$eventsHasEventDate = tableColumnExists($conn, "events", "event_date");
+$eventsHasEventTime = tableColumnExists($conn, "events", "event_time");
+$eventsHasCategory = tableColumnExists($conn, "events", "category");
+$eventsHasParticipantLimit = tableColumnExists($conn, "events", "participant_limit");
+$usersHasCollege = tableColumnExists($conn, "users", "college");
 
 if (!$eventsHasStartsAt) {
     $conn->query("ALTER TABLE events ADD COLUMN starts_at DATETIME DEFAULT NULL AFTER description");
-    $eventsHasStartsAt = eventColumnExists($conn, "starts_at");
+    $eventsHasStartsAt = tableColumnExists($conn, "events", "starts_at");
 }
 
 if (!$eventsHasEndsAt) {
     $conn->query("ALTER TABLE events ADD COLUMN ends_at DATETIME DEFAULT NULL AFTER starts_at");
-    $eventsHasEndsAt = eventColumnExists($conn, "ends_at");
+    $eventsHasEndsAt = tableColumnExists($conn, "events", "ends_at");
 }
 
 if (!$eventsHasCreatedBy) {
     $conn->query("ALTER TABLE events ADD COLUMN created_by_user_id INT(11) DEFAULT NULL AFTER ends_at");
-    $eventsHasCreatedBy = eventColumnExists($conn, "created_by_user_id");
+    $eventsHasCreatedBy = tableColumnExists($conn, "events", "created_by_user_id");
 }
 
 if (!$eventsHasCollege) {
     $conn->query("ALTER TABLE events ADD COLUMN college VARCHAR(150) DEFAULT NULL AFTER created_by_user_id");
-    $eventsHasCollege = eventColumnExists($conn, "college");
+    $eventsHasCollege = tableColumnExists($conn, "events", "college");
 }
 
 if (!$eventsHasCategory) {
     $conn->query("ALTER TABLE events ADD COLUMN category VARCHAR(100) DEFAULT NULL AFTER description");
-    $eventsHasCategory = eventColumnExists($conn, "category");
+    $eventsHasCategory = tableColumnExists($conn, "events", "category");
 }
 
 if (!$eventsHasParticipantLimit) {
     $conn->query("ALTER TABLE events ADD COLUMN participant_limit INT(11) DEFAULT NULL AFTER college");
-    $eventsHasParticipantLimit = eventColumnExists($conn, "participant_limit");
+    $eventsHasParticipantLimit = tableColumnExists($conn, "events", "participant_limit");
 }
 
 // Create event_checkins table if it doesn't exist
@@ -394,8 +395,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 // Get events from selected college
 $events = [];
-$collegeSelect = $eventsHasCollege ? "COALESCE(NULLIF(e.college, ''), u.college)" : "u.college";
-$eventCollegeWhere = $eventsHasCollege ? "COALESCE(NULLIF(e.college, ''), u.college) = ?" : "u.college = ?";
+$collegeSelect = "''";
+$eventCollegeWhere = "1 = 0";
+
+if ($eventsHasCollege && $usersHasCollege) {
+    $collegeSelect = "COALESCE(NULLIF(e.college, ''), u.college)";
+    $eventCollegeWhere = "COALESCE(NULLIF(e.college, ''), u.college) = ?";
+} elseif ($eventsHasCollege) {
+    $collegeSelect = "e.college";
+    $eventCollegeWhere = "e.college = ?";
+} elseif ($usersHasCollege) {
+    $collegeSelect = "u.college";
+    $eventCollegeWhere = "u.college = ?";
+}
 $stmt = $conn->prepare("
     SELECT 
         e.id,

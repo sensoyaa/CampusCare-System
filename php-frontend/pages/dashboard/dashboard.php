@@ -29,6 +29,41 @@ $instructorStudentsMonitored = 0;
 $instructorAvailableEvents = 0;
 $instructorStudentOverview = [];
 
+function tableColumnExists(mysqli $conn, string $tableName, string $columnName): bool
+{
+    $databaseResult = $conn->query("SELECT DATABASE() AS database_name");
+    $databaseRow = $databaseResult ? $databaseResult->fetch_assoc() : null;
+    $databaseName = trim((string) ($databaseRow["database_name"] ?? ""));
+
+    if ($databaseName === "") {
+        return false;
+    }
+
+    $stmt = $conn->prepare("
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = ?
+          AND TABLE_NAME = ?
+          AND COLUMN_NAME = ?
+        LIMIT 1
+    ");
+
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bind_param("sss", $databaseName, $tableName, $columnName);
+    $stmt->execute();
+    $stmt->store_result();
+    $exists = $stmt->num_rows > 0;
+    $stmt->close();
+
+    return $exists;
+}
+
+$eventsHasImageUrl = tableColumnExists($conn, "events", "image_url");
+$eventImageSelect = $eventsHasImageUrl ? "e.image_url" : "'' AS image_url";
+
 if ($role === "Student" && $userId > 0) {
     $pendingStmt = $conn->prepare(
         "SELECT COUNT(*) AS total
@@ -86,7 +121,7 @@ if ($role === "Student" && $userId > 0) {
     // Fetch student's joined events
     $joinedEvents = [];
     $eventsStmt = $conn->prepare(
-        "SELECT e.id, e.title, e.starts_at, e.ends_at, e.location, e.category, e.image_url,
+        "SELECT e.id, e.title, e.starts_at, e.ends_at, e.location, e.category, {$eventImageSelect},
                 ep.joined_at,
                 (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count
          FROM events e

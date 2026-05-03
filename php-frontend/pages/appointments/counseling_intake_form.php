@@ -49,6 +49,8 @@ function intake_table_ready(mysqli $conn): bool
 
 function intake_summary(array $formState): array
 {
+    $medicalHistory = is_array($formState["medical_history"] ?? null) ? array_filter($formState["medical_history"]) : [];
+
     return [
         "title" => "Counseling Intake Form",
         "sections" => [
@@ -58,8 +60,13 @@ function intake_summary(array $formState): array
                     ["label" => "Client Name", "value" => trim(intake_value($formState, "client_first_name") . " " . intake_value($formState, "client_last_name"))],
                     ["label" => "Course and Year", "value" => intake_value($formState, "course_year")],
                     ["label" => "Intake Type", "value" => intake_value($formState, "intake_mode")],
+                    ["label" => "Referred By", "value" => intake_value($formState, "referred_by")],
                     ["label" => "Email", "value" => intake_value($formState, "email")],
                     ["label" => "Cell Phone", "value" => intake_value($formState, "cell_phone")],
+                    ["label" => "Date of Birth", "value" => intake_value($formState, "date_of_birth")],
+                    ["label" => "Marital Status", "value" => intake_value($formState, "marital_status")],
+                    ["label" => "Religious Affiliation", "value" => intake_value($formState, "religious_affiliation")],
+                    ["label" => "Messenger Username", "value" => intake_value($formState, "messenger_username")],
                     [
                         "label" => "Address",
                         "value" => trim(implode(", ", array_filter([
@@ -80,7 +87,51 @@ function intake_summary(array $formState): array
                     ["label" => "Contact Number", "value" => intake_value($formState, "emergency_contact_number")],
                     [
                         "label" => "Medical History",
-                        "value" => is_array($formState["medical_history"]) ? implode(", ", $formState["medical_history"]) : "",
+                        "value" => !empty($medicalHistory) ? implode(", ", $medicalHistory) : "",
+                        "full" => true,
+                    ],
+                    [
+                        "label" => "Other Medical Details",
+                        "value" => intake_value($formState, "medical_history_other"),
+                        "full" => true,
+                    ],
+                    [
+                        "label" => "Family Medical History",
+                        "value" => intake_value($formState, "family_medical_history"),
+                        "full" => true,
+                    ],
+                    [
+                        "label" => "Tobacco Use",
+                        "value" => intake_value($formState, "tobacco_use"),
+                    ],
+                    [
+                        "label" => "Alcohol Use",
+                        "value" => intake_value($formState, "alcohol_use"),
+                    ],
+                    [
+                        "label" => "Caffeine Use",
+                        "value" => intake_value($formState, "caffeine_use"),
+                    ],
+                    [
+                        "label" => "Drug Use",
+                        "value" => intake_value($formState, "drug_use"),
+                    ],
+                    [
+                        "label" => "Prescription Medication",
+                        "value" => intake_value($formState, "takes_prescription_medication"),
+                    ],
+                    [
+                        "label" => "Prescription Details",
+                        "value" => intake_value($formState, "prescription_details"),
+                        "full" => true,
+                    ],
+                    [
+                        "label" => "Surgeries in Past 5 Years",
+                        "value" => intake_value($formState, "surgeries_past_5_years"),
+                    ],
+                    [
+                        "label" => "Surgery Details",
+                        "value" => intake_value($formState, "surgeries_details"),
                         "full" => true,
                     ],
                 ],
@@ -92,6 +143,8 @@ function intake_summary(array $formState): array
                     ["label" => "Session Expectation", "value" => intake_value($formState, "session_expectation"), "full" => true],
                     ["label" => "Average Sleep Hours", "value" => intake_value($formState, "average_sleep_hours")],
                     ["label" => "Seen a Mental Health Professional Before", "value" => intake_value($formState, "seen_mental_health_professional")],
+                    ["label" => "If Yes, Reason", "value" => intake_value($formState, "seen_professional_reason"), "full" => true],
+                    ["label" => "Additional Comments", "value" => intake_value($formState, "additional_comments"), "full" => true],
                 ],
             ],
             [
@@ -100,6 +153,8 @@ function intake_summary(array $formState): array
                     ["label" => "Agreement Accepted", "value" => intake_value($formState, "agreement_accepted") !== "" ? intake_value($formState, "agreement_accepted") : "No"],
                     ["label" => "Client Signature", "value" => intake_value($formState, "agreement_signature_client"), "signature" => intake_value($formState, "agreement_signature_client_drawn")],
                     ["label" => "Client Date", "value" => intake_value($formState, "agreement_client_date")],
+                    ["label" => "Counselor Signature", "value" => intake_value($formState, "agreement_signature_counselor"), "signature" => intake_value($formState, "agreement_signature_counselor_drawn")],
+                    ["label" => "Counselor Date", "value" => intake_value($formState, "agreement_counselor_date")],
                 ],
             ],
         ],
@@ -347,7 +402,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <?php endif; ?>
 
                 .intake-form-shell {
-                    
+                        
                 }
 
                 .intake-section {
@@ -895,8 +950,145 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         });
     }
 
+    var embeddedFormElement = document.querySelector("form");
+    var embeddedFormDraftKey = "campuscare_form_draft_counseling_<?php echo intval($userId); ?>";
+
+    function normalizeDraftFieldName(name) {
+        return name.slice(-2) === "[]" ? name.slice(0, -2) : name;
+    }
+
+    function readDraftState() {
+        try {
+            var raw = sessionStorage.getItem(embeddedFormDraftKey);
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function hasMeaningfulDraftValue(value) {
+        if (Array.isArray(value)) {
+            return value.some(hasMeaningfulDraftValue);
+        }
+
+        return String(value || "").trim() !== "";
+    }
+
+    function applyDraftState(draft) {
+        if (!draft || typeof draft !== "object" || !embeddedFormElement || embeddedFormIsViewMode) {
+            return false;
+        }
+
+        Array.prototype.forEach.call(embeddedFormElement.elements, function (field) {
+            if (!field || !field.name) {
+                return;
+            }
+
+            var normalizedName = normalizeDraftFieldName(field.name);
+            if (!Object.prototype.hasOwnProperty.call(draft, normalizedName)) {
+                return;
+            }
+
+            var savedValue = draft[normalizedName];
+
+            if (field.type === "checkbox") {
+                if (Array.isArray(savedValue)) {
+                    field.checked = savedValue.indexOf(field.value) !== -1;
+                } else {
+                    field.checked = !!savedValue;
+                }
+                return;
+            }
+
+            if (field.type === "radio") {
+                field.checked = String(savedValue) === String(field.value);
+                return;
+            }
+
+            if (field.type !== "file") {
+                field.value = Array.isArray(savedValue) ? (savedValue[0] || "") : savedValue;
+            }
+        });
+
+        return true;
+    }
+
+    function collectDraftState() {
+        if (!embeddedFormElement) {
+            return {};
+        }
+
+        var state = {};
+
+        Array.prototype.forEach.call(embeddedFormElement.elements, function (field) {
+            if (!field || !field.name || field.disabled || field.type === "file") {
+                return;
+            }
+
+            var normalizedName = normalizeDraftFieldName(field.name);
+
+            if (field.type === "checkbox") {
+                if (field.name.slice(-2) === "[]") {
+                    if (!Array.isArray(state[normalizedName])) {
+                        state[normalizedName] = [];
+                    }
+                    if (field.checked) {
+                        state[normalizedName].push(field.value);
+                    }
+                } else {
+                    state[normalizedName] = field.checked;
+                }
+                return;
+            }
+
+            if (field.type === "radio") {
+                if (field.checked) {
+                    state[normalizedName] = field.value;
+                }
+                return;
+            }
+
+            state[normalizedName] = field.value;
+        });
+
+        return state;
+    }
+
+    function persistDraftState() {
+        if (embeddedFormIsViewMode) {
+            return;
+        }
+
+        var state = collectDraftState();
+        var hasDraftData = Object.keys(state).some(function (key) {
+            return hasMeaningfulDraftValue(state[key]);
+        });
+
+        try {
+            if (hasDraftData) {
+                sessionStorage.setItem(embeddedFormDraftKey, JSON.stringify(state));
+            } else {
+                sessionStorage.removeItem(embeddedFormDraftKey);
+            }
+        } catch (error) {}
+    }
+
+    function clearDraftState() {
+        try {
+            sessionStorage.removeItem(embeddedFormDraftKey);
+        } catch (error) {}
+    }
+
+    var restoredDraftState = readDraftState();
+    var hasRestoredDraft = applyDraftState(restoredDraftState);
+
     setupSignaturePad("clientSignaturePad", "agreement_signature_client_drawn", "clearClientSignature", "undoClientSignature");
     applyEmbeddedFormMode();
+
+    if (embeddedFormElement && !embeddedFormIsViewMode) {
+        embeddedFormElement.addEventListener("input", persistDraftState);
+        embeddedFormElement.addEventListener("change", persistDraftState);
+    }
 
     var sectionAnchors = Array.from(document.querySelectorAll(".card-title"));
     var currentSectionIndex = 0;
@@ -950,6 +1142,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             formType: "counseling",
             isViewMode: <?php echo $isViewMode ? "true" : "false"; ?>,
             hasSavedData: <?php echo $hasExistingSubmission ? "true" : "false"; ?>,
+            hasDraftData: hasRestoredDraft,
             message: <?php echo json_encode($hasExistingSubmission ? "Your latest counseling intake form is loaded." : "Fill out the counseling intake form to continue."); ?>,
             previewUrl: "/campuscare-api/php-frontend/pages/appointments/counseling_intake_preview.php",
             summary: <?php echo json_encode($hasExistingSubmission ? intake_summary($formState) : null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
@@ -958,6 +1151,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     <?php endif; ?>
 
     <?php if ($success !== ""): ?>
+    clearDraftState();
     if (window.parent && window.parent !== window) {
         window.parent.postMessage({
             type: "campuscare-form-saved",

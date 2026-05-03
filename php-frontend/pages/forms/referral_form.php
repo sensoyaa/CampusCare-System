@@ -60,14 +60,29 @@ function referral_summary(array $formState): array
                     ["label" => "Referral Date and Time", "value" => (string) ($formState["referral_datetime"] ?? "")],
                     ["label" => "Student Name", "value" => (string) ($formState["student_name"] ?? "")],
                     ["label" => "Course/Year/Section", "value" => (string) ($formState["course_year_section"] ?? "")],
+                    ["label" => "Date Received", "value" => (string) ($formState["date_received"] ?? "")],
+                    ["label" => "Received By", "value" => (string) ($formState["received_by"] ?? "")],
                 ],
             ],
             [
-                "title" => "Reasons and Signatures",
+                "title" => "Reasons for Referral",
                 "entries" => [
                     ["label" => "Reasons", "value" => is_array($formState["reasons"] ?? null) ? implode(", ", $formState["reasons"]) : "", "full" => true],
                     ["label" => "Other Reason", "value" => (string) ($formState["other_reason"] ?? ""), "full" => true],
+                ],
+            ],
+            [
+                "title" => "Actions Taken",
+                "entries" => [
+                    ["label" => "Actions / Intervention", "value" => (string) ($formState["actions_taken"] ?? ""), "full" => true],
+                    ["label" => "Action Date and Time", "value" => (string) ($formState["actions_datetime"] ?? "")],
+                ],
+            ],
+            [
+                "title" => "Signatures",
+                "entries" => [
                     ["label" => "Faculty/Staff Signature", "value" => (string) ($formState["faculty_signature"] ?? ""), "signature" => (string) ($formState["faculty_signature_drawn"] ?? "")],
+                    ["label" => "Counselor Signature", "value" => (string) ($formState["counselor_signature"] ?? ""), "signature" => (string) ($formState["counselor_signature_drawn"] ?? "")],
                 ],
             ],
         ],
@@ -677,9 +692,146 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }, "*");
     }
 
+    var embeddedFormElement = document.querySelector("form");
+    var embeddedFormDraftKey = "campuscare_form_draft_referral_<?php echo intval($userId); ?>";
+
+    function normalizeDraftFieldName(name) {
+        return name.slice(-2) === "[]" ? name.slice(0, -2) : name;
+    }
+
+    function readDraftState() {
+        try {
+            var raw = sessionStorage.getItem(embeddedFormDraftKey);
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function hasMeaningfulDraftValue(value) {
+        if (Array.isArray(value)) {
+            return value.some(hasMeaningfulDraftValue);
+        }
+
+        return String(value || "").trim() !== "";
+    }
+
+    function applyDraftState(draft) {
+        if (!draft || typeof draft !== "object" || !embeddedFormElement || embeddedFormIsViewMode) {
+            return false;
+        }
+
+        Array.prototype.forEach.call(embeddedFormElement.elements, function (field) {
+            if (!field || !field.name) {
+                return;
+            }
+
+            var normalizedName = normalizeDraftFieldName(field.name);
+            if (!Object.prototype.hasOwnProperty.call(draft, normalizedName)) {
+                return;
+            }
+
+            var savedValue = draft[normalizedName];
+
+            if (field.type === "checkbox") {
+                if (Array.isArray(savedValue)) {
+                    field.checked = savedValue.indexOf(field.value) !== -1;
+                } else {
+                    field.checked = !!savedValue;
+                }
+                return;
+            }
+
+            if (field.type === "radio") {
+                field.checked = String(savedValue) === String(field.value);
+                return;
+            }
+
+            if (field.type !== "file") {
+                field.value = Array.isArray(savedValue) ? (savedValue[0] || "") : savedValue;
+            }
+        });
+
+        return true;
+    }
+
+    function collectDraftState() {
+        if (!embeddedFormElement) {
+            return {};
+        }
+
+        var state = {};
+
+        Array.prototype.forEach.call(embeddedFormElement.elements, function (field) {
+            if (!field || !field.name || field.disabled || field.type === "file") {
+                return;
+            }
+
+            var normalizedName = normalizeDraftFieldName(field.name);
+
+            if (field.type === "checkbox") {
+                if (field.name.slice(-2) === "[]") {
+                    if (!Array.isArray(state[normalizedName])) {
+                        state[normalizedName] = [];
+                    }
+                    if (field.checked) {
+                        state[normalizedName].push(field.value);
+                    }
+                } else {
+                    state[normalizedName] = field.checked;
+                }
+                return;
+            }
+
+            if (field.type === "radio") {
+                if (field.checked) {
+                    state[normalizedName] = field.value;
+                }
+                return;
+            }
+
+            state[normalizedName] = field.value;
+        });
+
+        return state;
+    }
+
+    function persistDraftState() {
+        if (embeddedFormIsViewMode) {
+            return;
+        }
+
+        var state = collectDraftState();
+        var hasDraftData = Object.keys(state).some(function (key) {
+            return hasMeaningfulDraftValue(state[key]);
+        });
+
+        try {
+            if (hasDraftData) {
+                sessionStorage.setItem(embeddedFormDraftKey, JSON.stringify(state));
+            } else {
+                sessionStorage.removeItem(embeddedFormDraftKey);
+            }
+        } catch (error) {}
+    }
+
+    function clearDraftState() {
+        try {
+            sessionStorage.removeItem(embeddedFormDraftKey);
+        } catch (error) {}
+    }
+
+    var restoredDraftState = readDraftState();
+    var hasRestoredDraft = applyDraftState(restoredDraftState);
+
     setupSignaturePad("facultySignaturePad", "faculty_signature_drawn", "clearFacultySignature", "undoFacultySignature");
     setupSignaturePad("counselorSignaturePad", "counselor_signature_drawn", "clearCounselorSignature", "undoCounselorSignature");
     applyEmbeddedFormMode();
+
+    if (embeddedFormElement && !embeddedFormIsViewMode) {
+        embeddedFormElement.addEventListener("input", persistDraftState);
+        embeddedFormElement.addEventListener("change", persistDraftState);
+    }
     notifyParentHeight();
 
     var studentSelect = document.getElementById("student_user_id");
@@ -708,6 +860,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             formType: "referral",
             isViewMode: <?php echo $isViewMode ? "true" : "false"; ?>,
             hasSavedData: <?php echo $hasExistingSubmission ? "true" : "false"; ?>,
+            hasDraftData: hasRestoredDraft,
             message: <?php echo json_encode($hasExistingSubmission ? "Your latest referral form is loaded." : "Fill out the referral form to continue."); ?>,
             previewUrl: <?php echo json_encode($lastSubmittedId > 0 ? "/campuscare-api/php-frontend/pages/forms/referral_form_preview.php?id=" . intval($lastSubmittedId) : ""); ?>,
             summary: <?php echo json_encode($hasExistingSubmission ? referral_summary($formState) : null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
@@ -717,6 +870,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     <?php endif; ?>
 
     <?php if ($success !== ""): ?>
+    clearDraftState();
     if (window.parent && window.parent !== window) {
         window.parent.postMessage({
             type: "campuscare-form-saved",
