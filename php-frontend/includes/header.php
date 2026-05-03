@@ -17,7 +17,7 @@ $darkModeEnabled = in_array($darkModeCookie, ["true", "1", "yes", "on"], true);
     <link rel="icon" type="image/png" href="/campuscare-api/php-frontend/assets/images/logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/campuscare-api/php-frontend/assets/style.css">
-    <?php if (basename($_SERVER["PHP_SELF"]) === "event_detail.php"): ?>
+    <?php if (in_array(basename($_SERVER["PHP_SELF"]), ["event_detail.php", "appointment_detail.php"], true)): ?>
     <link rel="stylesheet" href="/campuscare-api/php-frontend/css/event_detail.css">
     <?php endif; ?>
     <!-- SweetAlert2 -->
