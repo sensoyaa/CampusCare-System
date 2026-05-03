@@ -145,8 +145,14 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }
 
         .booking-head {
+<<<<<<< HEAD
             padding: 1.75rem 1.75rem 1.6rem;
             background: linear-gradient(135deg, var(--primary) 0%, #5f99ca 100%);
+=======
+            border-radius: 22px 22px 0 0;
+            padding: 30px 34px 20px;
+            background: var(--primary);
+>>>>>>> 4ddbe41e7dd058218afb228d232b60598ce6a767
             color: #fff;
             border-radius: 22px;
             margin-bottom: 1rem;

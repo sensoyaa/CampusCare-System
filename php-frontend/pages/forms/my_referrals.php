@@ -16,7 +16,6 @@ if (!in_array($role, $allowedRoles, true)) {
 }
 
 campuscare_ensure_referral_forms_table($conn);
-campuscare_ensure_referral_intake_forms_table($conn);
 
 // Get referrals submitted by this user
 $whereClause = "submitted_by_user_id = ?";
