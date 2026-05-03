@@ -8,64 +8,7 @@ $pageTitle = "Campus Events";
 $role = normalizeRole($_SESSION["role"] ?? "Student");
 $userId = intval($_SESSION["user_id"] ?? 0);
 
-$colleges = [
-    "College of Technology",
-    "College of Public Administration and Governance",
-    "College of Nursing",
-    "College of Medicine",
-    "College of Law",
-    "College of Education",
-    "College of Business",
-    "College of Arts and Sciences",
-];
-
-// Get event counts for each college
-$collegeEventCounts = [];
-foreach ($colleges as $college) {
-    $countStmt = $conn->prepare(
-        "SELECT COUNT(*) AS total
-         FROM events
-         WHERE college = ?
-         AND starts_at >= NOW()"
-    );
-    $countStmt->bind_param("s", $college);
-    $countStmt->execute();
-    $countResult = $countStmt->get_result()->fetch_assoc();
-    $collegeEventCounts[$college] = intval($countResult["total"] ?? 0);
-    $countStmt->close();
-}
-
-$collegeIconMap = [
-    "college of technology" => "Technology.png",
-    "technology" => "Technology.png",
-    "college of public administration and governance" => "Public Administration and Governance.png",
-    "public administration and governance" => "Public Administration and Governance.png",
-    "college of nursing" => "Nursing.png",
-    "nursing" => "Nursing.png",
-    "college of medicine" => "Medicine.png",
-    "medicine" => "Medicine.png",
-    "college of law" => "Law.png",
-    "law" => "Law.png",
-    "college of education" => "Education.png",
-    "education" => "Education.png",
-    "college of business" => "Business.png",
-    "business" => "Business.png",
-    "college of arts and sciences" => "Art and Sciences.png",
-    "college of art and sciences" => "Art and Sciences.png",
-    "arts and sciences" => "Art and Sciences.png",
-    "art and sciences" => "Art and Sciences.png",
-];
-
-function collegeIconUrl(string $college, array $collegeIconMap): ?string
-{
-    $key = strtolower(trim($college));
-
-    if (!isset($collegeIconMap[$key])) {
-        return null;
-    }
-
-    return "/campuscare-api/php-frontend/assets/images/colleges/" . rawurlencode($collegeIconMap[$key]);
-}
+$colleges = []; // College column missing from events table
 
 require_once __DIR__ . "/../../includes/header.php";
 require_once __DIR__ . "/../../includes/sidebar.php";
@@ -92,22 +35,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <!-- College Selection Section -->
             <section class="events-section">
                 <h2 class="events-section-title">Select a College</h2>
-                <div class="colleges-grid">
-                    <?php foreach ($colleges as $college): ?>
-                        <?php $collegeIconUrl = collegeIconUrl($college, $collegeIconMap); ?>
-                        <a href="/campuscare-api/php-frontend/pages/events/view_college_events.php?college=<?php echo urlencode($college); ?>" class="college-selector-card">
-                            <?php if (($collegeEventCounts[$college] ?? 0) > 0): ?>
-                                <span class="college-event-badge"><?php echo $collegeEventCounts[$college]; ?></span>
-                            <?php endif; ?>
-                            <span class="college-selector-icon">
-                                <?php if ($collegeIconUrl !== null): ?>
-                                    <img src="<?php echo htmlspecialchars($collegeIconUrl); ?>" alt="" loading="lazy">
-                                <?php endif; ?>
-                            </span>
-                            <h4><?php echo htmlspecialchars($college); ?></h4>
-                        </a>
-                    <?php endforeach; ?>
-                </div>
+    <div class="empty-state">
+    <h3>Events Page</h3>
+    <p>No college filtering (missing DB column). <a href="/campuscare-api/php-frontend/pages/events/view_college_events.php?college=All">View All Events</a></p>
+</div>
             </section>
         </div>
     </div>
