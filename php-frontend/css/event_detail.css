@@ -284,11 +284,7 @@
 }
 
 .event-detail-actions {
-    background: white;
-    padding: 1.25rem;
-    border-radius: 20px;
-    box-shadow: 0 10px 26px rgba(20, 40, 60, 0.08);
-    margin-bottom: 1.25rem;
+    margin: 1.25rem 0px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 0.85rem;
