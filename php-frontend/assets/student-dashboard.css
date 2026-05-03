@@ -1,0 +1,504 @@
+/* Modern Student Dashboard Redesign */
+
+/* Update page background for Student */
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) {
+  background: linear-gradient(135deg, #f0f6fb 0%, #e8f1f8 100%);
+}
+
+/* Summary Cards - Modern Style */
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .summary-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  margin-bottom: 28px;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .summary-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+  border: 1px solid rgba(77, 143, 197, 0.15);
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .summary-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(77, 143, 197, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .summary-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(77, 143, 197, 0.15);
+  border-color: rgba(77, 143, 197, 0.3);
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .summary-card .announcement-icon-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Quick Access Cards - Modern Style */
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .quick-card {
+  border-radius: 20px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-decoration: none;
+  color: inherit;
+  text-align: center;
+  min-height: 180px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .quick-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .quick-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .quick-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: bold;
+  position: relative;
+  z-index: 2;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .quick-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .quick-card h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-main);
+  position: relative;
+  z-index: 2;
+}
+
+/* Quick Access Section */
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .quick-layout {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 2fr 1fr;
+  margin-bottom: 28px;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .quick-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Announcement Card Styling */
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .announcement-card {
+  background: #ffffff;
+  border: 1px solid rgba(77, 143, 197, 0.1);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .announcement-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .announcement-item-card {
+  padding: 14px;
+  background: #f8fafc;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .announcement-item-card:hover {
+  background: #eef4f8;
+  transform: translateX(4px);
+}
+
+/* Appointment Card Styling */
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .appointment-card {
+  background: #ffffff;
+  border: 1px solid rgba(77, 143, 197, 0.1);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .appointment-card:hover {
+  background: #f8fcff;
+  border-color: rgba(77, 143, 197, 0.2);
+  box-shadow: 0 4px 12px rgba(77, 143, 197, 0.1);
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .appointment-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .appointment-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .appointment-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0 0 4px 0;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .appointment-meta {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Wellness Tip Card Styling */
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .wellness-tip-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
+  border: 1px solid rgba(77, 143, 197, 0.1);
+  border-radius: 20px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .wellness-carousel {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  overflow: hidden;
+  border-radius: 20px 20px 0 0;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .wellness-tip {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 24px;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .wellness-tip.active {
+  opacity: 1;
+  position: relative;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .tip-content {
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  max-width: 70%;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .tip-content h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .tip-quote {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .tip-text {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Wellness Dots */
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .wellness-dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .wellness-dots .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d0d8e0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .wellness-dots .dot.active {
+  background: #4d8fc5;
+  transform: scale(1.2);
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .wellness-dots .dot:hover {
+  background: #a0adbf;
+}
+
+/* Sections */
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .appointments-wellness-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .section-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .section-link:hover {
+  color: #2f6d9f;
+}
+
+/* Color variants for quick cards */
+.quick-light-blue {
+  background: linear-gradient(135deg, #e8f1f8 0%, #d9e8f7 100%);
+}
+
+.quick-light-green {
+  background: linear-gradient(135deg, #e5f7eb 0%, #d4f2e0 100%);
+}
+
+.quick-light-gray {
+  background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%);
+}
+
+.quick-bg-3 {
+  background: linear-gradient(135deg, #fff5e6 0%, #ffe8cc 100%);
+}
+
+.quick-bg-4 {
+  background: linear-gradient(135deg, #f0e8f5 0%, #e8ddf0 100%);
+}
+
+/* Dashboard Head */
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .dashboard-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .page-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--text-main);
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .page-subtitle {
+  font-size: 15px;
+  color: var(--text-muted);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .role-pill {
+  background: linear-gradient(135deg, #d9e8f7 0%, #c5daf2 100%);
+  color: var(--primary);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .date-card {
+  background: linear-gradient(135deg, #e8f1f8 0%, #d9e8f7 100%);
+  border: 1px solid rgba(77, 143, 197, 0.15);
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: fit-content;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .date-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .date-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .date-content small {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .date-content strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .date-weekday {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .appointments-wellness-row,
+  .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .quick-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .dashboard-head {
+    flex-direction: column;
+  }
+
+  .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .tip-content {
+    max-width: 100%;
+  }
+}
+
+/* Dark mode support */
+body.theme-dark .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) {
+  background: linear-gradient(135deg, #0e1a2e 0%, #1a2a3f 100%);
+}
+
+body.theme-dark .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .summary-card {
+  background: linear-gradient(135deg, #121d2b 0%, #1a2d3f 100%);
+  border-color: rgba(77, 143, 197, 0.2);
+}
+
+body.theme-dark .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .announcement-card,
+body.theme-dark .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .wellness-tip-card {
+  background: linear-gradient(135deg, #121d2b 0%, #1a2d3f 100%);
+  border-color: rgba(77, 143, 197, 0.2);
+}
+
+body.theme-dark .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .appointment-card {
+  background: #0f1a29;
+  border-color: rgba(77, 143, 197, 0.2);
+}
+
+body.theme-dark .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .appointment-card:hover {
+  background: #1a2d3f;
+}
+
+body.theme-dark .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .announcement-item-card {
+  background: rgba(77, 143, 197, 0.1);
+}
+
+body.theme-dark .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .announcement-item-card:hover {
+  background: rgba(77, 143, 197, 0.15);
+}
+
+body.theme-dark .page-shell:not(.counselor-shell):not(.admin-shell):not(.facilitator-shell):not(.instructor-shell) .wellness-dots {
+  background: #0f1a29;
+}

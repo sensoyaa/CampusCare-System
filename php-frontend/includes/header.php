@@ -17,6 +17,8 @@ $darkModeEnabled = in_array($darkModeCookie, ["true", "1", "yes", "on"], true);
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/campuscare-api/php-frontend/assets/style.css">
     <link rel="stylesheet" href="/campuscare-api/php-frontend/assets/compact.css">
+    <link rel="stylesheet" href="/campuscare-api/php-frontend/assets/admin-dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
     (function () {
         try {

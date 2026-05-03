@@ -176,6 +176,12 @@ function sendRegistrationVerificationEmail(string $email, string $recipientName,
     return send_smtp_mail($email, $recipientName, $subject, $htmlBody, $textBody);
 }
 
+function is_smtp_configured(): bool
+{
+    $validation = mailer_validate_config();
+    return $validation["success"] === true;
+}
+
 if (isset($_SESSION["oauth_error"])) {
     $error = trim((string) $_SESSION["oauth_error"]);
     unset($_SESSION["oauth_error"]);
@@ -434,6 +440,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } elseif ($password !== $confirm_password) {
             $error = "Password confirmation does not match.";
         } else {
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             $check = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
             $check->bind_param("s", $email);
             $check->execute();
@@ -441,6 +448,42 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             if ($checkResult->num_rows > 0) {
                 $error = "Email must be unique. Duplicate email is not allowed.";
+            } elseif (!is_smtp_configured()) {
+                $userStudentColumn = getColumnName($conn, "users", ["student_id", "student_number"], "student_id");
+                $userPasswordColumn = getColumnName($conn, "users", ["password_hash", "password"], "password");
+                $userRoleColumn = getColumnName($conn, "users", ["role", "role_id"], "role");
+                $userStatusColumn = getColumnName($conn, "users", ["status", "account_status_id"], "status");
+                $roleValue = $userRoleColumn === "role_id"
+                    ? (resolveRoleId($conn, $role) ?? 4)
+                    : $role;
+                $statusValue = $userStatusColumn === "account_status_id"
+                    ? (resolveAccountStatusId($conn, "Active") ?? 1)
+                    : "Active";
+
+                $stmt = $conn->prepare(
+                    "INSERT INTO users (full_name, " . $userStudentColumn . ", email, " . $userPasswordColumn . ", " . $userRoleColumn . ", " . $userStatusColumn . ") VALUES (?, ?, ?, ?, ?, ?)"
+                );
+
+                if (!$stmt) {
+                    $error = "Failed to create account.";
+                } else {
+                    $bindTypes = "ssss" . ($userRoleColumn === "role_id" ? "i" : "s") . ($userStatusColumn === "account_status_id" ? "i" : "s");
+                    $stmt->bind_param($bindTypes, $full_name, $student_id, $email, $hashedPassword, $roleValue, $statusValue);
+
+                    if ($stmt->execute()) {
+                        $success = "Registration completed. Email verification is disabled because SMTP is not configured. You can now log in.";
+                        $full_name = "";
+                        $email = "";
+                        $student_id = "";
+                        $role = "Student";
+                    } else {
+                        $error = intval($stmt->errno) === 1062
+                            ? "Email must be unique. Duplicate email is not allowed."
+                            : "Failed to create account.";
+                    }
+
+                    $stmt->close();
+                }
             } elseif (!ensureRegistrationVerificationTable($conn)) {
                 $error = "Unable to prepare email verification requests.";
             } else {
