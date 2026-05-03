@@ -150,7 +150,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }
 
         .booking-head {
-            border-radius: 28px 28px 0 0;
+            border-radius: 22px 22px 0 0;
             padding: 30px 34px 20px;
             background: var(--primary);
             color: #fff;
