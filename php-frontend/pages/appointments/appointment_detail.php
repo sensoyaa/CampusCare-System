@@ -169,7 +169,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     </div>
 
     <div class="content">
-        <div class="event-detail-page appointment-detail-root">
+        <div class="event-detail-page">
             <!-- Back Button -->
             <a href="/campuscare-api/php-frontend/pages/appointments/book_appointment.php" class="btn btn-outline event-back-link">
                 <?php echo sidebarIconSvg("arrow-left"); ?>
@@ -437,3 +437,295 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         </div>
     </div>
 </main>
+
+<style>
+    .event-detail-page {
+        padding: 0 80px;
+        border-radius: 10px;
+        max-width: 1200px;
+        margin: 20px auto;
+    }
+
+    .event-back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+        padding: 8px 12px;
+        font-size: 13px;
+        text-decoration: none;
+    }
+
+    .event-detail-header {
+    background: linear-gradient(135deg, var(--primary) 0%, #5f99ca 100%);
+    color: white;
+    padding: 1.75rem 1.75rem 1.6rem;
+    border-radius: 22px;
+    margin-bottom: 1rem;
+    box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.25rem;
+    }
+
+    .event-detail-header-main {
+        flex: 1;
+    }
+
+    .event-detail-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: #e6f2ff;
+        color: #0066cc;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+
+    .event-detail-kicker-icon {
+        display: flex;
+        align-items: center;
+    }
+
+    .event-detail-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0 0 8px 0;
+        line-height: 1.2;
+    }
+
+    .event-detail-subtitle {
+        font-size: 14px;
+        color: #ffffff;
+        margin: 0;
+    }
+
+    .event-detail-status {
+        flex-shrink: 0;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .status-badge.status-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status-badge.status-approved {
+        background: #d1e7dd;
+        color: #0f5132;
+    }
+
+    .status-badge.status-cancelled {
+        background: #f8d7da;
+        color: #842029;
+    }
+
+    .status-badge.status-completed {
+        background: #d1e7dd;
+        color: #0f5132;
+    }
+
+    .event-detail-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+
+    .event-meta-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+        background: #f9f9f9;
+        border-radius: 8px;
+        border: 1px solid #eee;
+    }
+
+    .event-meta-icon {
+        display: flex;
+        align-items: center;
+        color: #0066cc;
+        flex-shrink: 0;
+    }
+
+    .event-meta-label {
+        display: block;
+        font-size: 11px;
+        color: #999;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+
+    .event-meta-value {
+        display: block;
+        font-size: 14px;
+        color: #333;
+        font-weight: 500;
+    }
+
+    .event-detail-description {
+        margin-bottom: 32px;
+    }
+
+    .section-heading {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .section-heading-icon {
+        display: flex;
+        align-items: center;
+        color: #0066cc;
+        flex-shrink: 0;
+    }
+
+    .section-heading h2 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 0 0 4px 0;
+    }
+
+    .section-heading-subtext {
+        font-size: 12px;
+        color: #999;
+        margin: 0;
+    }
+
+    .event-detail-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+
+    .stat-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: #f0f7ff;
+        border-radius: 8px;
+        border-left: 4px solid #0066cc;
+    }
+
+    .stat-icon {
+        display: flex;
+        align-items: center;
+        color: #0066cc;
+        font-size: 24px;
+    }
+
+    .stat-value {
+        display: block;
+        font-size: 16px;
+        font-weight: 700;
+        color: #333;
+    }
+
+    .stat-label {
+        display: block;
+        font-size: 11px;
+        color: #999;
+        margin-top: 2px;
+    }
+
+    .event-detail-actions {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 32px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+        background: #0066cc;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #0052a3;
+        box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+    }
+
+    .btn-outline {
+        background: white;
+        color: #0066cc;
+        border: 1px solid #0066cc;
+    }
+
+    .btn-outline:hover {
+        background: #f0f7ff;
+    }
+
+    .btn-large {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+
+    .btn-disabled {
+        background: #ddd;
+        color: #999;
+        cursor: not-allowed;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #999;
+    }
+
+    @media (max-width: 900px) {
+        .event-detail-header {
+            flex-direction: column;
+        }
+
+        .event-detail-title {
+            font-size: 22px;
+        }
+
+        .event-detail-meta-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .event-detail-actions {
+            flex-direction: column;
+        }
+
+        .btn-large {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
