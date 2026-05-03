@@ -150,7 +150,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             );
                         ?>
 
-                        <article class="admin-appointment-card">
+                        <article class="admin-appointment-card" onclick="window.location.href='/campuscare-api/php-frontend/pages/appointments/appointment_detail.php?id=<?php echo intval($appointment["id"]); ?>';" style="cursor: pointer;">
                             <div class="admin-appointment-left">
                                 <span class="schedule-icon"><?php echo sidebarIconSvg("calendar"); ?></span>
                                 <div>
@@ -163,7 +163,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 </div>
                             </div>
 
-                            <div class="admin-appointment-actions">
+                            <div class="admin-appointment-actions" onclick="event.stopPropagation();">
                                 <span class="status-pill <?php echo $statusClass; ?> admin-status-pill-icon">
                                     <span class="status-icon-inline"><?php echo sidebarIconSvg($statusIcon); ?></span>
                                     <?php echo htmlspecialchars($status); ?>
@@ -221,6 +221,22 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </main>
 
 </div>
+<script>
+    /* Appointment card styling */
+    const style = document.createElement('style');
+    style.textContent = `
+        .admin-appointment-card {
+            transition: all 0.2s ease;
+        }
+
+        .admin-appointment-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 102, 204, 0.15) !important;
+            transform: translateY(-2px);
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+
 <script>
 (function () {
     const profileMenuToggle = document.querySelector(".profile-menu-toggle");

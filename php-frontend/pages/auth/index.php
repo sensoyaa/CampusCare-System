@@ -11,6 +11,13 @@ $projectBaseUrl = "/campuscare-api";
 $googleOauthConfig = campuscare_google_oauth_config();
 $googleOauthEnabled = (bool) ($googleOauthConfig["is_configured"] ?? false);
 
+function campuscare_login_email_allowed(string $email): bool
+{
+    $email = strtolower(trim($email));
+
+    return str_ends_with($email, "@student.buksu.edu.ph") || str_ends_with($email, "@buksu.edu.ph");
+}
+
 if (isset($_SESSION["oauth_error"])) {
     $error = trim((string) $_SESSION["oauth_error"]);
     unset($_SESSION["oauth_error"]);
@@ -31,6 +38,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if ($email === "" || $password === "") {
         $error = "Email and password are required.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || !campuscare_login_email_allowed($email)) {
+        $error = "Use your university email ending in @student.buksu.edu.ph or @buksu.edu.ph.";
     } elseif ($RECAPTCHA_SITE_KEY === "") {
         $error = "reCAPTCHA is not configured. Please contact the administrator.";
     } elseif ($recaptchaToken === "") {
@@ -78,6 +87,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
     <meta charset="UTF-8">
     <title>Login | CampusCare</title>
+    <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -89,10 +99,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <body class="login-page">
 <div class="form-page login-form-page">
     <div class="form-left login-hero">
-        <img
+         <img
             class="login-hero-image"
-            src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/LoginCover.png"
-            alt="CampusCare login cover"
+            src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/forgot_cover.png"
+            alt="CampusCare password reset cover"
             loading="eager"
             decoding="async"
         >
@@ -133,7 +143,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                                 <path fill="currentColor" d="M20 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 2-8 5-8-5h16Zm0 10H4V9l8 5 8-5v8Z"></path>
                             </svg>
                         </span>
-                        <input type="email" name="email" placeholder="yourname@mail.com" value="<?php echo htmlspecialchars($email); ?>" required>
+                        <input type="email" name="email" placeholder="yourname@student.buksu.edu.ph" value="<?php echo htmlspecialchars($email); ?>" required>
                     </div>
                 </div>
 

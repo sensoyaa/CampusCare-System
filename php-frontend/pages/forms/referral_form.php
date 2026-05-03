@@ -9,8 +9,10 @@ $role = normalizeRole($_SESSION["role"] ?? "Student");
 $userId = intval($_SESSION["user_id"] ?? 0);
 $fullName = trim((string) ($_SESSION["full_name"] ?? ""));
 $canManageForms = campuscare_forms_can_manage($role);
+$isIframe = isset($_GET["iframe"]) && $_GET["iframe"] === "1";
+$requestedMode = strtolower(trim((string) ($_GET["mode"] ?? "")));
 
-$allowedRoles = ["Instructor", "Facilitator", "Administrator", "Counselor"];
+$allowedRoles = ["Student", "Instructor", "Facilitator", "Administrator", "Counselor"];
 if (!in_array($role, $allowedRoles, true)) {
     header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
     exit();
@@ -19,6 +21,7 @@ if (!in_array($role, $allowedRoles, true)) {
 $error = "";
 $success = "";
 $lastSubmittedId = 0;
+$hasExistingSubmission = false;
 
 $reasonOptions = [
     "Absenteeism",
@@ -45,6 +48,47 @@ $reasonOptions = [
     "Withdrawn",
 ];
 
+function referral_summary(array $formState): array
+{
+    return [
+        "title" => "Referral Slip",
+        "sections" => [
+            [
+                "title" => "Referral Information",
+                "entries" => [
+                    ["label" => "Guidance Counselor", "value" => (string) ($formState["referred_to_counselor_name"] ?? "")],
+                    ["label" => "Referral Date and Time", "value" => (string) ($formState["referral_datetime"] ?? "")],
+                    ["label" => "Student Name", "value" => (string) ($formState["student_name"] ?? "")],
+                    ["label" => "Course/Year/Section", "value" => (string) ($formState["course_year_section"] ?? "")],
+                    ["label" => "Date Received", "value" => (string) ($formState["date_received"] ?? "")],
+                    ["label" => "Received By", "value" => (string) ($formState["received_by"] ?? "")],
+                ],
+            ],
+            [
+                "title" => "Reasons for Referral",
+                "entries" => [
+                    ["label" => "Reasons", "value" => is_array($formState["reasons"] ?? null) ? implode(", ", $formState["reasons"]) : "", "full" => true],
+                    ["label" => "Other Reason", "value" => (string) ($formState["other_reason"] ?? ""), "full" => true],
+                ],
+            ],
+            [
+                "title" => "Actions Taken",
+                "entries" => [
+                    ["label" => "Actions / Intervention", "value" => (string) ($formState["actions_taken"] ?? ""), "full" => true],
+                    ["label" => "Action Date and Time", "value" => (string) ($formState["actions_datetime"] ?? "")],
+                ],
+            ],
+            [
+                "title" => "Signatures",
+                "entries" => [
+                    ["label" => "Faculty/Staff Signature", "value" => (string) ($formState["faculty_signature"] ?? ""), "signature" => (string) ($formState["faculty_signature_drawn"] ?? "")],
+                    ["label" => "Counselor Signature", "value" => (string) ($formState["counselor_signature"] ?? ""), "signature" => (string) ($formState["counselor_signature_drawn"] ?? "")],
+                ],
+            ],
+        ],
+    ];
+}
+
 $formState = [
     "referred_to_counselor_id" => "",
     "referred_to_counselor_name" => "",
@@ -69,6 +113,49 @@ $students = [];
 
 if (!campuscare_ensure_referral_forms_table($conn)) {
     $error = "Unable to initialize referral form storage.";
+}
+
+if ($error === "") {
+    $latestStmt = $conn->prepare("
+        SELECT id, referred_to_counselor_id, referred_to_counselor_name, referral_datetime, student_user_id, student_name,
+               course_year_section, date_received, received_by, reasons_json, other_reason, faculty_signature_typed,
+               faculty_signature_drawn, actions_taken, actions_datetime, counselor_signature_typed, counselor_signature_drawn
+        FROM referral_forms
+        WHERE submitted_by_user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 1
+    ");
+
+    if ($latestStmt) {
+        $latestStmt->bind_param("i", $userId);
+        $latestStmt->execute();
+        $latestRow = $latestStmt->get_result()->fetch_assoc();
+        $latestStmt->close();
+
+        if (is_array($latestRow)) {
+            $hasExistingSubmission = true;
+            $lastSubmittedId = intval($latestRow["id"] ?? 0);
+            $formState["referred_to_counselor_id"] = trim((string) ($latestRow["referred_to_counselor_id"] ?? ""));
+            $formState["referred_to_counselor_name"] = trim((string) ($latestRow["referred_to_counselor_name"] ?? ""));
+            $formState["referral_datetime"] = trim((string) ($latestRow["referral_datetime"] ?? ""));
+            $formState["student_user_id"] = trim((string) ($latestRow["student_user_id"] ?? ""));
+            $formState["student_name"] = trim((string) ($latestRow["student_name"] ?? ""));
+            $formState["course_year_section"] = trim((string) ($latestRow["course_year_section"] ?? ""));
+            $formState["date_received"] = trim((string) ($latestRow["date_received"] ?? ""));
+            $formState["received_by"] = trim((string) ($latestRow["received_by"] ?? ""));
+            $formState["reasons"] = json_decode((string) ($latestRow["reasons_json"] ?? "[]"), true);
+            if (!is_array($formState["reasons"])) {
+                $formState["reasons"] = [];
+            }
+            $formState["other_reason"] = trim((string) ($latestRow["other_reason"] ?? ""));
+            $formState["faculty_signature"] = trim((string) ($latestRow["faculty_signature_typed"] ?? ""));
+            $formState["faculty_signature_drawn"] = trim((string) ($latestRow["faculty_signature_drawn"] ?? ""));
+            $formState["actions_taken"] = trim((string) ($latestRow["actions_taken"] ?? ""));
+            $formState["actions_datetime"] = trim((string) ($latestRow["actions_datetime"] ?? ""));
+            $formState["counselor_signature"] = trim((string) ($latestRow["counselor_signature_typed"] ?? ""));
+            $formState["counselor_signature_drawn"] = trim((string) ($latestRow["counselor_signature_drawn"] ?? ""));
+        }
+    }
 }
 
 $counselorResult = $conn->query("SELECT id, full_name FROM users WHERE role IN ('Counselor', 'Counsellor', 'Counselors') AND status = 'Active' ORDER BY full_name ASC");
@@ -186,12 +273,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
                 if ($insert->execute()) {
                     $lastSubmittedId = intval($insert->insert_id);
                     $success = "Referral slip submitted successfully.";
-                    $formState["other_reason"] = "";
-                    $formState["reasons"] = [];
-                    $formState["actions_taken"] = "";
-                    $formState["actions_datetime"] = "";
-                    $formState["counselor_signature"] = "";
-                    $formState["counselor_signature_drawn"] = "";
+                    $hasExistingSubmission = true;
+                    $requestedMode = "view";
+                    $isViewMode = $isIframe;
                 } else {
                     $error = "Failed to submit referral slip.";
                 }
@@ -201,6 +285,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
         }
     }
 }
+
+$isViewMode = $isIframe && $hasExistingSubmission && $requestedMode !== "edit";
 
 require_once __DIR__ . "/../../includes/header.php";
 require_once __DIR__ . "/../../includes/sidebar.php";
@@ -226,8 +312,53 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
             <?php endif; ?>
 
-            <form method="POST" class="card" style="padding:20px;">
+            <form method="POST" class="<?php echo $isIframe ? "" : "card"; ?>" style="padding:20px;">
                 <style>
+                <?php if ($isIframe): ?>
+                body {
+                    background: #f6fbff;
+                }
+
+                html,
+                body {
+                    height: auto !important;
+                    min-height: 0 !important;
+                    overflow-x: hidden;
+                }
+
+                .sidebar,
+                .topbar,
+                .page-title,
+                .page-subtitle,
+                .menu-toggle,
+                .topbar-user,
+                .chat-fab {
+                    display: none !important;
+                }
+
+                .app,
+                .main,
+                .content,
+                .page-shell {
+                    max-width: none !important;
+                    width: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+
+                form {
+                    background: transparent !important;
+                    border: 0 !important;
+                    box-shadow: none !important;
+                    border-radius: 0 !important;
+                }
+
+                .content,
+                .page-shell {
+                    min-height: 0 !important;
+                }
+                <?php endif; ?>
+
                 .ref-two-col { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; }
                 .ref-reasons { display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap:8px 12px; border:1px solid var(--border); border-radius:10px; padding:12px; }
                 .ref-check { display:inline-flex; align-items:center; gap:8px; margin:0; font-weight:600; font-size:14px; }
@@ -240,6 +371,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 @media (max-width: 880px) { .ref-reasons { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
                 @media (max-width: 700px) { .ref-two-col, .ref-reasons, .sig-grid { grid-template-columns: 1fr; } }
                 </style>
+                <fieldset id="embeddedFormFieldset" style="border:0; padding:0; margin:0;">
 
                 <div class="ref-two-col">
                     <div class="form-group">
@@ -356,6 +488,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <?php endif; ?>
                 </div>
 
+                <?php if (!$isIframe): ?>
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button type="submit" class="btn">Submit Referral Slip</button>
                     <?php if ($lastSubmittedId > 0): ?>
@@ -366,6 +499,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <?php endif; ?>
                     <a href="/campuscare-api/php-frontend/pages/dashboard/dashboard.php" class="btn-outline">Back to Dashboard</a>
                 </div>
+                <?php endif; ?>
+                </fieldset>
             </form>
         </div>
     </div>
@@ -374,6 +509,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </div>
 <script>
 (function () {
+    var embeddedFormFieldset = document.getElementById("embeddedFormFieldset");
+    var embeddedFormIsViewMode = <?php echo $isViewMode ? "true" : "false"; ?>;
+
     function setupSignaturePad(canvasId, hiddenInputId, clearButtonId, undoButtonId) {
         var canvas = document.getElementById(canvasId);
         var hiddenInput = document.getElementById(hiddenInputId);
@@ -455,6 +593,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }
 
         function beginDraw(event) {
+            if (embeddedFormIsViewMode) {
+                return;
+            }
+
             drawing = true;
             var point = pointFromEvent(event);
             ctx.beginPath();
@@ -518,8 +660,179 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         resizeCanvas();
     }
 
+    function applyEmbeddedFormMode() {
+        if (embeddedFormFieldset) {
+            embeddedFormFieldset.disabled = embeddedFormIsViewMode;
+        }
+
+        document.querySelectorAll(".sig-pad").forEach(function (canvas) {
+            canvas.style.pointerEvents = embeddedFormIsViewMode ? "none" : "auto";
+            canvas.style.opacity = embeddedFormIsViewMode ? "0.72" : "1";
+        });
+    }
+
+    function notifyParentHeight() {
+        if (!(window.parent && window.parent !== window)) {
+            return;
+        }
+
+        var form = document.querySelector("form");
+        var shell = document.querySelector(".page-shell");
+        var height = Math.max(
+            document.body ? document.body.scrollHeight : 0,
+            document.documentElement ? document.documentElement.scrollHeight : 0,
+            form ? Math.ceil(form.getBoundingClientRect().height) : 0,
+            shell ? Math.ceil(shell.getBoundingClientRect().height) : 0
+        );
+
+        window.parent.postMessage({
+            type: "campuscare-form-height",
+            formType: "referral",
+            height: height
+        }, "*");
+    }
+
+    var embeddedFormElement = document.querySelector("form");
+    var embeddedFormDraftKey = "campuscare_form_draft_referral_<?php echo intval($userId); ?>";
+
+    function normalizeDraftFieldName(name) {
+        return name.slice(-2) === "[]" ? name.slice(0, -2) : name;
+    }
+
+    function readDraftState() {
+        try {
+            var raw = sessionStorage.getItem(embeddedFormDraftKey);
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function hasMeaningfulDraftValue(value) {
+        if (Array.isArray(value)) {
+            return value.some(hasMeaningfulDraftValue);
+        }
+
+        return String(value || "").trim() !== "";
+    }
+
+    function applyDraftState(draft) {
+        if (!draft || typeof draft !== "object" || !embeddedFormElement || embeddedFormIsViewMode) {
+            return false;
+        }
+
+        Array.prototype.forEach.call(embeddedFormElement.elements, function (field) {
+            if (!field || !field.name) {
+                return;
+            }
+
+            var normalizedName = normalizeDraftFieldName(field.name);
+            if (!Object.prototype.hasOwnProperty.call(draft, normalizedName)) {
+                return;
+            }
+
+            var savedValue = draft[normalizedName];
+
+            if (field.type === "checkbox") {
+                if (Array.isArray(savedValue)) {
+                    field.checked = savedValue.indexOf(field.value) !== -1;
+                } else {
+                    field.checked = !!savedValue;
+                }
+                return;
+            }
+
+            if (field.type === "radio") {
+                field.checked = String(savedValue) === String(field.value);
+                return;
+            }
+
+            if (field.type !== "file") {
+                field.value = Array.isArray(savedValue) ? (savedValue[0] || "") : savedValue;
+            }
+        });
+
+        return true;
+    }
+
+    function collectDraftState() {
+        if (!embeddedFormElement) {
+            return {};
+        }
+
+        var state = {};
+
+        Array.prototype.forEach.call(embeddedFormElement.elements, function (field) {
+            if (!field || !field.name || field.disabled || field.type === "file") {
+                return;
+            }
+
+            var normalizedName = normalizeDraftFieldName(field.name);
+
+            if (field.type === "checkbox") {
+                if (field.name.slice(-2) === "[]") {
+                    if (!Array.isArray(state[normalizedName])) {
+                        state[normalizedName] = [];
+                    }
+                    if (field.checked) {
+                        state[normalizedName].push(field.value);
+                    }
+                } else {
+                    state[normalizedName] = field.checked;
+                }
+                return;
+            }
+
+            if (field.type === "radio") {
+                if (field.checked) {
+                    state[normalizedName] = field.value;
+                }
+                return;
+            }
+
+            state[normalizedName] = field.value;
+        });
+
+        return state;
+    }
+
+    function persistDraftState() {
+        if (embeddedFormIsViewMode) {
+            return;
+        }
+
+        var state = collectDraftState();
+        var hasDraftData = Object.keys(state).some(function (key) {
+            return hasMeaningfulDraftValue(state[key]);
+        });
+
+        try {
+            if (hasDraftData) {
+                sessionStorage.setItem(embeddedFormDraftKey, JSON.stringify(state));
+            } else {
+                sessionStorage.removeItem(embeddedFormDraftKey);
+            }
+        } catch (error) {}
+    }
+
+    function clearDraftState() {
+        try {
+            sessionStorage.removeItem(embeddedFormDraftKey);
+        } catch (error) {}
+    }
+
+    var restoredDraftState = readDraftState();
+    var hasRestoredDraft = applyDraftState(restoredDraftState);
+
     setupSignaturePad("facultySignaturePad", "faculty_signature_drawn", "clearFacultySignature", "undoFacultySignature");
     setupSignaturePad("counselorSignaturePad", "counselor_signature_drawn", "clearCounselorSignature", "undoCounselorSignature");
+    applyEmbeddedFormMode();
+
+    if (embeddedFormElement && !embeddedFormIsViewMode) {
+        embeddedFormElement.addEventListener("input", persistDraftState);
+        embeddedFormElement.addEventListener("change", persistDraftState);
+    }
+    notifyParentHeight();
 
     var studentSelect = document.getElementById("student_user_id");
     var studentName = document.getElementById("student_name");
@@ -531,8 +844,44 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             if (name !== "") {
                 studentName.value = name;
             }
+            notifyParentHeight();
         });
     }
+
+    window.addEventListener("load", notifyParentHeight);
+    window.addEventListener("resize", notifyParentHeight);
+    setTimeout(notifyParentHeight, 150);
+    setTimeout(notifyParentHeight, 500);
+
+    <?php if ($isIframe): ?>
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: "campuscare-form-loaded",
+            formType: "referral",
+            isViewMode: <?php echo $isViewMode ? "true" : "false"; ?>,
+            hasSavedData: <?php echo $hasExistingSubmission ? "true" : "false"; ?>,
+            hasDraftData: hasRestoredDraft,
+            message: <?php echo json_encode($hasExistingSubmission ? "Your latest referral form is loaded." : "Fill out the referral form to continue."); ?>,
+            previewUrl: <?php echo json_encode($lastSubmittedId > 0 ? "/campuscare-api/php-frontend/pages/forms/referral_form_preview.php?id=" . intval($lastSubmittedId) : ""); ?>,
+            summary: <?php echo json_encode($hasExistingSubmission ? referral_summary($formState) : null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+        }, "*");
+        notifyParentHeight();
+    }
+    <?php endif; ?>
+
+    <?php if ($success !== ""): ?>
+    clearDraftState();
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: "campuscare-form-saved",
+            formType: "referral",
+            message: "Referral form saved. You can now continue to schedule and review.",
+            previewUrl: <?php echo json_encode($lastSubmittedId > 0 ? "/campuscare-api/php-frontend/pages/forms/referral_form_preview.php?id=" . intval($lastSubmittedId) : ""); ?>,
+            summary: <?php echo json_encode(referral_summary($formState), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+        }, "*");
+        notifyParentHeight();
+    }
+    <?php endif; ?>
 
     const profileMenuToggle = document.querySelector(".profile-menu-toggle");
     const profileDropdown = document.querySelector(".profile-dropdown");

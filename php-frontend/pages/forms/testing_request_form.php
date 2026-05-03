@@ -9,6 +9,8 @@ $role = normalizeRole($_SESSION["role"] ?? "Student");
 $userId = intval($_SESSION["user_id"] ?? 0);
 $fullName = trim((string) ($_SESSION["full_name"] ?? ""));
 $canManageForms = campuscare_forms_can_manage($role);
+$isIframe = isset($_GET["iframe"]) && $_GET["iframe"] === "1";
+$requestedMode = strtolower(trim((string) ($_GET["mode"] ?? "")));
 
 $allowedRoles = ["Student", "Instructor", "Facilitator", "Administrator", "Counselor"];
 if (!in_array($role, $allowedRoles, true)) {
@@ -19,6 +21,34 @@ if (!in_array($role, $allowedRoles, true)) {
 $error = "";
 $success = "";
 $lastSubmittedId = 0;
+$hasExistingSubmission = false;
+
+function testing_request_summary(array $formState): array
+{
+    return [
+        "title" => "Testing Request",
+        "sections" => [
+            [
+                "title" => "Applicant Section",
+                "entries" => [
+                    ["label" => "Target Student", "value" => (string) ($formState["target_student_name"] ?? "")],
+                    ["label" => "Date", "value" => (string) ($formState["request_date"] ?? "")],
+                    ["label" => "Organization/Office", "value" => (string) ($formState["organization_office"] ?? "")],
+                    ["label" => "Address", "value" => (string) ($formState["address"] ?? ""), "full" => true],
+                    ["label" => "Purpose", "value" => (string) ($formState["purpose"] ?? ""), "full" => true],
+                    ["label" => "Applicant Signature", "value" => (string) ($formState["applicant_name_signature_typed"] ?? ""), "signature" => (string) ($formState["applicant_name_signature_drawn"] ?? "")],
+                ],
+            ],
+            [
+                "title" => "Counselor/Psychometrician Section",
+                "entries" => [
+                    ["label" => "Type of Tests", "value" => (string) ($formState["counselor_type_of_tests"] ?? ""), "full" => true],
+                    ["label" => "Counselor Notes", "value" => (string) ($formState["counselor_notes"] ?? ""), "full" => true],
+                ],
+            ],
+        ],
+    ];
+}
 
 $formState = [
     "request_date" => date("Y-m-d"),
@@ -35,6 +65,39 @@ $formState = [
 
 if (!campuscare_ensure_testing_requests_table($conn)) {
     $error = "Unable to initialize testing request storage.";
+}
+
+if ($error === "") {
+    $latestStmt = $conn->prepare("
+        SELECT id, request_date, target_student_user_id, target_student_name, applicant_name_signature_typed,
+               applicant_name_signature_drawn, address, organization_office, purpose, counselor_type_of_tests, counselor_notes
+        FROM testing_requests
+        WHERE requester_user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 1
+    ");
+
+    if ($latestStmt) {
+        $latestStmt->bind_param("i", $userId);
+        $latestStmt->execute();
+        $latestRow = $latestStmt->get_result()->fetch_assoc();
+        $latestStmt->close();
+
+        if (is_array($latestRow)) {
+            $hasExistingSubmission = true;
+            $lastSubmittedId = intval($latestRow["id"] ?? 0);
+            $formState["request_date"] = trim((string) ($latestRow["request_date"] ?? ""));
+            $formState["target_student_user_id"] = trim((string) ($latestRow["target_student_user_id"] ?? ""));
+            $formState["target_student_name"] = trim((string) ($latestRow["target_student_name"] ?? ""));
+            $formState["applicant_name_signature_typed"] = trim((string) ($latestRow["applicant_name_signature_typed"] ?? ""));
+            $formState["applicant_name_signature_drawn"] = trim((string) ($latestRow["applicant_name_signature_drawn"] ?? ""));
+            $formState["address"] = trim((string) ($latestRow["address"] ?? ""));
+            $formState["organization_office"] = trim((string) ($latestRow["organization_office"] ?? ""));
+            $formState["purpose"] = trim((string) ($latestRow["purpose"] ?? ""));
+            $formState["counselor_type_of_tests"] = trim((string) ($latestRow["counselor_type_of_tests"] ?? ""));
+            $formState["counselor_notes"] = trim((string) ($latestRow["counselor_notes"] ?? ""));
+        }
+    }
 }
 
 $students = [];
@@ -126,6 +189,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
             if ($insert->execute()) {
                 $lastSubmittedId = intval($insert->insert_id);
                 $success = "Request for testing form submitted successfully.";
+                $hasExistingSubmission = true;
+                $requestedMode = "view";
+                $isViewMode = $isIframe;
             } else {
                 $error = "Failed to submit testing request form.";
             }
@@ -134,6 +200,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
         }
     }
 }
+
+$isViewMode = $isIframe && $hasExistingSubmission && $requestedMode !== "edit";
 
 require_once __DIR__ . "/../../includes/header.php";
 require_once __DIR__ . "/../../includes/sidebar.php";
@@ -159,8 +227,45 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
             <?php endif; ?>
 
-            <form method="POST" class="card" style="padding:20px;">
+            <form method="POST" class="<?php echo $isIframe ? "" : "card"; ?>" style="padding:20px;">
                 <style>
+                <?php if ($isIframe): ?>
+                body {
+                    background: #f6fbff;
+                }
+
+                .sidebar,
+                .topbar,
+                .page-title,
+                .page-subtitle,
+                .menu-toggle,
+                .topbar-user,
+                .chat-fab {
+                    display: none !important;
+                }
+
+                .app,
+                .main,
+                .content,
+                .page-shell {
+                    max-width: none !important;
+                    width: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+
+                form {
+                    background: transparent !important;
+                    border: 0 !important;
+                    box-shadow: none !important;
+                    border-radius: 0 !important;
+                }
+
+                .form-submit-container {
+                    display: none !important;
+                }
+                <?php endif; ?>
+
                 .test-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; }
                 .test-full { grid-column: 1 / -1; }
                 .sig-card { border:1px solid var(--border); border-radius:10px; padding:10px; }
@@ -169,6 +274,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 .sig-help { margin-top:6px; color:var(--text-muted); font-size:12px; }
                 @media (max-width: 700px) { .test-grid { grid-template-columns: 1fr; } }
                 </style>
+                <fieldset id="embeddedFormFieldset" style="border:0; padding:0; margin:0;">
 
                 <p class="card-subtitle" style="margin-bottom:10px;"><strong>(To be filled up by the applicant)</strong></p>
                 <div class="test-grid">
@@ -244,13 +350,14 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <p class="page-subtitle" style="margin-bottom: 12px;">Counselor/Psychometrician fields are completed in the counselor/admin inbox.</p>
                 <?php endif; ?>
 
-                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <div class="form-submit-container" style="display:flex; gap:10px; flex-wrap:wrap;">
                     <button type="submit" class="btn">Submit Testing Request</button>
                     <?php if ($lastSubmittedId > 0): ?>
                         <a href="/campuscare-api/php-frontend/pages/forms/testing_request_preview.php?id=<?php echo intval($lastSubmittedId); ?>" class="btn-outline" target="_blank" rel="noopener">Preview Printable Form</a>
                     <?php endif; ?>
                     <a href="/campuscare-api/php-frontend/pages/dashboard/dashboard.php" class="btn-outline">Back to Dashboard</a>
                 </div>
+                </fieldset>
             </form>
         </div>
     </div>
@@ -259,6 +366,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </div>
 <script>
 (function () {
+    var embeddedFormFieldset = document.getElementById("embeddedFormFieldset");
+    var embeddedFormIsViewMode = <?php echo $isViewMode ? "true" : "false"; ?>;
+
     function setupSignaturePad(canvasId, hiddenInputId, clearButtonId, undoButtonId) {
         var canvas = document.getElementById(canvasId);
         var hiddenInput = document.getElementById(hiddenInputId);
@@ -340,6 +450,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }
 
         function beginDraw(event) {
+            if (embeddedFormIsViewMode) {
+                return;
+            }
+
             drawing = true;
             var point = pointFromEvent(event);
             ctx.beginPath();
@@ -403,7 +517,156 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         resizeCanvas();
     }
 
+    function applyEmbeddedFormMode() {
+        if (embeddedFormFieldset) {
+            embeddedFormFieldset.disabled = embeddedFormIsViewMode;
+        }
+
+        document.querySelectorAll(".sig-pad").forEach(function (canvas) {
+            canvas.style.pointerEvents = embeddedFormIsViewMode ? "none" : "auto";
+            canvas.style.opacity = embeddedFormIsViewMode ? "0.72" : "1";
+        });
+    }
+
+    var embeddedFormElement = document.querySelector("form");
+    var embeddedFormDraftKey = "campuscare_form_draft_testing_<?php echo intval($userId); ?>";
+
+    function normalizeDraftFieldName(name) {
+        return name.slice(-2) === "[]" ? name.slice(0, -2) : name;
+    }
+
+    function readDraftState() {
+        try {
+            var raw = sessionStorage.getItem(embeddedFormDraftKey);
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function hasMeaningfulDraftValue(value) {
+        if (Array.isArray(value)) {
+            return value.some(hasMeaningfulDraftValue);
+        }
+
+        return String(value || "").trim() !== "";
+    }
+
+    function applyDraftState(draft) {
+        if (!draft || typeof draft !== "object" || !embeddedFormElement || embeddedFormIsViewMode) {
+            return false;
+        }
+
+        Array.prototype.forEach.call(embeddedFormElement.elements, function (field) {
+            if (!field || !field.name) {
+                return;
+            }
+
+            var normalizedName = normalizeDraftFieldName(field.name);
+            if (!Object.prototype.hasOwnProperty.call(draft, normalizedName)) {
+                return;
+            }
+
+            var savedValue = draft[normalizedName];
+
+            if (field.type === "checkbox") {
+                if (Array.isArray(savedValue)) {
+                    field.checked = savedValue.indexOf(field.value) !== -1;
+                } else {
+                    field.checked = !!savedValue;
+                }
+                return;
+            }
+
+            if (field.type === "radio") {
+                field.checked = String(savedValue) === String(field.value);
+                return;
+            }
+
+            if (field.type !== "file") {
+                field.value = Array.isArray(savedValue) ? (savedValue[0] || "") : savedValue;
+            }
+        });
+
+        return true;
+    }
+
+    function collectDraftState() {
+        if (!embeddedFormElement) {
+            return {};
+        }
+
+        var state = {};
+
+        Array.prototype.forEach.call(embeddedFormElement.elements, function (field) {
+            if (!field || !field.name || field.disabled || field.type === "file") {
+                return;
+            }
+
+            var normalizedName = normalizeDraftFieldName(field.name);
+
+            if (field.type === "checkbox") {
+                if (field.name.slice(-2) === "[]") {
+                    if (!Array.isArray(state[normalizedName])) {
+                        state[normalizedName] = [];
+                    }
+                    if (field.checked) {
+                        state[normalizedName].push(field.value);
+                    }
+                } else {
+                    state[normalizedName] = field.checked;
+                }
+                return;
+            }
+
+            if (field.type === "radio") {
+                if (field.checked) {
+                    state[normalizedName] = field.value;
+                }
+                return;
+            }
+
+            state[normalizedName] = field.value;
+        });
+
+        return state;
+    }
+
+    function persistDraftState() {
+        if (embeddedFormIsViewMode) {
+            return;
+        }
+
+        var state = collectDraftState();
+        var hasDraftData = Object.keys(state).some(function (key) {
+            return hasMeaningfulDraftValue(state[key]);
+        });
+
+        try {
+            if (hasDraftData) {
+                sessionStorage.setItem(embeddedFormDraftKey, JSON.stringify(state));
+            } else {
+                sessionStorage.removeItem(embeddedFormDraftKey);
+            }
+        } catch (error) {}
+    }
+
+    function clearDraftState() {
+        try {
+            sessionStorage.removeItem(embeddedFormDraftKey);
+        } catch (error) {}
+    }
+
+    var restoredDraftState = readDraftState();
+    var hasRestoredDraft = applyDraftState(restoredDraftState);
+
     setupSignaturePad("applicantSignaturePad", "applicant_name_signature_drawn", "clearApplicantSignature", "undoApplicantSignature");
+    applyEmbeddedFormMode();
+
+    if (embeddedFormElement && !embeddedFormIsViewMode) {
+        embeddedFormElement.addEventListener("input", persistDraftState);
+        embeddedFormElement.addEventListener("change", persistDraftState);
+    }
 
     var studentSelect = document.getElementById("target_student_user_id");
     var studentName = document.getElementById("target_student_name");
@@ -417,6 +680,34 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             }
         });
     }
+
+    <?php if ($isIframe): ?>
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: "campuscare-form-loaded",
+            formType: "testing",
+            isViewMode: <?php echo $isViewMode ? "true" : "false"; ?>,
+            hasSavedData: <?php echo $hasExistingSubmission ? "true" : "false"; ?>,
+            hasDraftData: hasRestoredDraft,
+            message: <?php echo json_encode($hasExistingSubmission ? "Your latest testing request form is loaded." : "Fill out the testing request form to continue."); ?>,
+            previewUrl: <?php echo json_encode($lastSubmittedId > 0 ? "/campuscare-api/php-frontend/pages/forms/testing_request_preview.php?id=" . intval($lastSubmittedId) : ""); ?>,
+            summary: <?php echo json_encode($hasExistingSubmission ? testing_request_summary($formState) : null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+        }, "*");
+    }
+    <?php endif; ?>
+
+    <?php if ($success !== ""): ?>
+    clearDraftState();
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: "campuscare-form-saved",
+            formType: "testing",
+            message: "Testing request form saved. You can now continue to schedule and review.",
+            previewUrl: <?php echo json_encode($lastSubmittedId > 0 ? "/campuscare-api/php-frontend/pages/forms/testing_request_preview.php?id=" . intval($lastSubmittedId) : ""); ?>,
+            summary: <?php echo json_encode(testing_request_summary($formState), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+        }, "*");
+    }
+    <?php endif; ?>
 
     const profileMenuToggle = document.querySelector(".profile-menu-toggle");
     const profileDropdown = document.querySelector(".profile-dropdown");

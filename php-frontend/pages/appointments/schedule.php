@@ -495,7 +495,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             $dateTime = date("D, F j \a\t g:i A", strtotime($apt["appointment_date"] . " " . $apt["appointment_time"]));
                         ?>
 
-                        <article class="schedule-item schedule-item-clean">
+                        <article class="schedule-item schedule-item-clean" onclick="window.location.href='/campuscare-api/php-frontend/pages/appointments/appointment_detail.php?id=<?php echo intval($apt["id"]); ?>';" style="cursor: pointer;">
                             <div class="schedule-main">
                                 <div class="schedule-left">
                                     <span class="schedule-icon"><?php echo $role === "Counselor" ? sidebarIconSvg("user") : sidebarIconSvg("calendar"); ?></span>
@@ -517,7 +517,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                     </div>
                                 </div>
 
-                                <div class="schedule-actions schedule-actions-clean">
+                                <div class="schedule-actions schedule-actions-clean" onclick="event.stopPropagation();">
                                 <div class="schedule-action-group schedule-action-group-primary">
 
                                 <?php if ($role === "Counselor" && $status === "Pending"): ?>
@@ -531,7 +531,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="appointment_id" value="<?php echo intval($apt["id"]); ?>">
                                         <input type="hidden" name="status" value="Approved">
-                                        <button type="submit" class="btn btn-sm">Approve</button>
+                                        <button type="submit" class="btn event-join-btn btn-sm">Approve</button>
                                     </form>
 
                                     <form
@@ -545,7 +545,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="appointment_id" value="<?php echo intval($apt["id"]); ?>">
                                         <input type="hidden" name="status" value="Rejected">
-                                        <button type="submit" class="btn btn-outline btn-sm">Decline</button>
+                                        <button type="submit" class="btn event-join-btn btn-outline btn-sm">Decline</button>
                                     </form>
                                 <?php endif; ?>
 
@@ -565,24 +565,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <?php endif; ?>
                                 </div>
 
-                                <div class="schedule-action-group schedule-action-group-danger">
-
-                                <?php if ($status !== "Cancelled" && $status !== "Rejected"): ?>
-                                    <form
-                                        method="POST"
-                                        data-confirm-title="Cancel appointment"
-                                        data-confirm-message="Cancel this appointment?"
-                                        data-confirm-button="Cancel Appointment"
-                                        data-confirm-variant="danger"
-                                    >
-                                        <input type="hidden" name="action" value="cancel_appointment">
-                                        <input type="hidden" name="appointment_id" value="<?php echo intval($apt["id"]); ?>">
-                                        <button type="submit" class="icon-btn" aria-label="Cancel appointment">
-                                            x
-                                        </button>
-                                    </form>
-                                <?php endif; ?>
-                                </div>
                                 </div>
                             </div>
                         </article>
@@ -650,6 +632,18 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         <a href="#" class="chat-fab" aria-label="Open chat">?</a>
     </div>
 </main>
+
+<style>
+    .schedule-item.schedule-item-clean {
+        transition: all 0.2s ease;
+    }
+
+    .schedule-item.schedule-item-clean:hover {
+        box-shadow: 0 4px 16px rgba(0, 102, 204, 0.15) !important;
+        transform: translateY(-2px);
+        background: #f9faff;
+    }
+</style>
 
 <?php if ($role === "Counselor"): ?>
 <script>

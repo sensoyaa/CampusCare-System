@@ -17,6 +17,27 @@ $usersHasCollege = false;
 $usersHasProgram = false;
 $usersHasAvatarPath = false;
 
+function ensureUserProfileColumns(mysqli $conn): void
+{
+    $desiredColumns = [
+        "college" => "ALTER TABLE users ADD COLUMN college VARCHAR(150) DEFAULT NULL AFTER role",
+        "program" => "ALTER TABLE users ADD COLUMN program VARCHAR(150) DEFAULT NULL AFTER college",
+        "avatar_path" => "ALTER TABLE users ADD COLUMN avatar_path VARCHAR(255) DEFAULT NULL AFTER program",
+    ];
+
+    foreach ($desiredColumns as $columnName => $sql) {
+        $escapedColumn = $conn->real_escape_string($columnName);
+        $exists = $conn->query("SHOW COLUMNS FROM users LIKE '{$escapedColumn}'");
+        $hasColumn = $exists && $exists->num_rows > 0;
+
+        if (!$hasColumn) {
+            $conn->query($sql);
+        }
+    }
+}
+
+ensureUserProfileColumns($conn);
+
 $columnsResult = $conn->query("SHOW COLUMNS FROM users");
 if ($columnsResult) {
     while ($column = $columnsResult->fetch_assoc()) {
@@ -190,7 +211,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         $error = "Failed to save the uploaded avatar.";
                     } else {
                         if ($avatarPath !== "") {
-                            $existingAvatarFile = __DIR__ . "/../../" . ltrim($avatarPath, "/");
+                            $existingAvatarFile = $_SERVER["DOCUMENT_ROOT"] . ltrim($avatarPath, "/");
                             if (is_file($existingAvatarFile)) {
                                 @unlink($existingAvatarFile);
                             }
@@ -251,6 +272,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         if ($updateStmt->execute()) {
                             $_SESSION["full_name"] = $newFullName;
                             $_SESSION["email"] = $newEmail;
+                            $_SESSION["college"] = $newCollege;
+                            $_SESSION["program"] = $newProgram;
                             $fullName = $newFullName;
                             $email = $newEmail;
                             $college = $newCollege;

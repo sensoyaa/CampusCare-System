@@ -6,6 +6,8 @@ require_once __DIR__ . "/../../includes/db.php";
 $pageTitle = "Counseling Intake Form";
 $role = normalizeRole($_SESSION["role"] ?? "Student");
 $userId = intval($_SESSION["user_id"] ?? 0);
+$isIframe = isset($_GET["iframe"]) && $_GET["iframe"] === "1";
+$requestedMode = strtolower(trim((string) ($_GET["mode"] ?? "")));
 
 if ($role !== "Student") {
     header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
@@ -15,6 +17,7 @@ if ($role !== "Student") {
 $error = "";
 $success = "";
 $lastSubmittedAt = "";
+$hasExistingSubmission = false;
 
 function intake_value(array $state, string $key, string $default = ""): string
 {
@@ -42,6 +45,120 @@ function intake_table_ready(mysqli $conn): bool
     ";
 
     return $conn->query($createSql) !== false;
+}
+
+function intake_summary(array $formState): array
+{
+    $medicalHistory = is_array($formState["medical_history"] ?? null) ? array_filter($formState["medical_history"]) : [];
+
+    return [
+        "title" => "Counseling Intake Form",
+        "sections" => [
+            [
+                "title" => "Client Information",
+                "entries" => [
+                    ["label" => "Client Name", "value" => trim(intake_value($formState, "client_first_name") . " " . intake_value($formState, "client_last_name"))],
+                    ["label" => "Course and Year", "value" => intake_value($formState, "course_year")],
+                    ["label" => "Intake Type", "value" => intake_value($formState, "intake_mode")],
+                    ["label" => "Referred By", "value" => intake_value($formState, "referred_by")],
+                    ["label" => "Email", "value" => intake_value($formState, "email")],
+                    ["label" => "Cell Phone", "value" => intake_value($formState, "cell_phone")],
+                    ["label" => "Date of Birth", "value" => intake_value($formState, "date_of_birth")],
+                    ["label" => "Marital Status", "value" => intake_value($formState, "marital_status")],
+                    ["label" => "Religious Affiliation", "value" => intake_value($formState, "religious_affiliation")],
+                    ["label" => "Messenger Username", "value" => intake_value($formState, "messenger_username")],
+                    [
+                        "label" => "Address",
+                        "value" => trim(implode(", ", array_filter([
+                            intake_value($formState, "address_street"),
+                            intake_value($formState, "address_city"),
+                            intake_value($formState, "address_state"),
+                            intake_value($formState, "address_postal"),
+                        ]))),
+                        "full" => true,
+                    ],
+                ],
+            ],
+            [
+                "title" => "Emergency and Medical",
+                "entries" => [
+                    ["label" => "Emergency Contact", "value" => intake_value($formState, "emergency_contact_name")],
+                    ["label" => "Relationship", "value" => intake_value($formState, "emergency_contact_relationship")],
+                    ["label" => "Contact Number", "value" => intake_value($formState, "emergency_contact_number")],
+                    [
+                        "label" => "Medical History",
+                        "value" => !empty($medicalHistory) ? implode(", ", $medicalHistory) : "",
+                        "full" => true,
+                    ],
+                    [
+                        "label" => "Other Medical Details",
+                        "value" => intake_value($formState, "medical_history_other"),
+                        "full" => true,
+                    ],
+                    [
+                        "label" => "Family Medical History",
+                        "value" => intake_value($formState, "family_medical_history"),
+                        "full" => true,
+                    ],
+                    [
+                        "label" => "Tobacco Use",
+                        "value" => intake_value($formState, "tobacco_use"),
+                    ],
+                    [
+                        "label" => "Alcohol Use",
+                        "value" => intake_value($formState, "alcohol_use"),
+                    ],
+                    [
+                        "label" => "Caffeine Use",
+                        "value" => intake_value($formState, "caffeine_use"),
+                    ],
+                    [
+                        "label" => "Drug Use",
+                        "value" => intake_value($formState, "drug_use"),
+                    ],
+                    [
+                        "label" => "Prescription Medication",
+                        "value" => intake_value($formState, "takes_prescription_medication"),
+                    ],
+                    [
+                        "label" => "Prescription Details",
+                        "value" => intake_value($formState, "prescription_details"),
+                        "full" => true,
+                    ],
+                    [
+                        "label" => "Surgeries in Past 5 Years",
+                        "value" => intake_value($formState, "surgeries_past_5_years"),
+                    ],
+                    [
+                        "label" => "Surgery Details",
+                        "value" => intake_value($formState, "surgeries_details"),
+                        "full" => true,
+                    ],
+                ],
+            ],
+            [
+                "title" => "Mental Health Information",
+                "entries" => [
+                    ["label" => "Reason for Visit", "value" => intake_value($formState, "initial_visit_reason"), "full" => true],
+                    ["label" => "Session Expectation", "value" => intake_value($formState, "session_expectation"), "full" => true],
+                    ["label" => "Average Sleep Hours", "value" => intake_value($formState, "average_sleep_hours")],
+                    ["label" => "Seen a Mental Health Professional Before", "value" => intake_value($formState, "seen_mental_health_professional")],
+                    ["label" => "If Yes, Reason", "value" => intake_value($formState, "seen_professional_reason"), "full" => true],
+                    ["label" => "Additional Comments", "value" => intake_value($formState, "additional_comments"), "full" => true],
+                ],
+            ],
+            [
+                "title" => "Agreement and Signature",
+                "entries" => [
+                    ["label" => "Agreement Accepted", "value" => intake_value($formState, "agreement_accepted") !== "" ? intake_value($formState, "agreement_accepted") : "No"],
+                    ["label" => "Client Signature", "value" => intake_value($formState, "agreement_signature_client"), "signature" => intake_value($formState, "agreement_signature_client_drawn")],
+                    ["label" => "Client Date", "value" => intake_value($formState, "agreement_client_date")],
+                    ["label" => "Counselor Signature", "value" => intake_value($formState, "agreement_signature_counselor"), "signature" => intake_value($formState, "agreement_signature_counselor_drawn")],
+                    ["label" => "Counselor Date", "value" => intake_value($formState, "agreement_counselor_date")],
+                ],
+            ],
+        ],
+    ];
 }
 
 $medicalOptions = [
@@ -123,6 +240,7 @@ if (!intake_table_ready($conn)) {
         $latestStmt->close();
 
         if (is_array($latestRow)) {
+            $hasExistingSubmission = true;
             $payload = json_decode((string) ($latestRow["payload_json"] ?? ""), true);
 
             if (is_array($payload)) {
@@ -140,6 +258,8 @@ if (!intake_table_ready($conn)) {
         }
     }
 }
+
+$isViewMode = $isIframe && $hasExistingSubmission && $requestedMode !== "edit";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
     foreach ($formState as $key => $value) {
@@ -204,6 +324,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $error === "") {
                 if ($insertStmt->execute()) {
                     $success = "Counseling intake form submitted successfully. You can now book a Counseling appointment online.";
                     $lastSubmittedAt = date("F j, Y g:i A");
+                    $hasExistingSubmission = true;
+                    $requestedMode = "view";
+                    $isViewMode = $isIframe;
                 } else {
                     $error = "Failed to submit counseling intake form.";
                 }
@@ -243,12 +366,43 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
             <?php endif; ?>
 
-            <form method="POST" class="card" style="padding: 22px;">
+            <form method="POST" class="<?php echo $isIframe ? "" : "card"; ?>" style="padding: 22px;">
                 <style>
+                <?php if ($isIframe): ?>
+                body {
+                    background: #f6fbff;
+                }
+
+                .sidebar,
+                .topbar,
+                .page-title,
+                .page-subtitle,
+                .menu-toggle,
+                .topbar-user,
+                .chat-fab {
+                    display: none !important;
+                }
+
+                .app,
+                .main,
+                .content,
+                .page-shell {
+                    max-width: none !important;
+                    width: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+
+                form {
+                    background: transparent !important;
+                    border: 0 !important;
+                    box-shadow: none !important;
+                    border-radius: 0 !important;
+                }
+                <?php endif; ?>
+
                 .intake-form-shell {
-                    border: 1px solid var(--border);
-                    border-radius: 20px;
-                    background: linear-gradient(180deg, rgba(77, 143, 197, 0.08) 0%, rgba(255, 255, 255, 0) 180px), var(--card-bg);
+                        
                 }
 
                 .intake-section {
@@ -373,6 +527,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     }
                 }
                 </style>
+                <fieldset id="embeddedFormFieldset" style="border:0; padding:0; margin:0;">
                 <div class="intake-form-shell">
                 <h2 class="card-title" style="margin-bottom: 14px;">1. Client Information</h2>
 
@@ -603,39 +758,26 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                         </div>
                     </div>
 
-                    <div class="signature-card">
-                        <label for="agreement_signature_counselor">Counselor Name (optional)</label>
-                        <input id="agreement_signature_counselor" name="agreement_signature_counselor" type="text" value="<?php echo htmlspecialchars(intake_value($formState, "agreement_signature_counselor")); ?>" placeholder="Counselor typed name">
-                        <p class="signature-hint" style="margin-top:8px;">Optional counselor signature:</p>
-                        <canvas id="counselorSignaturePad" class="signature-pad"></canvas>
-                        <input id="agreement_signature_counselor_drawn" name="agreement_signature_counselor_drawn" type="hidden" value="<?php echo htmlspecialchars(intake_value($formState, "agreement_signature_counselor_drawn")); ?>">
-                        <div class="signature-actions">
-                            <span class="signature-hint">Optional field.</span>
-                            <div style="display:flex; gap:8px;">
-                                <button type="button" class="btn-outline" id="undoCounselorSignature">Undo</button>
-                                <button type="button" class="btn-outline" id="clearCounselorSignature">Clear</button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <div class="grid intake-two-col" style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 10px;">
+                <div class="grid intake-two-col" style="display:grid; grid-template-columns: 1fr; gap: 14px; margin-top: 10px;">
                     <div class="form-group">
                         <label for="agreement_client_date">Client Date</label>
                         <input id="agreement_client_date" name="agreement_client_date" type="date" value="<?php echo htmlspecialchars(intake_value($formState, "agreement_client_date")); ?>" required>
                     </div>
-                    <div class="form-group">
-                        <label for="agreement_counselor_date">Counselor Date (optional)</label>
-                        <input id="agreement_counselor_date" name="agreement_counselor_date" type="date" value="<?php echo htmlspecialchars(intake_value($formState, "agreement_counselor_date")); ?>">
-                    </div>
                 </div>
 
+                <?php if (!$isIframe): ?>
                 <div style="display:flex; gap:10px; margin-top: 14px; flex-wrap: wrap;">
                     <button type="submit" class="btn">Submit Intake Form</button>
+                    <button type="button" class="btn-outline" id="intakePreviousSection">Previous</button>
+                    <button type="button" class="btn-outline" id="intakeNextSection">Next</button>
                     <a href="/campuscare-api/php-frontend/pages/appointments/counseling_intake_preview.php" class="btn-outline" target="_blank" rel="noopener">Preview Printable Form</a>
                     <a href="/campuscare-api/php-frontend/pages/appointments/book_appointment.php?service=counseling" class="btn-outline">Proceed to Book Counseling</a>
                 </div>
+                <?php endif; ?>
                 </div>
+                </fieldset>
             </form>
         </div>
     </div>
@@ -644,6 +786,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </div>
 <script>
 (function () {
+    var embeddedFormFieldset = document.getElementById("embeddedFormFieldset");
+    var embeddedFormIsViewMode = <?php echo $isViewMode ? "true" : "false"; ?>;
+
     function setupSignaturePad(canvasId, hiddenInputId, clearButtonId, undoButtonId) {
         const canvas = document.getElementById(canvasId);
         const hiddenInput = document.getElementById(hiddenInputId);
@@ -727,6 +872,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }
 
         function beginDraw(event) {
+            if (embeddedFormIsViewMode) {
+                return;
+            }
+
             drawing = true;
             const p = pointFromEvent(event);
             ctx.beginPath();
@@ -790,8 +939,229 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         resizeCanvas();
     }
 
+    function applyEmbeddedFormMode() {
+        if (embeddedFormFieldset) {
+            embeddedFormFieldset.disabled = embeddedFormIsViewMode;
+        }
+
+        document.querySelectorAll(".signature-pad").forEach(function (canvas) {
+            canvas.style.pointerEvents = embeddedFormIsViewMode ? "none" : "auto";
+            canvas.style.opacity = embeddedFormIsViewMode ? "0.72" : "1";
+        });
+    }
+
+    var embeddedFormElement = document.querySelector("form");
+    var embeddedFormDraftKey = "campuscare_form_draft_counseling_<?php echo intval($userId); ?>";
+
+    function normalizeDraftFieldName(name) {
+        return name.slice(-2) === "[]" ? name.slice(0, -2) : name;
+    }
+
+    function readDraftState() {
+        try {
+            var raw = sessionStorage.getItem(embeddedFormDraftKey);
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function hasMeaningfulDraftValue(value) {
+        if (Array.isArray(value)) {
+            return value.some(hasMeaningfulDraftValue);
+        }
+
+        return String(value || "").trim() !== "";
+    }
+
+    function applyDraftState(draft) {
+        if (!draft || typeof draft !== "object" || !embeddedFormElement || embeddedFormIsViewMode) {
+            return false;
+        }
+
+        Array.prototype.forEach.call(embeddedFormElement.elements, function (field) {
+            if (!field || !field.name) {
+                return;
+            }
+
+            var normalizedName = normalizeDraftFieldName(field.name);
+            if (!Object.prototype.hasOwnProperty.call(draft, normalizedName)) {
+                return;
+            }
+
+            var savedValue = draft[normalizedName];
+
+            if (field.type === "checkbox") {
+                if (Array.isArray(savedValue)) {
+                    field.checked = savedValue.indexOf(field.value) !== -1;
+                } else {
+                    field.checked = !!savedValue;
+                }
+                return;
+            }
+
+            if (field.type === "radio") {
+                field.checked = String(savedValue) === String(field.value);
+                return;
+            }
+
+            if (field.type !== "file") {
+                field.value = Array.isArray(savedValue) ? (savedValue[0] || "") : savedValue;
+            }
+        });
+
+        return true;
+    }
+
+    function collectDraftState() {
+        if (!embeddedFormElement) {
+            return {};
+        }
+
+        var state = {};
+
+        Array.prototype.forEach.call(embeddedFormElement.elements, function (field) {
+            if (!field || !field.name || field.disabled || field.type === "file") {
+                return;
+            }
+
+            var normalizedName = normalizeDraftFieldName(field.name);
+
+            if (field.type === "checkbox") {
+                if (field.name.slice(-2) === "[]") {
+                    if (!Array.isArray(state[normalizedName])) {
+                        state[normalizedName] = [];
+                    }
+                    if (field.checked) {
+                        state[normalizedName].push(field.value);
+                    }
+                } else {
+                    state[normalizedName] = field.checked;
+                }
+                return;
+            }
+
+            if (field.type === "radio") {
+                if (field.checked) {
+                    state[normalizedName] = field.value;
+                }
+                return;
+            }
+
+            state[normalizedName] = field.value;
+        });
+
+        return state;
+    }
+
+    function persistDraftState() {
+        if (embeddedFormIsViewMode) {
+            return;
+        }
+
+        var state = collectDraftState();
+        var hasDraftData = Object.keys(state).some(function (key) {
+            return hasMeaningfulDraftValue(state[key]);
+        });
+
+        try {
+            if (hasDraftData) {
+                sessionStorage.setItem(embeddedFormDraftKey, JSON.stringify(state));
+            } else {
+                sessionStorage.removeItem(embeddedFormDraftKey);
+            }
+        } catch (error) {}
+    }
+
+    function clearDraftState() {
+        try {
+            sessionStorage.removeItem(embeddedFormDraftKey);
+        } catch (error) {}
+    }
+
+    var restoredDraftState = readDraftState();
+    var hasRestoredDraft = applyDraftState(restoredDraftState);
+
     setupSignaturePad("clientSignaturePad", "agreement_signature_client_drawn", "clearClientSignature", "undoClientSignature");
-    setupSignaturePad("counselorSignaturePad", "agreement_signature_counselor_drawn", "clearCounselorSignature", "undoCounselorSignature");
+    applyEmbeddedFormMode();
+
+    if (embeddedFormElement && !embeddedFormIsViewMode) {
+        embeddedFormElement.addEventListener("input", persistDraftState);
+        embeddedFormElement.addEventListener("change", persistDraftState);
+    }
+
+    var sectionAnchors = Array.from(document.querySelectorAll(".card-title"));
+    var currentSectionIndex = 0;
+    var previousSectionButton = document.getElementById("intakePreviousSection");
+    var nextSectionButton = document.getElementById("intakeNextSection");
+
+    function scrollToSection(index) {
+        if (!sectionAnchors.length) {
+            return;
+        }
+
+        currentSectionIndex = Math.max(0, Math.min(index, sectionAnchors.length - 1));
+        sectionAnchors[currentSectionIndex].scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    if (previousSectionButton) {
+        previousSectionButton.addEventListener("click", function () {
+            scrollToSection(currentSectionIndex - 1);
+        });
+    }
+
+    if (nextSectionButton) {
+        nextSectionButton.addEventListener("click", function () {
+            scrollToSection(currentSectionIndex + 1);
+        });
+    }
+
+    window.addEventListener("scroll", function () {
+        if (!sectionAnchors.length) {
+            return;
+        }
+
+        var bestIndex = 0;
+        var bestDistance = Number.POSITIVE_INFINITY;
+
+        sectionAnchors.forEach(function (anchor, index) {
+            var distance = Math.abs(anchor.getBoundingClientRect().top);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestIndex = index;
+            }
+        });
+
+        currentSectionIndex = bestIndex;
+    });
+
+    <?php if ($isIframe): ?>
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: "campuscare-form-loaded",
+            formType: "counseling",
+            isViewMode: <?php echo $isViewMode ? "true" : "false"; ?>,
+            hasSavedData: <?php echo $hasExistingSubmission ? "true" : "false"; ?>,
+            hasDraftData: hasRestoredDraft,
+            message: <?php echo json_encode($hasExistingSubmission ? "Your latest counseling intake form is loaded." : "Fill out the counseling intake form to continue."); ?>,
+            previewUrl: "/campuscare-api/php-frontend/pages/appointments/counseling_intake_preview.php",
+            summary: <?php echo json_encode($hasExistingSubmission ? intake_summary($formState) : null, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+        }, "*");
+    }
+    <?php endif; ?>
+
+    <?php if ($success !== ""): ?>
+    clearDraftState();
+    if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+            type: "campuscare-form-saved",
+            formType: "counseling",
+            message: "Counseling intake form saved. You can continue to schedule and review.",
+            previewUrl: "/campuscare-api/php-frontend/pages/appointments/counseling_intake_preview.php",
+            summary: <?php echo json_encode(intake_summary($formState), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>
+        }, "*");
+    }
+    <?php endif; ?>
 
     const profileMenuToggle = document.querySelector(".profile-menu-toggle");
     const profileDropdown = document.querySelector(".profile-dropdown");

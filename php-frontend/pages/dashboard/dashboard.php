@@ -10,6 +10,9 @@ $userId = intval($_SESSION["user_id"] ?? 0);
 
 $pendingCount = 0;
 $upcomingAppointments = [];
+$eventsThisWeek = 0;
+$latestMentalHealthTest = null;
+$mentalHealthTestTrend = "first";
 $counselorTodaySessions = 0;
 $counselorPendingNotes = 0;
 $counselorWeekSessions = 0;
@@ -25,6 +28,41 @@ $facilitatorUpcomingSessions = [];
 $instructorStudentsMonitored = 0;
 $instructorAvailableEvents = 0;
 $instructorStudentOverview = [];
+
+function tableColumnExists(mysqli $conn, string $tableName, string $columnName): bool
+{
+    $databaseResult = $conn->query("SELECT DATABASE() AS database_name");
+    $databaseRow = $databaseResult ? $databaseResult->fetch_assoc() : null;
+    $databaseName = trim((string) ($databaseRow["database_name"] ?? ""));
+
+    if ($databaseName === "") {
+        return false;
+    }
+
+    $stmt = $conn->prepare("
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = ?
+          AND TABLE_NAME = ?
+          AND COLUMN_NAME = ?
+        LIMIT 1
+    ");
+
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bind_param("sss", $databaseName, $tableName, $columnName);
+    $stmt->execute();
+    $stmt->store_result();
+    $exists = $stmt->num_rows > 0;
+    $stmt->close();
+
+    return $exists;
+}
+
+$eventsHasImageUrl = tableColumnExists($conn, "events", "image_url");
+$eventImageSelect = $eventsHasImageUrl ? "e.image_url" : "'' AS image_url";
 
 if ($role === "Student" && $userId > 0) {
     $pendingStmt = $conn->prepare(
@@ -61,6 +99,104 @@ if ($role === "Student" && $userId > 0) {
     }
 
     $apptStmt->close();
+
+    // Count events this week
+    $weekStart = date("Y-m-d", strtotime("monday this week"));
+    $weekEnd = date("Y-m-d", strtotime("sunday this week"));
+    $eventsWeekStmt = $conn->prepare(
+        "SELECT COUNT(*) AS total
+         FROM events e
+         INNER JOIN event_participants ep ON e.id = ep.event_id
+         WHERE ep.user_id = ?
+           AND DATE(e.starts_at) BETWEEN ? AND ?"
+    );
+    if ($eventsWeekStmt) {
+        $eventsWeekStmt->bind_param("iss", $userId, $weekStart, $weekEnd);
+        $eventsWeekStmt->execute();
+        $eventsWeekResult = $eventsWeekStmt->get_result()->fetch_assoc();
+        $eventsThisWeek = intval($eventsWeekResult["total"] ?? 0);
+        $eventsWeekStmt->close();
+    }
+
+    // Fetch student's joined events
+    $joinedEvents = [];
+    $eventsStmt = $conn->prepare(
+        "SELECT e.id, e.title, e.starts_at, e.ends_at, e.location, e.category, {$eventImageSelect},
+                ep.joined_at,
+                (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count
+         FROM events e
+         INNER JOIN event_participants ep ON e.id = ep.event_id
+            WHERE ep.user_id = ?
+             AND (
+                 e.starts_at >= NOW()
+                 OR (DATE(e.starts_at) = CURDATE() AND (e.ends_at IS NULL OR e.ends_at >= NOW()))
+             )
+         ORDER BY e.starts_at ASC
+         LIMIT 3"
+    );
+    $eventsStmt->bind_param("i", $userId);
+    $eventsStmt->execute();
+    $eventsResult = $eventsStmt->get_result();
+
+    while ($row = $eventsResult->fetch_assoc()) {
+        $joinedEvents[] = $row;
+    }
+
+    $eventsStmt->close();
+
+    // Fetch latest mental health test (store uses result_text, not a numeric score column)
+    $testStmt = $conn->prepare(
+        "SELECT id, result_text, created_at
+         FROM mental_health_tests
+         WHERE user_id = ?
+         ORDER BY created_at DESC
+         LIMIT 2"
+    );
+    if ($testStmt) {
+        $testStmt->bind_param("i", $userId);
+        $testStmt->execute();
+        $testResult = $testStmt->get_result();
+
+        $tests = [];
+        while ($row = $testResult->fetch_assoc()) {
+            $tests[] = $row;
+        }
+        $testStmt->close();
+
+        if (!empty($tests)) {
+            // parse numeric score from stored result_text (expected format: '... Score: X/Y ...')
+            $parseScore = function ($text) {
+                if (!is_string($text) || $text === "") return null;
+                if (preg_match('/Score:\s*(\d+)\s*\/\s*(\d+)/i', $text, $m)) {
+                    $num = intval($m[1]);
+                    $den = intval($m[2]) ?: 1;
+                    return round(($num / $den) * 100);
+                }
+                return null;
+            };
+
+            // attach a computed 'score' percentage if available
+            foreach ($tests as &$t) {
+                $tScore = $parseScore($t['result_text'] ?? '');
+                $t['score'] = $tScore !== null ? $tScore : null;
+            }
+            unset($t);
+
+            $latestMentalHealthTest = $tests[0];
+
+            if (count($tests) > 1) {
+                $previousScore = intval($tests[1]['score'] ?? 0);
+                $currentScore = intval($latestMentalHealthTest['score'] ?? 0);
+                if ($currentScore > $previousScore) {
+                    $mentalHealthTestTrend = "up";
+                } elseif ($currentScore < $previousScore) {
+                    $mentalHealthTestTrend = "down";
+                } else {
+                    $mentalHealthTestTrend = "stable";
+                }
+            }
+        }
+    }
 } elseif ($role === "Counselor" && $userId > 0) {
         $todayStmt = $conn->prepare(
                 "SELECT COUNT(*) AS total
@@ -434,17 +570,35 @@ $adminQuickActions = [
     ],
 ];
 
+$counselorQuickActions = [
+    [
+        "title" => "View Appointments",
+        "path" => "/campuscare-api/php-frontend/pages/appointments/schedule.php",
+        "cardClass" => "quick-light-blue",
+        "iconClass" => "quick-icon-blue",
+        "iconText" => "A",
+    ],
+    [
+        "title" => "Manage Schedule",
+        "path" => "/campuscare-api/php-frontend/pages/appointments/manage_schedule.php",
+        "cardClass" => "quick-light-gold",
+        "iconClass" => "quick-icon-gold",
+        "iconText" => "S",
+    ],
+    [
+        "title" => "Session Feedback",
+        "path" => "/campuscare-api/php-frontend/pages/reports/session_feedback.php",
+        "cardClass" => "quick-light-blue",
+        "iconClass" => "quick-icon-blue",
+        "iconText" => "F",
+    ],
+];
+
 $facilitatorQuickActions = [
     [
         "title" => "Manage Events",
         "path" => "/campuscare-api/php-frontend/pages/events/events.php",
         "icon" => "calendar",
-        "iconClass" => "blue",
-    ],
-    [
-        "title" => "View Participants",
-        "path" => "/campuscare-api/php-frontend/pages/events/view_participants.php",
-        "icon" => "users",
         "iconClass" => "blue",
     ],
     [
@@ -501,11 +655,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <div class="dashboard-head">
                 <div>
                     <h1 class="page-title">Welcome back, <?php echo htmlspecialchars($fullName); ?>!</h1>
-                    <p class="page-subtitle">
-                        Logged in as
-                        <span class="role-pill"><?php echo htmlspecialchars($role); ?></span>
-                        &mdash; Here's what's happening today.
-                    </p>
+                    <p class="page-subtitle">Here's what's happening today.</p>
                 </div>
 
                 <div class="date-card">
@@ -528,7 +678,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             <p>Upcoming Events</p>
                             <div class="summary-row">
                                 <h3>
-                                    <span class="big summary-primary">3</span>
+                                    <span class="big summary-primary"><?php echo $eventsThisWeek; ?></span>
                                     <span class="muted">this week</span>
                                 </h3>
                                 <span class="summary-arrow">&rarr;</span>
@@ -543,8 +693,34 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             <p>Pending Requests</p>
                             <div class="summary-row">
                                 <h3>
-                                    <span class="big summary-accent">2</span>
-                                    <span class="muted">new messages</span>
+                                    <span class="big summary-accent"><?php echo $pendingCount; ?></span>
+                                    <span class="muted">pending appointments</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
+                    </div>
+                    </article>
+                    <article class="summary-card">
+                        <span class="announcement-icon-wrap announcement-tone-sky">
+                            <?php echo sidebarIconSvg("star"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>Mental Health Test</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <?php if ($latestMentalHealthTest): ?>
+                                        <span class="big summary-primary"><?php echo intval($latestMentalHealthTest["score"] ?? 0); ?>%</span>
+                                        <span class="muted trend-<?php echo $mentalHealthTestTrend; ?>">
+                                            <?php 
+                                                if ($mentalHealthTestTrend === "up") echo "↑ Improving";
+                                                elseif ($mentalHealthTestTrend === "down") echo "↓ Declining"; 
+                                                else echo "→ Stable";
+                                            ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="big summary-muted">—</span>
+                                        <span class="muted">Not taken yet</span>
+                                    <?php endif; ?>
                                 </h3>
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
@@ -576,23 +752,43 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
                     <aside class="announcement-card">
                         <div class="announcement-head-row">
-                            <h3 class="announcement-head">Announcements</h3>
+                            <h3 class="announcement-head">Your Events</h3>
                             <a href="/campuscare-api/php-frontend/pages/events/events.php" class="announcement-view-all">View All</a>
                         </div>
 
                         <ul class="announcement-list">
-                            <?php foreach ($announcements as $item): ?>
+                            <?php if (empty($joinedEvents)): ?>
                                 <li class="announcement-item-card">
-                                    <span class="announcement-icon-wrap announcement-tone-<?php echo htmlspecialchars((string) ($item["tone"] ?? "blue")); ?>">
-                                        <?php echo sidebarIconSvg((string) ($item["icon"] ?? "calendar")); ?>
-                                    </span>
                                     <div class="announcement-body">
-                                        <strong><?php echo htmlspecialchars($item["title"]); ?></strong>
-                                        <span><?php echo htmlspecialchars($item["date"]); ?></span>
+                                        <span>No upcoming or ongoing events yet.</span>
+                                        <a href="/campuscare-api/php-frontend/pages/events/events.php" class="text-primary">Browse Events</a>
                                     </div>
-                                    <span class="announcement-chevron" aria-hidden="true">›</span>
                                 </li>
-                            <?php endforeach; ?>
+                            <?php else: ?>
+                                <?php foreach ($joinedEvents as $event): ?>
+                                    <?php
+                                        $eventDate = new DateTime($event["starts_at"]);
+                                        $eventEnd = !empty($event["ends_at"]) ? new DateTime($event["ends_at"]) : null;
+                                        $dateStr = $eventDate->format("M j");
+                                        $timeStr = $eventDate->format("g:i A");
+                                        $displayTime = $eventEnd ? $timeStr . " - " . $eventEnd->format("g:i A") : $timeStr;
+                                        $isPast = $eventDate < new DateTime();
+                                        $statusClass = $isPast ? "announcement-tone-gray" : "announcement-tone-blue";
+                                    ?>
+                                    <li>
+                                        <a href="/campuscare-api/php-frontend/pages/events/event_detail.php?id=<?php echo $event["id"]; ?>" class="announcement-item-card announcement-event-link">
+                                            <span class="announcement-icon-wrap <?php echo $statusClass; ?>">
+                                                <?php echo sidebarIconSvg("calendar"); ?>
+                                            </span>
+                                            <div class="announcement-body">
+                                                <strong><?php echo htmlspecialchars($event["title"]); ?></strong>
+                                                <span><?php echo htmlspecialchars($dateStr . " at " . $displayTime); ?></span>
+                                            </div>
+                                            <span class="announcement-chevron" aria-hidden="true">›</span>
+                                        </a>
+                                    </li>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </ul>
                     </aside>
                 </section>
@@ -981,44 +1177,68 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     });
                 </script>
             <?php elseif ($role === "Counselor"): ?>
-                <section class="counselor-stats">
-                    <article class="counselor-stat">
-                        <span class="counselor-stat-icon"><?php echo sidebarIconSvg("calendar"); ?></span>
-                        <div class="counselor-stat-value counselor-stat-blue"><?php echo $counselorTodaySessions; ?></div>
-                        <p class="counselor-stat-label">Today's Sessions</p>
+                <section class="summary-grid">
+                    <article class="summary-card">
+                        <span class="announcement-icon-wrap announcement-tone-blue">
+                            <?php echo sidebarIconSvg("calendar"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>Today's Sessions</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-primary"><?php echo $counselorTodaySessions; ?></span>
+                                    <span class="muted">scheduled</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
+                        </div>
                     </article>
-
-                    <article class="counselor-stat">
-                        <span class="counselor-stat-icon"><?php echo sidebarIconSvg("message"); ?></span>
-                        <div class="counselor-stat-value counselor-stat-gold"><?php echo $counselorPendingNotes; ?></div>
-                        <p class="counselor-stat-label">Pending Notes</p>
+                    <article class="summary-card">
+                        <span class="announcement-icon-wrap announcement-tone-gold">
+                            <?php echo sidebarIconSvg("message"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>Pending Notes</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-accent"><?php echo $counselorPendingNotes; ?></span>
+                                    <span class="muted">to complete</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
+                        </div>
                     </article>
-
-                    <article class="counselor-stat">
-                        <span class="counselor-stat-icon"><?php echo sidebarIconSvg("clock"); ?></span>
-                        <div class="counselor-stat-value counselor-stat-blue"><?php echo $counselorWeekSessions; ?></div>
-                        <p class="counselor-stat-label">This Week</p>
+                    <article class="summary-card">
+                        <span class="announcement-icon-wrap announcement-tone-sky">
+                            <?php echo sidebarIconSvg("clock"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>This Week</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-primary"><?php echo $counselorWeekSessions; ?></span>
+                                    <span class="muted">total sessions</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
+                        </div>
                     </article>
                 </section>
 
-                <section>
-                    <h2 class="quick-title">Quick Actions</h2>
+                <section class="quick-layout">
+                    <div class="announcement-card">
+                        <h2 class="quick-title">Quick Actions</h2>
 
-                    <div class="counselor-quick">
-                        <a href="/campuscare-api/php-frontend/pages/appointments/schedule.php" class="counselor-quick-card">
-                            <span class="counselor-quick-icon blue"><?php echo sidebarIconSvg("calendar"); ?></span>
-                            <h3 class="counselor-quick-title">View Appointments</h3>
-                        </a>
-
-                        <a href="/campuscare-api/php-frontend/pages/appointments/manage_schedule.php" class="counselor-quick-card">
-                            <span class="counselor-quick-icon gold"><?php echo sidebarIconSvg("clock"); ?></span>
-                            <h3 class="counselor-quick-title">Manage Schedule</h3>
-                        </a>
-
-                        <a href="/campuscare-api/php-frontend/pages/reports/session_feedback.php" class="counselor-quick-card">
-                            <span class="counselor-quick-icon blue"><?php echo sidebarIconSvg("message"); ?></span>
-                            <h3 class="counselor-quick-title">Session Feedback</h3>
-                        </a>
+                        <div class="quick-grid">
+                            <?php foreach ($counselorQuickActions as $action): ?>
+                                <a href="<?php echo htmlspecialchars($action["path"]); ?>" class="quick-card <?php echo $action["cardClass"]; ?> roboto-regular">
+                                    <span class="quick-icon <?php echo $action["iconClass"]; ?>">
+                                        <?php echo htmlspecialchars($action["iconText"]); ?>
+                                    </span>
+                                    <h4><?php echo htmlspecialchars($action["title"]); ?></h4>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </section>
 
