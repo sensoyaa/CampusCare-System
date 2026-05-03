@@ -25,9 +25,10 @@ $facilitatorYourEvents = 0;
 $facilitatorTotalParticipants = 0;
 $facilitatorThisWeek = 0;
 $facilitatorUpcomingSessions = [];
-$instructorStudentsMonitored = 0;
 $instructorAvailableEvents = 0;
-$instructorStudentOverview = [];
+$instructorEventsThisWeek = 0;
+$instructorEventColleges = 0;
+$instructorUpcomingEvents = [];
 
 function tableColumnExists(mysqli $conn, string $tableName, string $columnName): bool
 {
@@ -63,6 +64,31 @@ function tableColumnExists(mysqli $conn, string $tableName, string $columnName):
 
 $eventsHasImageUrl = tableColumnExists($conn, "events", "image_url");
 $eventImageSelect = $eventsHasImageUrl ? "e.image_url" : "'' AS image_url";
+$eventsHasStartsAt = tableColumnExists($conn, "events", "starts_at");
+$eventsHasEndsAt = tableColumnExists($conn, "events", "ends_at");
+$eventsHasEventDate = tableColumnExists($conn, "events", "event_date");
+$eventsHasEventTime = tableColumnExists($conn, "events", "event_time");
+$eventsHasCollege = tableColumnExists($conn, "events", "college");
+$usersHasCollege = tableColumnExists($conn, "users", "college");
+$usersHasRole = tableColumnExists($conn, "users", "role");
+
+$dashboardEventStartExpression = "NULL";
+if ($eventsHasStartsAt) {
+    $dashboardEventStartExpression = "e.starts_at";
+} elseif ($eventsHasEventDate && $eventsHasEventTime) {
+    $dashboardEventStartExpression = "TIMESTAMP(e.event_date, COALESCE(e.event_time, '00:00:00'))";
+} elseif ($eventsHasEventDate) {
+    $dashboardEventStartExpression = "TIMESTAMP(e.event_date, '00:00:00')";
+}
+
+$dashboardEventCollegeExpression = "''";
+if ($eventsHasCollege && $usersHasCollege) {
+    $dashboardEventCollegeExpression = "COALESCE(NULLIF(e.college, ''), creator.college)";
+} elseif ($eventsHasCollege) {
+    $dashboardEventCollegeExpression = "e.college";
+} elseif ($usersHasCollege) {
+    $dashboardEventCollegeExpression = "creator.college";
+}
 
 if ($role === "Student" && $userId > 0) {
     $pendingStmt = $conn->prepare(
@@ -453,52 +479,51 @@ if ($role === "Student" && $userId > 0) {
 
     $upcomingEventsStmt->close();
 } elseif ($role === "Instructor") {
-    $studentsResult = $conn->query(
-        "SELECT COUNT(*) AS total
-         FROM users
-         WHERE role = 'Student'"
-    );
-    if ($studentsResult && ($row = $studentsResult->fetch_assoc())) {
-        $instructorStudentsMonitored = intval($row["total"] ?? 0);
-    }
+    if ($dashboardEventStartExpression !== "NULL") {
+        $weekStart = date("Y-m-d", strtotime("monday this week"));
+        $weekEnd = date("Y-m-d", strtotime("sunday this week"));
+        $instructorEventWhere = "{$dashboardEventStartExpression} IS NOT NULL AND {$dashboardEventStartExpression} >= NOW()";
 
-    $eventsResult = $conn->query(
-        "SELECT COUNT(*) AS total
-         FROM events
-         WHERE event_date >= CURDATE()"
-    );
-    if ($eventsResult && ($row = $eventsResult->fetch_assoc())) {
-        $instructorAvailableEvents = intval($row["total"] ?? 0);
-    }
-
-    $overviewResult = $conn->query(
-        "SELECT
-            u.full_name AS name,
-            u.student_id,
-            COUNT(a.id) AS sessions
-         FROM users u
-         LEFT JOIN appointments a ON u.id = a.user_id
-         WHERE u.role = 'Student'
-         GROUP BY u.id, u.full_name, u.student_id
-         ORDER BY sessions DESC, u.full_name ASC
-         LIMIT 5"
-    );
-
-    while ($overviewResult && ($row = $overviewResult->fetch_assoc())) {
-        $sessions = intval($row["sessions"] ?? 0);
-        $status = "No sessions";
-
-        if ($sessions >= 5) {
-            $status = "Follow-up";
-        } elseif ($sessions > 0) {
-            $status = "Active";
+        if ($usersHasRole) {
+            $instructorEventWhere .= " AND creator.role = 'Counselor'";
         }
 
-        $instructorStudentOverview[] = [
-            "name" => (string) ($row["name"] ?? "Student"),
-            "sessions" => $sessions,
-            "status" => $status,
-        ];
+        $eventSummaryResult = $conn->query(
+            "SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN DATE({$dashboardEventStartExpression}) BETWEEN '{$weekStart}' AND '{$weekEnd}' THEN 1 ELSE 0 END) AS week_total,
+                COUNT(DISTINCT NULLIF(TRIM({$dashboardEventCollegeExpression}), '')) AS college_total
+             FROM events e
+             LEFT JOIN users creator ON creator.id = e.created_by_user_id
+             WHERE {$instructorEventWhere}"
+        );
+
+        if ($eventSummaryResult && ($row = $eventSummaryResult->fetch_assoc())) {
+            $instructorAvailableEvents = intval($row["total"] ?? 0);
+            $instructorEventsThisWeek = intval($row["week_total"] ?? 0);
+            $instructorEventColleges = intval($row["college_total"] ?? 0);
+        }
+
+        $upcomingEventsResult = $conn->query(
+            "SELECT
+                e.id,
+                e.title,
+                e.description,
+                e.location,
+                {$dashboardEventStartExpression} AS starts_at,
+                " . ($eventsHasEndsAt ? "e.ends_at" : "NULL") . " AS ends_at,
+                {$dashboardEventCollegeExpression} AS college,
+                creator.full_name AS created_by_name
+             FROM events e
+             LEFT JOIN users creator ON creator.id = e.created_by_user_id
+             WHERE {$instructorEventWhere}
+             ORDER BY {$dashboardEventStartExpression} ASC
+             LIMIT 5"
+        );
+
+        while ($upcomingEventsResult && ($row = $upcomingEventsResult->fetch_assoc())) {
+            $instructorUpcomingEvents[] = $row;
+        }
     }
 }
 
@@ -611,16 +636,20 @@ $facilitatorQuickActions = [
 
 $instructorQuickActions = [
     [
-        "title" => "Student Status",
-        "path" => "/campuscare-api/php-frontend/pages/users/student_status.php",
-        "icon" => "eye",
-        "iconClass" => "blue",
+        "title" => "Refer Student",
+        "path" => "/campuscare-api/php-frontend/pages/forms/student_referral_form.php",
+        "cardClass" => "quick-light-blue quick-counseling-bg",
+        "iconClass" => "quick-icon-blue",
+        "iconText" => "R",
+        "iconImage" => "/campuscare-api/php-frontend/assets/images/icons/refer icon.png",
     ],
     [
         "title" => "View Events",
         "path" => "/campuscare-api/php-frontend/pages/events/events.php",
-        "icon" => "calendar",
-        "iconClass" => "blue",
+        "cardClass" => "quick-light-green quick-workshop-bg",
+        "iconClass" => "quick-icon-teal",
+        "iconText" => "E",
+        "iconImage" => "/campuscare-api/php-frontend/assets/images/icons/workshop.png",
     ],
 ];
 
@@ -637,6 +666,16 @@ function statusClass($status)
     return "status-pending";
 }
 
+function dashboardCardTag(string $href, string $className = "summary-card"): string
+{
+    return '<a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '" class="' . htmlspecialchars($className, ENT_QUOTES, 'UTF-8') . ' dashboard-card-link">';
+}
+
+function dashboardCardCloseTag(): string
+{
+    return "</a>";
+}
+
 require_once __DIR__ . "/../../includes/header.php";
 require_once __DIR__ . "/../../includes/sidebar.php";
 ?>
@@ -651,7 +690,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     </div>
 
     <div class="content">
-        <div class="page-shell<?php echo $role === "Counselor" ? " counselor-shell" : ($role === "Administrator" ? " admin-shell" : ($role === "Facilitator" ? " facilitator-shell" : ($role === "Instructor" ? " instructor-shell" : ""))); ?>">
+        <div class="page-shell<?php echo $role === "Counselor" ? " counselor-shell" : ($role === "Administrator" ? " admin-shell" : ($role === "Facilitator" ? " facilitator-shell" : "")); ?>">
             <div class="dashboard-head">
                 <div>
                     <h1 class="page-title">Welcome back, <?php echo htmlspecialchars($fullName); ?>!</h1>
@@ -670,7 +709,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
             <?php if ($role === "Student"): ?>
                 <section class="summary-grid">
-                    <article class="summary-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-blue">
                             <?php echo sidebarIconSvg("calendar"); ?>
                         </span>
@@ -684,8 +723,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/appointments/schedule.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-gold">
                             <?php echo sidebarIconSvg("message"); ?>
                         </span>
@@ -699,8 +738,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                     </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/tests/mental_health_test.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-sky">
                             <?php echo sidebarIconSvg("star"); ?>
                         </span>
@@ -725,7 +764,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
 
 
                 </section>
@@ -879,7 +918,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 
             <?php elseif ($role === "Administrator"): ?>
                 <section class="summary-grid">
-                    <article class="summary-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/users/manage_users.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-blue">
                             <?php echo sidebarIconSvg("users"); ?>
                         </span>
@@ -892,8 +931,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/appointments/manage_appointments.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-blue">
                             <?php echo sidebarIconSvg("calendar"); ?>
                         </span>
@@ -906,8 +945,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/appointments/manage_appointments.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-gold">
                             <?php echo sidebarIconSvg("settings"); ?>
                         </span>
@@ -920,8 +959,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-blue">
                             <?php echo sidebarIconSvg("report"); ?>
                         </span>
@@ -934,7 +973,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
                 </section>
 
                 <!-- Charts Section -->
@@ -1178,7 +1217,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 </script>
             <?php elseif ($role === "Counselor"): ?>
                 <section class="summary-grid">
-                    <article class="summary-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/appointments/schedule.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-blue">
                             <?php echo sidebarIconSvg("calendar"); ?>
                         </span>
@@ -1192,8 +1231,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/reports/session_feedback.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-gold">
                             <?php echo sidebarIconSvg("message"); ?>
                         </span>
@@ -1207,8 +1246,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/appointments/schedule.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-sky">
                             <?php echo sidebarIconSvg("clock"); ?>
                         </span>
@@ -1222,7 +1261,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
                 </section>
 
                 <section class="quick-layout">
@@ -1298,23 +1337,23 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 </section>
             <?php elseif ($role === "Facilitator"): ?>
                 <section class="facilitator-stats">
-                    <article class="facilitator-stat-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php", "facilitator-stat-card"); ?>
                         <span class="facilitator-stat-icon blue"><?php echo sidebarIconSvg("calendar"); ?></span>
                         <p class="facilitator-stat-value blue"><?php echo number_format($facilitatorYourEvents); ?></p>
                         <p class="facilitator-stat-label">Your Events</p>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
 
-                    <article class="facilitator-stat-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php", "facilitator-stat-card"); ?>
                         <span class="facilitator-stat-icon blue"><?php echo sidebarIconSvg("users"); ?></span>
                         <p class="facilitator-stat-value blue"><?php echo number_format($facilitatorTotalParticipants); ?></p>
                         <p class="facilitator-stat-label">Total Participants</p>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
 
-                    <article class="facilitator-stat-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php", "facilitator-stat-card"); ?>
                         <span class="facilitator-stat-icon gold"><?php echo sidebarIconSvg("calendar"); ?></span>
                         <p class="facilitator-stat-value gold"><?php echo number_format($facilitatorThisWeek); ?></p>
                         <p class="facilitator-stat-label">This Week</p>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
                 </section>
 
                 <section class="facilitator-quick-grid">
@@ -1360,77 +1399,173 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <?php endif; ?>
                 </section>
             <?php elseif ($role === "Instructor"): ?>
-                <section class="instructor-stats">
-                    <article class="instructor-stat-card">
-                        <span class="instructor-stat-icon blue"><?php echo sidebarIconSvg("users"); ?></span>
-                        <p class="instructor-stat-value blue"><?php echo number_format($instructorStudentsMonitored); ?></p>
-                        <p class="instructor-stat-label">Students Monitored</p>
-                    </article>
+                <section class="summary-grid">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php"); ?>
+                        <span class="announcement-icon-wrap announcement-tone-blue">
+                            <?php echo sidebarIconSvg("calendar"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>Available Events</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-primary"><?php echo number_format($instructorAvailableEvents); ?></span>
+                                    <span class="muted">upcoming sessions</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
+                        </div>
+                    <?php echo dashboardCardCloseTag(); ?>
 
-                    <article class="instructor-stat-card">
-                        <span class="instructor-stat-icon blue"><?php echo sidebarIconSvg("calendar"); ?></span>
-                        <p class="instructor-stat-value blue"><?php echo number_format($instructorAvailableEvents); ?></p>
-                        <p class="instructor-stat-label">Available Events</p>
-                    </article>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php"); ?>
+                        <span class="announcement-icon-wrap announcement-tone-gold">
+                            <?php echo sidebarIconSvg("trend"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>This Week</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-accent"><?php echo number_format($instructorEventsThisWeek); ?></span>
+                                    <span class="muted">scheduled events</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
+                        </div>
+                    <?php echo dashboardCardCloseTag(); ?>
+
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php"); ?>
+                        <span class="announcement-icon-wrap announcement-tone-sky">
+                            <?php echo sidebarIconSvg("pin"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>College Coverage</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-primary"><?php echo number_format($instructorEventColleges); ?></span>
+                                    <span class="muted">active colleges</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
+                        </div>
+                    <?php echo dashboardCardCloseTag(); ?>
                 </section>
 
-                <section class="instructor-quick-grid">
-                    <?php foreach ($instructorQuickActions as $action): ?>
-                        <a href="<?php echo htmlspecialchars((string) ($action["path"] ?? "#")); ?>" class="instructor-quick-card">
-                            <span class="instructor-quick-icon <?php echo htmlspecialchars((string) ($action["iconClass"] ?? "blue")); ?>">
-                                <?php echo sidebarIconSvg((string) ($action["icon"] ?? "eye")); ?>
-                            </span>
-                            <p class="instructor-quick-title"><?php echo htmlspecialchars((string) ($action["title"] ?? "Action")); ?></p>
-                        </a>
-                    <?php endforeach; ?>
-                </section>
+                <section class="quick-layout">
+                    <div class="announcement-card">
+                        <h2 class="quick-title">Quick Access</h2>
 
-                <section>
-                    <div class="instructor-overview-head">
-                        <h2 class="instructor-overview-title">Student Participation Overview</h2>
-                        <a href="/campuscare-api/php-frontend/pages/users/student_status.php" class="instructor-view-all">View All &rarr;</a>
+                        <div class="quick-grid">
+                            <?php foreach ($instructorQuickActions as $action): ?>
+                                <a href="<?php echo htmlspecialchars((string) ($action["path"] ?? "#")); ?>" class="quick-card <?php echo htmlspecialchars((string) ($action["cardClass"] ?? "quick-light-blue")); ?> roboto-regular">
+                                    <span class="quick-icon <?php echo htmlspecialchars((string) ($action["iconClass"] ?? "quick-icon-blue")); ?>">
+                                        <?php if (!empty($action["iconImage"])): ?>
+                                            <img src="<?php echo htmlspecialchars((string) $action["iconImage"]); ?>" alt="<?php echo htmlspecialchars((string) ($action["title"] ?? "Action")); ?>">
+                                        <?php else: ?>
+                                            <?php echo htmlspecialchars((string) ($action["iconText"] ?? "I")); ?>
+                                        <?php endif; ?>
+                                    </span>
+                                    <h4><?php echo htmlspecialchars((string) ($action["title"] ?? "Action")); ?></h4>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
 
-                    <?php if (empty($instructorStudentOverview)): ?>
-                        <article class="instructor-overview-item">
-                            <div class="instructor-overview-left">
-                                <span class="instructor-overview-avatar">S</span>
+                    <aside class="announcement-card">
+                        <div class="announcement-head-row">
+                            <h3 class="announcement-head">Upcoming Events</h3>
+                            <a href="/campuscare-api/php-frontend/pages/events/events.php" class="announcement-view-all">View All</a>
+                        </div>
+
+                        <ul class="announcement-list">
+                            <?php if (empty($instructorUpcomingEvents)): ?>
+                                <li class="announcement-item-card">
+                                    <div class="announcement-body">
+                                        <span>No counselor-created events are available yet.</span>
+                                        <a href="/campuscare-api/php-frontend/pages/events/events.php" class="text-primary">Browse Events</a>
+                                    </div>
+                                </li>
+                            <?php else: ?>
+                                <?php foreach ($instructorUpcomingEvents as $event): ?>
+                                    <?php
+                                        $eventDate = !empty($event["starts_at"]) ? new DateTime((string) $event["starts_at"]) : null;
+                                        $eventEnd = !empty($event["ends_at"]) ? new DateTime((string) $event["ends_at"]) : null;
+                                        $dateText = $eventDate ? $eventDate->format("M j") : "TBA";
+                                        $timeText = $eventDate ? $eventDate->format("g:i A") : "Schedule pending";
+                                        if ($eventDate && $eventEnd) {
+                                            $timeText .= " - " . $eventEnd->format("g:i A");
+                                        }
+                                    ?>
+                                    <li>
+                                        <a href="/campuscare-api/php-frontend/pages/events/event_detail.php?id=<?php echo intval($event["id"] ?? 0); ?>" class="announcement-item-card announcement-event-link">
+                                            <span class="announcement-icon-wrap announcement-tone-blue">
+                                                <?php echo sidebarIconSvg("calendar"); ?>
+                                            </span>
+                                            <div class="announcement-body">
+                                                <strong><?php echo htmlspecialchars((string) ($event["title"] ?? "Campus Event")); ?></strong>
+                                                <span><?php echo htmlspecialchars($dateText . " at " . $timeText); ?></span>
+                                                <?php if (!empty($event["location"])): ?>
+                                                    <span><?php echo htmlspecialchars((string) $event["location"]); ?></span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <span class="announcement-chevron" aria-hidden="true">›</span>
+                                        </a>
+                                    </li>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </ul>
+                    </aside>
+                </section>
+
+                <section class="announcement-card appointments-column">
+                    <div class="section-head">
+                        <h2 class="section-title">Event Details</h2>
+                        <a href="/campuscare-api/php-frontend/pages/events/events.php" class="section-link">Open Events &rarr;</a>
+                    </div>
+
+                    <?php if (empty($instructorUpcomingEvents)): ?>
+                        <div class="appointment-card">
+                            <div class="appointment-left">
+                                <img src="/campuscare-api/php-frontend/assets/images/icons/workshop.png" alt="Event" class="appointment-icon">
                                 <div>
-                                    <p class="instructor-overview-name">No students found</p>
-                                    <p class="instructor-overview-meta">Student records will appear here.</p>
+                                    <p class="appointment-title">No published events yet</p>
+                                    <p class="appointment-meta">Counselor-created events will appear here once they are scheduled.</p>
                                 </div>
                             </div>
-                        </article>
+                        </div>
                     <?php else: ?>
-                        <div class="instructor-overview-list">
-                            <?php foreach ($instructorStudentOverview as $student): ?>
+                        <div class="appointment-list">
+                            <?php foreach ($instructorUpcomingEvents as $event): ?>
                                 <?php
-                                    $studentName = trim((string) ($student["name"] ?? "Student"));
-                                    if ($studentName === "") {
-                                        $studentName = "Student";
+                                    $eventDate = !empty($event["starts_at"]) ? new DateTime((string) $event["starts_at"]) : null;
+                                    $eventEnd = !empty($event["ends_at"]) ? new DateTime((string) $event["ends_at"]) : null;
+                                    $scheduleText = $eventDate ? $eventDate->format("D, F j | g:i A") : "Schedule pending";
+                                    if ($eventDate && $eventEnd) {
+                                        $scheduleText .= " - " . $eventEnd->format("g:i A");
                                     }
-
-                                    $sessions = intval($student["sessions"] ?? 0);
-                                    $status = (string) ($student["status"] ?? "No sessions");
-                                    $statusClass = "none";
-
-                                    if ($status === "Active") {
-                                        $statusClass = "active";
-                                    } elseif ($status === "Follow-up") {
-                                        $statusClass = "follow-up";
+                                    $metaBits = [$scheduleText];
+                                    if (!empty($event["location"])) {
+                                        $metaBits[] = (string) $event["location"];
+                                    }
+                                    if (!empty($event["college"])) {
+                                        $metaBits[] = (string) $event["college"];
+                                    }
+                                    $description = trim((string) ($event["description"] ?? ""));
+                                    if ($description !== "" && strlen($description) > 140) {
+                                        $description = substr($description, 0, 137) . "...";
                                     }
                                 ?>
-
-                                <article class="instructor-overview-item">
-                                    <div class="instructor-overview-left">
-                                        <span class="instructor-overview-avatar"><?php echo htmlspecialchars(strtoupper(substr($studentName, 0, 1))); ?></span>
+                                <article class="appointment-card">
+                                    <div class="appointment-left">
+                                        <img src="/campuscare-api/php-frontend/assets/images/icons/workshop.png" alt="Event" class="appointment-icon">
                                         <div>
-                                            <p class="instructor-overview-name"><?php echo htmlspecialchars($studentName); ?></p>
-                                            <p class="instructor-overview-meta"><?php echo $sessions; ?> counseling sessions</p>
+                                            <p class="appointment-title"><?php echo htmlspecialchars((string) ($event["title"] ?? "Campus Event")); ?></p>
+                                            <p class="appointment-meta"><?php echo htmlspecialchars(implode(" • ", $metaBits)); ?></p>
+                                            <?php if ($description !== ""): ?>
+                                                <p class="appointment-meta"><?php echo htmlspecialchars($description); ?></p>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
 
-                                    <span class="instructor-overview-status <?php echo $statusClass; ?>"><?php echo htmlspecialchars($status); ?></span>
+                                    <a href="/campuscare-api/php-frontend/pages/events/event_detail.php?id=<?php echo intval($event["id"] ?? 0); ?>" class="section-link">Details &rarr;</a>
                                 </article>
                             <?php endforeach; ?>
                         </div>

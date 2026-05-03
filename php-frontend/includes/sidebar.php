@@ -44,12 +44,7 @@ $navItems = [
     ],
     "Instructor" => [
         ["Dashboard", "dashboard.php", "dashboard"],
-        "Forms" => [
-            ["Refer Student", "student_referral_form.php", "message"],
-            ["Referral Slip", "referral_form.php", "message"],
-            ["Request Testing", "testing_request_form.php", "report"]
-        ],
-        ["Student Status", "student_status.php", "eye"],
+        ["Refer Student", "student_referral_form.php", "message"],
         ["View Events", "events.php", "calendar"],
     ],
 ];
