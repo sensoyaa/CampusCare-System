@@ -666,6 +666,16 @@ function statusClass($status)
     return "status-pending";
 }
 
+function dashboardCardTag(string $href, string $className = "summary-card"): string
+{
+    return '<a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '" class="' . htmlspecialchars($className, ENT_QUOTES, 'UTF-8') . ' dashboard-card-link">';
+}
+
+function dashboardCardCloseTag(): string
+{
+    return "</a>";
+}
+
 require_once __DIR__ . "/../../includes/header.php";
 require_once __DIR__ . "/../../includes/sidebar.php";
 ?>
@@ -699,7 +709,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
             <?php if ($role === "Student"): ?>
                 <section class="summary-grid">
-                    <article class="summary-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-blue">
                             <?php echo sidebarIconSvg("calendar"); ?>
                         </span>
@@ -713,8 +723,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/appointments/schedule.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-gold">
                             <?php echo sidebarIconSvg("message"); ?>
                         </span>
@@ -728,8 +738,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                     </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/tests/mental_health_test.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-sky">
                             <?php echo sidebarIconSvg("star"); ?>
                         </span>
@@ -754,7 +764,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
 
 
                 </section>
@@ -908,7 +918,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 
             <?php elseif ($role === "Administrator"): ?>
                 <section class="summary-grid">
-                    <article class="summary-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/users/manage_users.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-blue">
                             <?php echo sidebarIconSvg("users"); ?>
                         </span>
@@ -921,8 +931,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/appointments/manage_appointments.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-blue">
                             <?php echo sidebarIconSvg("calendar"); ?>
                         </span>
@@ -935,8 +945,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/appointments/manage_appointments.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-gold">
                             <?php echo sidebarIconSvg("settings"); ?>
                         </span>
@@ -949,8 +959,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-blue">
                             <?php echo sidebarIconSvg("report"); ?>
                         </span>
@@ -963,7 +973,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
                 </section>
 
                 <!-- Charts Section -->
@@ -1207,7 +1217,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 </script>
             <?php elseif ($role === "Counselor"): ?>
                 <section class="summary-grid">
-                    <article class="summary-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/appointments/schedule.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-blue">
                             <?php echo sidebarIconSvg("calendar"); ?>
                         </span>
@@ -1221,8 +1231,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/reports/session_feedback.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-gold">
                             <?php echo sidebarIconSvg("message"); ?>
                         </span>
@@ -1236,8 +1246,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
-                    <article class="summary-card">
+                    <?php echo dashboardCardCloseTag(); ?>
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/appointments/schedule.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-sky">
                             <?php echo sidebarIconSvg("clock"); ?>
                         </span>
@@ -1251,7 +1261,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
                 </section>
 
                 <section class="quick-layout">
@@ -1327,23 +1337,23 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 </section>
             <?php elseif ($role === "Facilitator"): ?>
                 <section class="facilitator-stats">
-                    <article class="facilitator-stat-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php", "facilitator-stat-card"); ?>
                         <span class="facilitator-stat-icon blue"><?php echo sidebarIconSvg("calendar"); ?></span>
                         <p class="facilitator-stat-value blue"><?php echo number_format($facilitatorYourEvents); ?></p>
                         <p class="facilitator-stat-label">Your Events</p>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
 
-                    <article class="facilitator-stat-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php", "facilitator-stat-card"); ?>
                         <span class="facilitator-stat-icon blue"><?php echo sidebarIconSvg("users"); ?></span>
                         <p class="facilitator-stat-value blue"><?php echo number_format($facilitatorTotalParticipants); ?></p>
                         <p class="facilitator-stat-label">Total Participants</p>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
 
-                    <article class="facilitator-stat-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php", "facilitator-stat-card"); ?>
                         <span class="facilitator-stat-icon gold"><?php echo sidebarIconSvg("calendar"); ?></span>
                         <p class="facilitator-stat-value gold"><?php echo number_format($facilitatorThisWeek); ?></p>
                         <p class="facilitator-stat-label">This Week</p>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
                 </section>
 
                 <section class="facilitator-quick-grid">
@@ -1390,7 +1400,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 </section>
             <?php elseif ($role === "Instructor"): ?>
                 <section class="summary-grid">
-                    <article class="summary-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-blue">
                             <?php echo sidebarIconSvg("calendar"); ?>
                         </span>
@@ -1404,9 +1414,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
 
-                    <article class="summary-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-gold">
                             <?php echo sidebarIconSvg("trend"); ?>
                         </span>
@@ -1420,9 +1430,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
 
-                    <article class="summary-card">
+                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/events/events.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-sky">
                             <?php echo sidebarIconSvg("pin"); ?>
                         </span>
@@ -1436,7 +1446,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <span class="summary-arrow">&rarr;</span>
                             </div>
                         </div>
-                    </article>
+                    <?php echo dashboardCardCloseTag(); ?>
                 </section>
 
                 <section class="quick-layout">
