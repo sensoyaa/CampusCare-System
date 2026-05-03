@@ -85,7 +85,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <div class="dashboard-head">
                 <div>
                     <h1 class="page-title">Campus Events</h1>
-                    <p class="page-subtitle">Discover workshops, brown bag sessions, forums and more</p>
+                    <p class="page-subtitle" style="color:black;">Discover workshops, brown bag sessions, forums and more</p>
                 </div>
             </div>
 

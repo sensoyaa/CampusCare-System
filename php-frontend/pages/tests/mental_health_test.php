@@ -172,7 +172,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <div class="test-head">
                         <div>
                             <h1 class="page-title" style="font-size: 40px; margin-bottom: 3px;">Mental Health Check-in</h1>
-                            <p class="page-subtitle">Quick self-assessment</p>
+                            <p class="page-subtitle" style="color: #ffffff;">Quick self-assessment</p>
                         </div>
                     </div>
 

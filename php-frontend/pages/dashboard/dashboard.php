@@ -437,6 +437,30 @@ $adminQuickActions = [
     ],
 ];
 
+$counselorQuickActions = [
+    [
+        "title" => "View Appointments",
+        "path" => "/campuscare-api/php-frontend/pages/appointments/schedule.php",
+        "cardClass" => "quick-light-blue",
+        "iconClass" => "quick-icon-blue",
+        "iconText" => "A",
+    ],
+    [
+        "title" => "Manage Schedule",
+        "path" => "/campuscare-api/php-frontend/pages/appointments/manage_schedule.php",
+        "cardClass" => "quick-light-gold",
+        "iconClass" => "quick-icon-gold",
+        "iconText" => "S",
+    ],
+    [
+        "title" => "Session Feedback",
+        "path" => "/campuscare-api/php-frontend/pages/reports/session_feedback.php",
+        "cardClass" => "quick-light-blue",
+        "iconClass" => "quick-icon-blue",
+        "iconText" => "F",
+    ],
+];
+
 $facilitatorQuickActions = [
     [
         "title" => "Manage Events",
@@ -498,11 +522,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <div class="dashboard-head">
                 <div>
                     <h1 class="page-title">Welcome back, <?php echo htmlspecialchars($fullName); ?>!</h1>
-                    <p class="page-subtitle">
-                        Logged in as
-                        <span class="role-pill"><?php echo htmlspecialchars($role); ?></span>
-                        &mdash; Here's what's happening today.
-                    </p>
+                    <p class="page-subtitle">Here's what's happening today.</p>
                 </div>
 
                 <div class="date-card">
@@ -771,44 +791,68 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     </div>
                 </section>
             <?php elseif ($role === "Counselor"): ?>
-                <section class="counselor-stats">
-                    <article class="counselor-stat">
-                        <span class="counselor-stat-icon"><?php echo sidebarIconSvg("calendar"); ?></span>
-                        <div class="counselor-stat-value counselor-stat-blue"><?php echo $counselorTodaySessions; ?></div>
-                        <p class="counselor-stat-label">Today's Sessions</p>
+                <section class="summary-grid">
+                    <article class="summary-card">
+                        <span class="announcement-icon-wrap announcement-tone-blue">
+                            <?php echo sidebarIconSvg("calendar"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>Today's Sessions</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-primary"><?php echo $counselorTodaySessions; ?></span>
+                                    <span class="muted">scheduled</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
+                        </div>
                     </article>
-
-                    <article class="counselor-stat">
-                        <span class="counselor-stat-icon"><?php echo sidebarIconSvg("message"); ?></span>
-                        <div class="counselor-stat-value counselor-stat-gold"><?php echo $counselorPendingNotes; ?></div>
-                        <p class="counselor-stat-label">Pending Notes</p>
+                    <article class="summary-card">
+                        <span class="announcement-icon-wrap announcement-tone-gold">
+                            <?php echo sidebarIconSvg("message"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>Pending Notes</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-accent"><?php echo $counselorPendingNotes; ?></span>
+                                    <span class="muted">to complete</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
+                        </div>
                     </article>
-
-                    <article class="counselor-stat">
-                        <span class="counselor-stat-icon"><?php echo sidebarIconSvg("clock"); ?></span>
-                        <div class="counselor-stat-value counselor-stat-blue"><?php echo $counselorWeekSessions; ?></div>
-                        <p class="counselor-stat-label">This Week</p>
+                    <article class="summary-card">
+                        <span class="announcement-icon-wrap announcement-tone-sky">
+                            <?php echo sidebarIconSvg("clock"); ?>
+                        </span>
+                        <div class="summary-content">
+                            <p>This Week</p>
+                            <div class="summary-row">
+                                <h3>
+                                    <span class="big summary-primary"><?php echo $counselorWeekSessions; ?></span>
+                                    <span class="muted">total sessions</span>
+                                </h3>
+                                <span class="summary-arrow">&rarr;</span>
+                            </div>
+                        </div>
                     </article>
                 </section>
 
-                <section>
-                    <h2 class="quick-title">Quick Actions</h2>
+                <section class="quick-layout">
+                    <div class="announcement-card">
+                        <h2 class="quick-title">Quick Actions</h2>
 
-                    <div class="counselor-quick">
-                        <a href="/campuscare-api/php-frontend/pages/appointments/schedule.php" class="counselor-quick-card">
-                            <span class="counselor-quick-icon blue"><?php echo sidebarIconSvg("calendar"); ?></span>
-                            <h3 class="counselor-quick-title">View Appointments</h3>
-                        </a>
-
-                        <a href="/campuscare-api/php-frontend/pages/appointments/manage_schedule.php" class="counselor-quick-card">
-                            <span class="counselor-quick-icon gold"><?php echo sidebarIconSvg("clock"); ?></span>
-                            <h3 class="counselor-quick-title">Manage Schedule</h3>
-                        </a>
-
-                        <a href="/campuscare-api/php-frontend/pages/reports/session_feedback.php" class="counselor-quick-card">
-                            <span class="counselor-quick-icon blue"><?php echo sidebarIconSvg("message"); ?></span>
-                            <h3 class="counselor-quick-title">Session Feedback</h3>
-                        </a>
+                        <div class="quick-grid">
+                            <?php foreach ($counselorQuickActions as $action): ?>
+                                <a href="<?php echo htmlspecialchars($action["path"]); ?>" class="quick-card <?php echo $action["cardClass"]; ?> roboto-regular">
+                                    <span class="quick-icon <?php echo $action["iconClass"]; ?>">
+                                        <?php echo htmlspecialchars($action["iconText"]); ?>
+                                    </span>
+                                    <h4><?php echo htmlspecialchars($action["title"]); ?></h4>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </section>
 

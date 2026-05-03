@@ -10,11 +10,13 @@ $navItems = [
         ["My Schedule", "schedule.php", "calendar"],
         ["Mental Health Test", "mental_health_test.php", "brain"],
         ["Events", "events.php", "calendar"],
+        ["Refer", "my_referrals.php", "message"],
     ],
     "Administrator" => [
         ["Dashboard", "dashboard.php", "dashboard"],
         "Forms & Inbox" => [
             ["Intake Reviews", "counseling_intake_reviews.php", "eye"],
+            ["Referral Management", "referral_management.php", "message"],
             ["Request Testing", "testing_request_form.php", "report"],
             ["Testing Inbox", "testing_requests_inbox.php", "search"]
         ],
@@ -25,24 +27,16 @@ $navItems = [
     ],
     "Counselor" => [
         ["Dashboard", "dashboard.php", "dashboard"],
-        "Forms & Inbox" => [
-            ["Intake Reviews", "counseling_intake_reviews.php", "eye"],
-            ["Referral Slip", "referral_form.php", "message"],
-            ["Referral Inbox", "referral_inbox.php", "search"],
-            ["Request Testing", "testing_request_form.php", "report"],
-            ["Testing Inbox", "testing_requests_inbox.php", "search"]
-        ],
+        ["Refer", "referral_management.php", "message"],
         ["View Appointments", "schedule.php", "calendar"],
         ["Manage Schedule", "manage_schedule.php", "clock"],
-        "Events" => [
-            ["Manage Events", "events.php", "users"],
-            ["View Participants", "view_participants.php", "eye"]
-        ],
+        ["Events", "events.php", "calendar"],
         ["Session Feedback", "session_feedback.php", "message"],
     ],
     "Facilitator" => [
         ["Dashboard", "dashboard.php", "dashboard"],
         "Forms" => [
+            ["Refer Student", "student_referral_form.php", "message"],
             ["Referral Slip", "referral_form.php", "message"],
             ["Request Testing", "testing_request_form.php", "report"]
         ],
@@ -51,6 +45,7 @@ $navItems = [
     "Instructor" => [
         ["Dashboard", "dashboard.php", "dashboard"],
         "Forms" => [
+            ["Refer Student", "student_referral_form.php", "message"],
             ["Referral Slip", "referral_form.php", "message"],
             ["Request Testing", "testing_request_form.php", "report"]
         ],
@@ -68,6 +63,10 @@ function sidebarPageUrl($fileName)
         "counseling_intake_reviews.php" => "/campuscare-api/php-frontend/pages/appointments/counseling_intake_reviews.php",
         "referral_form.php" => "/campuscare-api/php-frontend/pages/forms/referral_form.php",
         "referral_inbox.php" => "/campuscare-api/php-frontend/pages/forms/referral_inbox.php",
+        "student_referral_form.php" => "/campuscare-api/php-frontend/pages/forms/student_referral_form.php",
+        "my_referrals.php" => "/campuscare-api/php-frontend/pages/forms/my_referrals.php",
+        "referral_management.php" => "/campuscare-api/php-frontend/pages/forms/referral_management.php",
+        "pre_counseling_intake.php" => "/campuscare-api/php-frontend/pages/forms/pre_counseling_intake.php",
         "testing_request_form.php" => "/campuscare-api/php-frontend/pages/forms/testing_request_form.php",
         "testing_requests_inbox.php" => "/campuscare-api/php-frontend/pages/forms/testing_requests_inbox.php",
         "schedule.php" => "/campuscare-api/php-frontend/pages/appointments/schedule.php",

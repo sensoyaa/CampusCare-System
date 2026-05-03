@@ -599,10 +599,12 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <?php elseif (in_array($role, ["Administrator", "Facilitator", "Counselor"], true)): ?>
                     <!-- Event Management Actions -->
                     <section class="event-detail-admin-actions">
-                        <a href="/campuscare-api/php-frontend/pages/events/events.php?edit=<?php echo $eventId; ?>" class="btn btn-outline">
-                            <?php echo sidebarIconSvg("edit"); ?>
-                            Edit Event
-                        </a>
+                        <?php if (!$hasEventEnded): ?>
+                            <a href="/campuscare-api/php-frontend/pages/events/events.php?edit=<?php echo $eventId; ?>" class="btn btn-outline">
+                                <?php echo sidebarIconSvg("edit"); ?>
+                                Edit Event
+                            </a>
+                        <?php endif; ?>
                     </section>
 
                     <!-- Participants List -->
@@ -653,29 +655,168 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                         <?php endif; ?>
                     </section>
 
-                    <!-- Event Feedback Summary -->
+                    <!-- Event Feedback Summary (inline: chart left, comments right) -->
                     <?php if ($hasEventEnded): ?>
-                        <section class="event-detail-feedback-summary">
+                        <?php
+                        // Get rating counts per value (1..5)
+                        $counts = array_fill(1, 5, 0);
+                        $cntStmt = $conn->prepare(
+                            "SELECT rating, COUNT(*) as cnt
+                             FROM event_feedback
+                             WHERE event_id = ?
+                             GROUP BY rating"
+                        );
+                        $cntStmt->bind_param("i", $eventId);
+                        $cntStmt->execute();
+                        $cntRes = $cntStmt->get_result();
+                        while ($r = $cntRes->fetch_assoc()) {
+                            $rating = intval($r['rating']);
+                            $c = intval($r['cnt']);
+                            if ($rating >= 1 && $rating <= 5) $counts[$rating] = $c;
+                        }
+                        $cntStmt->close();
+
+                        // Fetch recent feedback comments
+                        $feedbacks = [];
+                        $fbStmt = $conn->prepare(
+                            "SELECT ef.rating, ef.feedback, ef.is_anonymous, u.full_name, u.student_id, ef.created_at
+                             FROM event_feedback ef
+                             LEFT JOIN users u ON ef.user_id = u.id
+                             WHERE ef.event_id = ?
+                             ORDER BY ef.created_at DESC LIMIT 50"
+                        );
+                        $fbStmt->bind_param("i", $eventId);
+                        $fbStmt->execute();
+                        $fbRes = $fbStmt->get_result();
+                        while ($row = $fbRes->fetch_assoc()) { $feedbacks[] = $row; }
+                        $fbStmt->close();
+                        ?>
+
+                        <?php
+                        $ratingRows = [
+                            ["label" => "Excellent", "rating" => 5, "class" => "excellent", "emoji" => "🤩"],
+                            ["label" => "Good", "rating" => 4, "class" => "good", "emoji" => "😊"],
+                            ["label" => "Average", "rating" => 3, "class" => "average", "emoji" => "🙂"],
+                            ["label" => "Below Average", "rating" => 2, "class" => "below-average", "emoji" => "😐"],
+                            ["label" => "Poor", "rating" => 1, "class" => "poor", "emoji" => "😞"]
+                        ];
+                        ?>
+
+                        <section class="event-detail-feedback-summary" id="eventFeedbackSummary" data-total="<?php echo $totalRatings; ?>" data-score="<?php echo number_format($avgRating, 1, '.', ''); ?>">
                             <div class="section-heading">
                                 <h2>Event Feedback Summary</h2>
                             </div>
-                            <div class="feedback-stats">
-                                <div class="feedback-stat">
-                                    <span class="feedback-stat-value"><?php echo number_format($avgRating, 1); ?></span>
-                                    <span class="feedback-stat-label">Average Rating</span>
+
+                            <div class="event-feedback-layout">
+                                <div class="feedback-overview-card">
+                                    <div class="feedback-overview-score"><?php echo $avgRating ? number_format($avgRating, 1) : "0.0"; ?></div>
+
+                                    <div class="feedback-overview-emojis" aria-label="Average rating emojis">
+                                        <span class="feedback-overview-emoji" data-value="1">😞</span>
+                                        <span class="feedback-overview-emoji" data-value="2">😐</span>
+                                        <span class="feedback-overview-emoji" data-value="3">🙂</span>
+                                        <span class="feedback-overview-emoji" data-value="4">😊</span>
+                                        <span class="feedback-overview-emoji" data-value="5">🤩</span>
+                                    </div>
+
+                                    <div class="feedback-overview-meta">based on <?php echo $totalRatings; ?> review<?php echo $totalRatings !== 1 ? "s" : ""; ?></div>
+
+                                    <div class="feedback-breakdown-list">
+                                        <?php foreach ($ratingRows as $row): ?>
+                                            <?php $count = intval($counts[$row["rating"]] ?? 0); ?>
+                                            <div class="feedback-breakdown-row">
+                                                <span class="feedback-breakdown-label"><?php echo $row["label"]; ?></span>
+                                                <div class="feedback-breakdown-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                                                    <span class="feedback-breakdown-fill feedback-fill-<?php echo $row["class"]; ?>" data-count="<?php echo $count; ?>"></span>
+                                                </div>
+                                                <span class="feedback-breakdown-count"><?php echo $count; ?></span>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
                                 </div>
-                                <div class="feedback-stat">
-                                    <span class="feedback-stat-value"><?php echo $totalRatings; ?></span>
-                                    <span class="feedback-stat-label">Total Ratings</span>
+
+                                <div>
+                                    <div class="feedback-list feedback-review-list">
+                                        <?php if (empty($feedbacks)): ?>
+                                            <div class="feedback-item">No feedback submitted yet.</div>
+                                        <?php else: ?>
+                                            <?php foreach ($feedbacks as $fb): ?>
+                                                <?php
+                                                $displayName = $fb['is_anonymous'] ? 'Anonymous' : (string) $fb['full_name'];
+                                                $initials = 'AN';
+                                                if (!$fb['is_anonymous'] && !empty($fb['full_name'])) {
+                                                    $nameParts = preg_split('/\s+/', trim((string) $fb['full_name']));
+                                                    if (!empty($nameParts[0])) {
+                                                        $initials = strtoupper(substr($nameParts[0], 0, 1));
+                                                    }
+                                                    if (count($nameParts) > 1 && !empty($nameParts[count($nameParts) - 1])) {
+                                                        $initials .= strtoupper(substr($nameParts[count($nameParts) - 1], 0, 1));
+                                                    }
+                                                }
+                                                $rating = intval($fb['rating']);
+                                                ?>
+
+                                                <article class="feedback-review-card">
+                                                    <header class="feedback-review-top">
+                                                        <div class="feedback-review-author-wrap">
+                                                            <div class="feedback-review-avatar"><?php echo htmlspecialchars($initials); ?></div>
+                                                            <div>
+                                                                <div class="feedback-review-name"><?php echo htmlspecialchars($displayName); ?></div>
+                                                                <div class="feedback-review-date"><?php echo date("d M Y", strtotime($fb['created_at'])); ?></div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="feedback-review-rating-wrap">
+                                                            <div class="feedback-review-emojis" aria-label="Rating: <?php echo $rating; ?> out of 5">
+                                                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                                                    <span class="feedback-review-emoji <?php echo $i <= $rating ? 'is-active' : ''; ?>">
+                                                                        <?php echo ["😞", "😐", "🙂", "😊", "🤩"][($i - 1)]; ?>
+                                                                    </span>
+                                                                <?php endfor; ?>
+                                                            </div>
+                                                        </div>
+                                                    </header>
+
+                                                    <div class="feedback-review-body">
+                                                        <?php echo nl2br(htmlspecialchars($fb['feedback'])); ?>
+                                                    </div>
+                                                </article>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             </div>
-
-                            <!-- View All Feedback Button -->
-                            <a href="/campuscare-api/php-frontend/pages/events/event_feedback.php?id=<?php echo $eventId; ?>" class="btn btn-outline">
-                                <?php echo sidebarIconSvg("message"); ?>
-                                View All Feedback
-                            </a>
                         </section>
+
+                        <script>
+                        (function(){
+                            const summary = document.getElementById('eventFeedbackSummary');
+                            if (!summary) return;
+
+                            const total = parseInt(summary.dataset.total || '0', 10);
+                            const score = parseFloat(summary.dataset.score || '0');
+                            const roundedScore = Math.max(0, Math.min(5, Math.round(score)));
+
+                            const emojiEls = summary.querySelectorAll('.feedback-overview-emoji');
+                            emojiEls.forEach((el) => {
+                                const value = parseInt(el.dataset.value || '0', 10);
+                                if (value <= roundedScore) {
+                                    el.classList.add('is-active');
+                                }
+                            });
+
+                            const fillEls = summary.querySelectorAll('.feedback-breakdown-fill');
+                            fillEls.forEach((fill) => {
+                                const count = parseInt(fill.dataset.count || '0', 10);
+                                const percent = total > 0 ? (count / total) * 100 : 0;
+                                fill.style.width = percent.toFixed(1) + '%';
+                                const track = fill.parentElement;
+                                if (track) {
+                                    track.setAttribute('aria-valuenow', percent.toFixed(0));
+                                }
+                            });
+                        })();
+                        </script>
                     <?php endif; ?>
 
                     <!-- Comments Section -->

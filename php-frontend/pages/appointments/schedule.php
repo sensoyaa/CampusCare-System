@@ -531,7 +531,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="appointment_id" value="<?php echo intval($apt["id"]); ?>">
                                         <input type="hidden" name="status" value="Approved">
-                                        <button type="submit" class="btn btn-sm">Approve</button>
+                                        <button type="submit" class="btn event-join-btn btn-sm">Approve</button>
                                     </form>
 
                                     <form
@@ -545,7 +545,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                         <input type="hidden" name="action" value="update_status">
                                         <input type="hidden" name="appointment_id" value="<?php echo intval($apt["id"]); ?>">
                                         <input type="hidden" name="status" value="Rejected">
-                                        <button type="submit" class="btn btn-outline btn-sm">Decline</button>
+                                        <button type="submit" class="btn event-join-btn btn-outline btn-sm">Decline</button>
                                     </form>
                                 <?php endif; ?>
 
@@ -565,24 +565,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <?php endif; ?>
                                 </div>
 
-                                <div class="schedule-action-group schedule-action-group-danger">
-
-                                <?php if ($status !== "Cancelled" && $status !== "Rejected"): ?>
-                                    <form
-                                        method="POST"
-                                        data-confirm-title="Cancel appointment"
-                                        data-confirm-message="Cancel this appointment?"
-                                        data-confirm-button="Cancel Appointment"
-                                        data-confirm-variant="danger"
-                                    >
-                                        <input type="hidden" name="action" value="cancel_appointment">
-                                        <input type="hidden" name="appointment_id" value="<?php echo intval($apt["id"]); ?>">
-                                        <button type="submit" class="icon-btn" aria-label="Cancel appointment">
-                                            x
-                                        </button>
-                                    </form>
-                                <?php endif; ?>
-                                </div>
                                 </div>
                             </div>
                         </article>
