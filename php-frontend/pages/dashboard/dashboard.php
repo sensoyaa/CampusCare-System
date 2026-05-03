@@ -599,23 +599,18 @@ $counselorQuickActions = [
     [
         "title" => "View Appointments",
         "path" => "/campuscare-api/php-frontend/pages/appointments/schedule.php",
-        "cardClass" => "quick-light-blue",
+        "cardClass" => "quick-light-blue quick-counseling-bg",
         "iconClass" => "quick-icon-blue",
         "iconText" => "A",
+        "iconImage" => "/campuscare-api/php-frontend/assets/images/icons/view appointment.png",
     ],
     [
         "title" => "Manage Schedule",
         "path" => "/campuscare-api/php-frontend/pages/appointments/manage_schedule.php",
-        "cardClass" => "quick-light-gold",
+        "cardClass" => "quick-light-gold quick-bg-3",
         "iconClass" => "quick-icon-gold",
         "iconText" => "S",
-    ],
-    [
-        "title" => "Session Feedback",
-        "path" => "/campuscare-api/php-frontend/pages/reports/session_feedback.php",
-        "cardClass" => "quick-light-blue",
-        "iconClass" => "quick-icon-blue",
-        "iconText" => "F",
+        "iconImage" => "/campuscare-api/php-frontend/assets/images/icons/Managemet Schedule.png",
     ],
 ];
 
@@ -1272,7 +1267,11 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             <?php foreach ($counselorQuickActions as $action): ?>
                                 <a href="<?php echo htmlspecialchars($action["path"]); ?>" class="quick-card <?php echo $action["cardClass"]; ?> roboto-regular">
                                     <span class="quick-icon <?php echo $action["iconClass"]; ?>">
-                                        <?php echo htmlspecialchars($action["iconText"]); ?>
+                                        <?php if (!empty($action["iconImage"])): ?>
+                                            <img src="<?php echo htmlspecialchars($action["iconImage"]); ?>" alt="<?php echo htmlspecialchars($action["title"]); ?>">
+                                        <?php else: ?>
+                                            <?php echo htmlspecialchars($action["iconText"]); ?>
+                                        <?php endif; ?>
                                     </span>
                                     <h4><?php echo htmlspecialchars($action["title"]); ?></h4>
                                 </a>
