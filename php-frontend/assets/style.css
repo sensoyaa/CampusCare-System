@@ -5680,7 +5680,6 @@ textarea:focus {
   gap: 16px;
 }
 
-<<<<<<< HEAD
 /* Events Subsection */
 .events-subsection {
   margin-bottom: 32px;
@@ -5695,11 +5694,6 @@ textarea:focus {
 }
 
 #openCreateModal{
-
-#openCreateModal{
-=======
-#openCreateModal {
->>>>>>> c70d232b5357689a065471db87b8a1efdbe963dc
   font-size: 14px;
   background: #4b8fc4;
   border-color: #4b8fc4;
