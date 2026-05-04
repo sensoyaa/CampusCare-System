@@ -287,10 +287,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <p class="page-subtitle">Help us support students who may be struggling</p>
                 </div>
             </div>
-<<<<<<< HEAD
-
-=======
->>>>>>> c52637ba83854ef6a401cbcb08e02736e463ae8e
             <?php if ($error): ?>
                 <div style="padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; border-left: 3px solid #c33; background: #fee; color: #c33; font-size: 13px;">
                     <strong>Error:</strong> <?php echo htmlspecialchars($error); ?>
