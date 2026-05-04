@@ -3,6 +3,7 @@ session_start();
 require_once __DIR__ . "/../../includes/db.php";
 require_once __DIR__ . "/../../includes/recaptcha.php";
 require_once __DIR__ . "/../../includes/google_oauth.php";
+require_once __DIR__ . "/../../includes/notifications.php";
 
 $error = "";
 $email = "";
@@ -31,6 +32,11 @@ if (($_GET["reset"] ?? "") === "success") {
     $success = "Password reset successful. Please log in.";
 }
 
+if (isset($_SESSION["registration_success"])) {
+    $success = $_SESSION["registration_success"];
+    unset($_SESSION["registration_success"]);
+}
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = trim($_POST["email"] ?? "");
     $password = $_POST["password"] ?? "";
@@ -50,7 +56,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if (!($recaptchaCheck["success"] ?? false)) {
             $error = $recaptchaCheck["message"] ?? "reCAPTCHA verification failed.";
         } else {
-            $stmt = $conn->prepare("SELECT id, full_name, student_id, email, password, role, status FROM users WHERE email = ? LIMIT 1");
+            $stmt = $conn->prepare("SELECT id, full_name, student_id, email, password, role, status, avatar_path, college, program FROM users WHERE email = ? LIMIT 1");
             $stmt->bind_param("s", $email);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -61,11 +67,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 if ($user["status"] !== "Active") {
                     $error = "Your account is not active. Please verify your email before logging in.";
                 } elseif (password_verify($password, $user["password"])) {
+                    session_regenerate_id(true);
                     $_SESSION["user_id"] = $user["id"];
                     $_SESSION["full_name"] = $user["full_name"];
                     $_SESSION["student_id"] = $user["student_id"];
                     $_SESSION["email"] = $user["email"];
                     $_SESSION["role"] = $user["role"];
+                    $_SESSION["avatar_path"] = trim((string) ($user["avatar_path"] ?? ""));
+                    $_SESSION["college"] = trim((string) ($user["college"] ?? ""));
+                    $_SESSION["program"] = trim((string) ($user["program"] ?? ""));
+
+                    campuscare_notifications_upsert($conn, [
+                        "user_id" => intval($user["id"]),
+                        "type" => "security",
+                        "title" => "Signed in successfully",
+                        "message" => "Your CampusCare account was accessed on " . date("M j, Y g:i A") . ".",
+                        "related_type" => "account",
+                        "event_key" => "security-login-" . intval($user["id"]) . "-" . date("YmdHi"),
+                        "action_url" => "/campuscare-api/php-frontend/pages/users/settings.php",
+                    ]);
 
                     header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
                     exit();
@@ -186,41 +206,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             <div class="oauth-divider"><span>or</span></div>
 
-            <div class="social-row">
-                <?php if ($googleOauthEnabled): ?>
-                    <a href="google-login.php?mode=login" class="social-btn" aria-label="Continue with Google">
-                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                            <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.2-.9 2.3-2 3.1l3.2 2.5c1.9-1.8 3-4.5 3-7.7 0-.7-.1-1.3-.2-1.9H12z"></path>
-                            <path fill="#34A853" d="M12 22c2.7 0 5-0.9 6.7-2.4l-3.2-2.5c-.9.6-2 .9-3.5.9-2.7 0-5-1.8-5.8-4.3l-3.3 2.6C4.7 19.7 8.1 22 12 22z"></path>
-                            <path fill="#4A90E2" d="M6.2 13.7c-.2-.6-.3-1.1-.3-1.7s.1-1.2.3-1.7L2.9 7.7C2.3 8.9 2 10.4 2 12s.3 3.1.9 4.3l3.3-2.6z"></path>
-                            <path fill="#FBBC05" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C17 2.9 14.7 2 12 2 8.1 2 4.7 4.3 2.9 7.7l3.3 2.6c.8-2.5 3.1-4.4 5.8-4.4z"></path>
-                        </svg>
-                    </a>
-                <?php else: ?>
-                    <span class="social-btn is-disabled" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" focusable="false">
-                            <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.2-.9 2.3-2 3.1l3.2 2.5c1.9-1.8 3-4.5 3-7.7 0-.7-.1-1.3-.2-1.9H12z"></path>
-                            <path fill="#34A853" d="M12 22c2.7 0 5-0.9 6.7-2.4l-3.2-2.5c-.9.6-2 .9-3.5.9-2.7 0-5-1.8-5.8-4.3l-3.3 2.6C4.7 19.7 8.1 22 12 22z"></path>
-                            <path fill="#4A90E2" d="M6.2 13.7c-.2-.6-.3-1.1-.3-1.7s.1-1.2.3-1.7L2.9 7.7C2.3 8.9 2 10.4 2 12s.3 3.1.9 4.3l3.3-2.6z"></path>
-                            <path fill="#FBBC05" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C17 2.9 14.7 2 12 2 8.1 2 4.7 4.3 2.9 7.7l3.3 2.6c.8-2.5 3.1-4.4 5.8-4.4z"></path>
-                        </svg>
-                    </span>
-                <?php endif; ?>
-
-                <span class="social-btn is-disabled" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" focusable="false">
-                        <path fill="currentColor" d="M22 12a10 10 0 1 0-11.6 9.9v-7h-2.1V12h2.1V9.8c0-2.1 1.3-3.3 3.2-3.3.9 0 1.9.2 1.9.2v2.1h-1.1c-1.1 0-1.4.7-1.4 1.4V12h2.4l-.4 2.9H13v7A10 10 0 0 0 22 12Z"></path>
+            <?php if ($googleOauthEnabled): ?>
+                <a href="google-login.php?mode=login" class="google-login-btn" aria-label="Continue with Google">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.2-.9 2.3-2 3.1l3.2 2.5c1.9-1.8 3-4.5 3-7.7 0-.7-.1-1.3-.2-1.9H12z"></path>
+                        <path fill="#34A853" d="M12 22c2.7 0 5-0.9 6.7-2.4l-3.2-2.5c-.9.6-2 .9-3.5.9-2.7 0-5-1.8-5.8-4.3l-3.3 2.6C4.7 19.7 8.1 22 12 22z"></path>
+                        <path fill="#4A90E2" d="M6.2 13.7c-.2-.6-.3-1.1-.3-1.7s.1-1.2.3-1.7L2.9 7.7C2.3 8.9 2 10.4 2 12s.3 3.1.9 4.3l3.3-2.6z"></path>
+                        <path fill="#FBBC05" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C17 2.9 14.7 2 12 2 8.1 2 4.7 4.3 2.9 7.7l3.3 2.6c.8-2.5 3.1-4.4 5.8-4.4z"></path>
                     </svg>
-                </span>
-
-                <span class="social-btn is-disabled" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" focusable="false">
-                        <path fill="currentColor" d="M16.7 12.5c0-2.2 1.8-3.2 1.9-3.3-1-1.5-2.7-1.7-3.3-1.7-1.4-.1-2.8.8-3.5.8-.7 0-1.8-.8-3-.8-1.6 0-3 .9-3.8 2.3-1.6 2.8-.4 6.8 1.2 9.1.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.9-2.2.9-1.3 1.3-2.7 1.3-2.8-.1 0-2.6-1-2.6-3.7Zm-2.3-6.4c.6-.7 1-1.7.9-2.6-.9 0-1.9.6-2.5 1.3-.6.7-1 1.7-.9 2.6 1 0 1.9-.5 2.5-1.3Z"></path>
-                    </svg>
-                </span>
-            </div>
-
-            <?php if (!$googleOauthEnabled): ?>
+                    Continue with Google
+                </a>
+            <?php else: ?>
                 <p class="oauth-help">Google sign-in is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI in backend/.env.</p>
             <?php endif; ?>
 

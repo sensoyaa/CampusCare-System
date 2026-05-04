@@ -37,6 +37,15 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 --confirm-soft: #f5faff;
             }
 
+            body.theme-dark {
+                --confirm-brand-1: #8bb8df;
+                --confirm-brand-2: #68a8dc;
+                --confirm-ink: #e6edf5;
+                --confirm-muted: #9fb0c3;
+                --confirm-line: #2b3b4f;
+                --confirm-soft: #162534;
+            }
+
             .confirmation-shell {
                 max-width: 860px;
                 margin: 0 auto;
@@ -44,8 +53,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             }
 
             .confirmation-card {
-                background: #fff;
-                border: 1px solid #d7e4ef;
+                background: var(--card-bg);
+                border: 1px solid var(--confirm-line);
                 border-radius: 26px;
                 overflow: hidden;
                 box-shadow: 0 20px 46px rgba(19, 41, 61, 0.08);
@@ -101,7 +110,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             }
 
             .confirmation-sheet {
-                border: 1px dashed #c8dceb;
+                border: 1px dashed var(--confirm-line);
                 border-radius: 24px;
                 padding: 18px;
                 background: linear-gradient(180deg, #fcfeff 0%, #f6faff 100%);
@@ -111,7 +120,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             .confirmation-section {
                 border: 1px solid var(--confirm-line);
                 border-radius: 22px;
-                background: #fff;
+                background: var(--card-bg);
                 padding: 22px;
                 margin-bottom: 14px;
                 box-shadow: 0 14px 34px rgba(20, 46, 68, 0.06);
@@ -144,7 +153,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
             .confirmation-field {
                 min-height: 96px;
-                border: 1px solid #e5eef6;
+                border: 1px solid var(--confirm-line);
                 border-radius: 18px;
                 background: linear-gradient(180deg, #ffffff 0%, #f9fcff 100%);
                 padding: 16px 18px;
@@ -242,7 +251,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             }
 
             .contact-chip {
-                border: 1px solid #e1ebf3;
+                border: 1px solid var(--confirm-line);
                 border-radius: 16px;
                 background: var(--confirm-soft);
                 padding: 13px 14px;
@@ -273,6 +282,52 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
             .print-only {
                 display: none;
+            }
+
+            body.theme-dark .confirmation-card,
+            body.theme-dark .confirmation-section,
+            body.theme-dark .confirmation-field,
+            body.theme-dark .contact-chip {
+                background: var(--card-bg);
+                color: var(--confirm-ink);
+                border-color: var(--confirm-line);
+            }
+
+            body.theme-dark .confirmation-sheet {
+                background: linear-gradient(180deg, #121d2b 0%, #162534 100%);
+                border-color: var(--confirm-line);
+            }
+
+            body.theme-dark .confirmation-field {
+                background: linear-gradient(180deg, #132131 0%, #121d2b 100%);
+            }
+
+            body.theme-dark .confirmation-note {
+                border-color: #29523b;
+                background: #143123;
+                color: #76d39a;
+            }
+
+            body.theme-dark .confirmation-note.error {
+                border-color: #5a2b34;
+                background: #3a1d21;
+                color: #f0a0aa;
+            }
+
+            body.theme-dark .confirmation-field strong,
+            body.theme-dark .contact-chip strong {
+                color: #9fb0c3;
+            }
+
+            body.theme-dark .confirmation-field div,
+            body.theme-dark .contact-chip span,
+            body.theme-dark .sweu-copy p,
+            body.theme-dark .check-information-copy p {
+                color: var(--confirm-muted);
+            }
+
+            body.theme-dark .sweu-copy h3 {
+                color: var(--confirm-ink);
             }
 
             @media (max-width: 760px) {
@@ -464,29 +519,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }
     }
 
-    const profileMenuToggle = document.querySelector(".profile-menu-toggle");
-    const profileDropdown = document.querySelector(".profile-dropdown");
 
-    if (!profileMenuToggle || !profileDropdown) {
-        return;
-    }
-
-    profileMenuToggle.addEventListener("click", function (e) {
-        e.stopPropagation();
-        const parent = profileMenuToggle.closest(".topbar-user");
-        const isOpen = parent.classList.toggle("is-open");
-        profileMenuToggle.setAttribute("aria-expanded", isOpen);
-    });
-
-    document.addEventListener("click", function () {
-        const parent = profileMenuToggle.closest(".topbar-user");
-        if (parent) parent.classList.remove("is-open");
-        profileMenuToggle.setAttribute("aria-expanded", "false");
-    });
-
-    profileDropdown.addEventListener("click", function (e) {
-        e.stopPropagation();
-    });
 })();
 </script>
 </body>

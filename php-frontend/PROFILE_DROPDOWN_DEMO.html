@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Dropdown - Refactored Component Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --sidebar-bg: #2f6d9f;
+            --sidebar-accent: rgba(255, 255, 255, 0.14);
+            --page-bg: #f3f6fa;
+            --card-bg: #ffffff;
+            --border: #e4ebf2;
+            --text-main: #1e2f40;
+            --text-muted: #6f8295;
+            --primary: #4d8fc5;
+            --primary-soft: #d9e8f7;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
+            --hover-bg: rgba(30, 41, 59, 0.08);
+            --active-bg: rgba(30, 41, 59, 0.12);
+            --focus-color: #2563eb;
+        }
+
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--page-bg);
+            color: var(--text-main);
+            padding: 20px;
+        }
+
+        body.theme-dark {
+            --page-bg: #0e1622;
+            --card-bg: #121d2b;
+            --border: #2d3f4d;
+            --text-main: #e8f1f8;
+            --text-secondary: #a1b5c3;
+            --text-tertiary: #7a8a98;
+            --hover-bg: rgba(100, 116, 139, 0.1);
+            --active-bg: rgba(100, 116, 139, 0.15);
+        }
+
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .demo-header {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .demo-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .demo-header p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .demo-controls button {
+            padding: 10px 20px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 200ms ease;
+        }
+
+        .demo-controls button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .demo-controls button.secondary {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .demo-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 300px;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .demo-section h2 {
+            position: absolute;
+            top: 20px;
+            left: 40px;
+            font-size: 18px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+
+        .feature-card h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+
+        .feature-card p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .feature-card ul {
+            list-style: none;
+            padding-left: 0;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .feature-card li {
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-card li:before {
+            content: "✓";
+            color: #22c55e;
+            font-weight: bold;
+        }
+
+        .keyboard-shortcuts {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .keyboard-shortcuts h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .shortcut {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .shortcut-key {
+            background: var(--primary);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .shortcut-desc {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .theme-toggle button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 200ms ease;
+        }
+
+        .theme-toggle button:hover {
+            opacity: 0.9;
+        }
+
+        .code-block {
+            background: var(--page-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        /* Include the profile dropdown CSS */
+        .profile-section {
+            position: relative;
+            display: flex;
+            align-items: center;
+            z-index: 1050;
+        }
+
+        .profile-trigger {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 200ms ease;
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .profile-trigger:hover {
+            background: var(--hover-bg);
+            border-color: var(--border);
+        }
+
+        .profile-trigger[aria-expanded="true"] {
+            background: var(--active-bg);
+            border-color: var(--border);
+        }
+
+        .profile-avatar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1f6fa3, #2563eb);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .avatar-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .avatar-initials {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .profile-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .profile-name {
+            font-weight: 500;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+
+        .dropdown-arrow {
+            width: 16px;
+            height: 16px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            transition: transform 250ms ease;
+        }
+
+        .profile-trigger[aria-expanded="true"] .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .profile-menu {
+            position: absolute;
+            top: calc(100% + 12px);
+            right: 0;
+            min-width: 280px;
+            max-width: 320px;
+            max-height: 600px;
+            overflow-y: auto;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.08);
+            display: none;
+            flex-direction: column;
+            z-index: 1200;
+            animation: slideDown 200ms ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .profile-menu[aria-expanded="true"] {
+            display: flex;
+        }
+
+        .profile-header {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            align-items: flex-start;
+        }
+
+        .profile-header-avatar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            min-width: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1f6fa3, #2563eb);
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .profile-header-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .profile-header-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-main);
+            margin: 0 0 4px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .profile-header-role {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 0 0 4px 0;
+            text-transform: capitalize;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .profile-header-email {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .menu-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 0;
+        }
+
+        .profile-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            text-decoration: none;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.4;
+            cursor: pointer;
+            transition: all 150ms ease;
+            text-align: left;
+            user-select: none;
+        }
+
+        .profile-menu-item:hover {
+            background: var(--hover-bg);
+            color: var(--text-main);
+        }
+
+        .profile-menu-item:active {
+            background: var(--active-bg);
+        }
+
+        .profile-menu-item:focus-visible {
+            outline: 2px solid var(--focus-color);
+            outline-offset: -2px;
+        }
+
+        .menu-item-icon {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            transition: color 150ms ease;
+        }
+
+        .profile-menu-item:hover .menu-item-icon {
+            color: var(--text-main);
+        }
+
+        .menu-item-label {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .menu-item-arrow {
+            width: 16px;
+            height: 16px;
+            min-width: 16px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            opacity: 0.5;
+            transition: opacity 150ms ease, transform 150ms ease;
+        }
+
+        .profile-menu-item:hover .menu-item-arrow {
+            opacity: 0.8;
+            transform: translateX(4px);
+        }
+
+        .profile-menu-item.logout-item {
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .profile-menu-item.logout-item .menu-item-icon {
+            color: #dc2626;
+        }
+
+        .profile-menu-item.logout-item:hover {
+            background: rgba(220, 38, 38, 0.08);
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-toggle">
+        <button onclick="toggleTheme()">🌙 Dark Mode</button>
+    </div>
+
+    <div class="demo-container">
+        <!-- Header -->
+        <div class="demo-header">
+            <h1>Profile Dropdown - Refactored Component</h1>
+            <p>
+                A comprehensive redesign of the CampusCare profile dropdown component featuring modern UI/UX, 
+                full keyboard navigation, accessibility compliance, and mobile responsiveness.
+            </p>
+            <div class="demo-controls">
+                <button onclick="testDropdown()">Test Dropdown</button>
+                <button class="secondary" onclick="scrollToSection('features')">View Features</button>
+                <button class="secondary" onclick="scrollToSection('keyboard')">Keyboard Shortcuts</button>
+            </div>
+        </div>
+
+        <!-- Demo Section -->
+        <div class="demo-section" id="demo-section">
+            <h2>Interactive Demo</h2>
+            <div class="profile-section" style="margin-top: 40px;">
+                <button class="profile-trigger" id="profile-trigger" aria-label="Open profile menu" aria-expanded="false" aria-haspopup="menu" type="button">
+                    <span class="profile-avatar">
+                        <span class="avatar-initials">JD</span>
+                    </span>
+                    <span class="profile-label">
+                        <span class="profile-name">John Doe</span>
+                        <svg class="dropdown-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path fill="currentColor" d="M7 10l5 5 5-5z"></path>
+                        </svg>
+                    </span>
+                </button>
+
+                <div class="profile-menu" id="profile-menu" role="menu" aria-orientation="vertical" aria-labelledby="profile-trigger" aria-expanded="false" hidden>
+                    <div class="profile-header">
+                        <div class="profile-header-avatar">
+                            <span>JD</span>
+                        </div>
+                        <div class="profile-header-info">
+                            <p class="profile-header-name">John Doe</p>
+                            <p class="profile-header-role">Student</p>
+                            <p class="profile-header-email">john.doe@campus.edu</p>
+                        </div>
+                    </div>
+
+                    <div class="menu-divider"></div>
+
+                    <a href="#" class="profile-menu-item" role="menuitem" data-menu-item="edit-profile">
+                        <svg class="menu-item-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4z"/>
+                        </svg>
+                        <span class="menu-item-label">Edit Profile</span>
+                        <svg class="menu-item-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path fill="currentColor" d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L12.17 12z"/>
+                        </svg>
+                    </a>
+
+                    <a href="#" class="profile-menu-item" role="menuitem" data-menu-item="settings">
+                        <svg class="menu-item-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path fill="currentColor" d="M19.43 12.98a7.93 7.93 0 0 0 .07-.98 7.93 7.93 0 0 0-.07-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.14 7.14 0 0 0-1.69-.98l-.38-2.65a.5.5 0 0 0-.49-.42h-4a.5.5 0 0 0-.49.42L9.13 5.07a7.14 7.14 0 0 0-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46a.5.5 0 0 0 .12.64L4.57 11a7.93 7.93 0 0 0-.07.98 7.93 7.93 0 0 0 .07.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46a.5.5 0 0 0 .61.22l2.49-1a7.14 7.14 0 0 0 1.69.98l.38 2.65a.5.5 0 0 0 .49.42h4a.5.5 0 0 0 .49-.42l.38-2.65a7.14 7.14 0 0 0 1.69-.98l2.49 1a .5.5 0 0 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64zM12 15.5a3.5 3.5 0 1 1 3.5-3.5 3.5 3.5 0 0 1-3.5 3.5z"/>
+                        </svg>
+                        <span class="menu-item-label">Settings & Preferences</span>
+                        <svg class="menu-item-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path fill="currentColor" d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L12.17 12z"/>
+                        </svg>
+                    </a>
+
+                    <a href="#" class="profile-menu-item" role="menuitem" data-menu-item="dashboard">
+                        <svg class="menu-item-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path fill="currentColor" d="M3 13h8V3H3zm0 8h8v-6H3zm10 0h8V11h-8zm0-18v6h8V3z"/>
+                        </svg>
+                        <span class="menu-item-label">Dashboard</span>
+                        <svg class="menu-item-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path fill="currentColor" d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L12.17 12z"/>
+                        </svg>
+                    </a>
+
+                    <div class="menu-divider"></div>
+
+                    <a href="#" class="profile-menu-item logout-item" role="menuitem" data-menu-item="logout">
+                        <svg class="menu-item-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path fill="currentColor" d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8v-2H4V5z"/>
+                        </svg>
+                        <span class="menu-item-label">Sign Out</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div id="features">
+            <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 30px; margin-bottom: 30px;">
+                <h2 style="font-size: 20px; margin-bottom: 20px;">✨ Key Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h3>🎨 Modern Design</h3>
+                        <ul>
+                            <li>Clean, professional interface</li>
+                            <li>Smooth animations</li>
+                            <li>Better visual hierarchy</li>
+                            <li>Consistent spacing</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>⌨️ Keyboard Navigation</h3>
+                        <ul>
+                            <li>Arrow keys to navigate</li>
+                            <li>Home/End keys supported</li>
+                            <li>Enter to activate</li>
+                            <li>Escape to close</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>♿ Accessibility</h3>
+                        <ul>
+                            <li>WCAG 2.1 compliant</li>
+                            <li>ARIA attributes</li>
+                            <li>Screen reader support</li>
+                            <li>Focus management</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>📱 Responsive</h3>
+                        <ul>
+                            <li>Mobile optimized</li>
+                            <li>Tablet friendly</li>
+                            <li>Touch-friendly sizing</li>
+                            <li>All screen sizes</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>🌙 Dark Mode</h3>
+                        <ul>
+                            <li>Full dark theme support</li>
+                            <li>Proper contrast</li>
+                            <li>Smooth transitions</li>
+                            <li>CSS variables</li>
+                        </ul>
+                    </div>
+
+                    <div class="feature-card">
+                        <h3>⚡ Performance</h3>
+                        <ul>
+                            <li>60fps animations</li>
+                            <li>Optimized CSS</li>
+                            <li>Minimal JavaScript</li>
+                            <li>Fast interactions</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Keyboard Shortcuts Section -->
+        <div class="keyboard-shortcuts" id="keyboard">
+            <h2>⌨️ Keyboard Shortcuts</h2>
+            <div class="shortcuts-grid">
+                <div class="shortcut">
+                    <div class="shortcut-key">Enter/Click</div>
+                    <div class="shortcut-desc">Open profile menu</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-key">↓ Arrow</div>
+                    <div class="shortcut-desc">Move to next item</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-key">↑ Arrow</div>
+                    <div class="shortcut-desc">Move to previous item</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-key">Home</div>
+                    <div class="shortcut-desc">Jump to first item</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-key">End</div>
+                    <div class="shortcut-desc">Jump to last item</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-key">Enter</div>
+                    <div class="shortcut-desc">Select item</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-key">Escape</div>
+                    <div class="shortcut-desc">Close menu</div>
+                </div>
+                <div class="shortcut">
+                    <div class="shortcut-key">Tab</div>
+                    <div class="shortcut-desc">Close and move next</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documentation -->
+        <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 30px; margin-bottom: 30px;">
+            <h2 style="font-size: 20px; margin-bottom: 20px;">📚 Documentation</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                For complete documentation, refer to:
+            </p>
+            <ul style="list-style: none; padding: 0; margin-bottom: 20px;">
+                <li style="padding: 8px 0; color: var(--text-secondary);">
+                    📄 <strong>PROFILE_DROPDOWN_REFACTOR.md</strong> - Complete refactoring guide
+                </li>
+                <li style="padding: 8px 0; color: var(--text-secondary);">
+                    📊 <strong>REFACTORING_SUMMARY.md</strong> - Summary of changes and improvements
+                </li>
+                <li style="padding: 8px 0; color: var(--text-secondary);">
+                    💾 <strong>topbar_user_dropdown.php</strong> - Component HTML
+                </li>
+                <li style="padding: 8px 0; color: var(--text-secondary);">
+                    🎨 <strong>style.css</strong> - Component styling
+                </li>
+                <li style="padding: 8px 0; color: var(--text-secondary);">
+                    ⚙️ <strong>profile-dropdown.js</strong> - Component functionality
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Simple demo dropdown functionality
+        const trigger = document.getElementById('profile-trigger');
+        const menu = document.getElementById('profile-menu');
+        const menuItems = menu.querySelectorAll('[role="menuitem"]');
+        let currentFocusIndex = -1;
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = menu.getAttribute('aria-expanded') === 'true';
+            if (isOpen) {
+                closeMenu();
+            } else {
+                openMenu();
+            }
+        });
+
+        function openMenu() {
+            menu.removeAttribute('hidden');
+            menu.setAttribute('aria-expanded', 'true');
+            trigger.setAttribute('aria-expanded', 'true');
+            currentFocusIndex = 0;
+            menuItems[0]?.focus();
+        }
+
+        function closeMenu() {
+            menu.setAttribute('hidden', '');
+            menu.setAttribute('aria-expanded', 'false');
+            trigger.setAttribute('aria-expanded', 'false');
+            currentFocusIndex = -1;
+        }
+
+        menu.addEventListener('keydown', (e) => {
+            if (menu.getAttribute('aria-expanded') !== 'true') return;
+
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    currentFocusIndex = (currentFocusIndex + 1) % menuItems.length;
+                    menuItems[currentFocusIndex].focus();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    currentFocusIndex = currentFocusIndex === 0 ? menuItems.length - 1 : currentFocusIndex - 1;
+                    menuItems[currentFocusIndex].focus();
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    currentFocusIndex = 0;
+                    menuItems[0].focus();
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    currentFocusIndex = menuItems.length - 1;
+                    menuItems[currentFocusIndex].focus();
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    closeMenu();
+                    trigger.focus();
+                    break;
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!trigger.contains(e.target) && !menu.contains(e.target)) {
+                closeMenu();
+            }
+        });
+
+        function toggleTheme() {
+            document.body.classList.toggle('theme-dark');
+            const isDark = document.body.classList.contains('theme-dark');
+            document.querySelector('.theme-toggle button').textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+        }
+
+        function testDropdown() {
+            trigger.click();
+        }
+
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

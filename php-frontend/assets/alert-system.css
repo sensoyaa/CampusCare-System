@@ -1,0 +1,441 @@
+/* ========================================
+   CAMPUSCARE MODERN ALERT SYSTEM
+   Consistent, beautiful, and accessible alerts
+   ======================================== */
+
+/* Base Alert Styles */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  animation: alertSlideIn 0.3s ease-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.alert:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes alertSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Alert Icon */
+.alert-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.alert-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Alert Content */
+.alert-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.alert-message {
+  margin: 0;
+  color: inherit;
+  opacity: 0.9;
+}
+
+/* Alert Close Button */
+.alert-close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  color: inherit;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.alert-close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.alert-close svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+/* Success Alert */
+.alert-success {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border-color: #86efac;
+  color: #065f46;
+}
+
+.alert-success .alert-icon {
+  color: #10b981;
+}
+
+body.theme-dark .alert-success {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+  border-color: #059669;
+  color: #d1fae5;
+}
+
+body.theme-dark .alert-success .alert-icon {
+  color: #34d399;
+}
+
+/* Error Alert */
+.alert-error {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.alert-error .alert-icon {
+  color: #dc2626;
+}
+
+body.theme-dark .alert-error {
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+  border-color: #dc2626;
+  color: #fee2e2;
+}
+
+body.theme-dark .alert-error .alert-icon {
+  color: #f87171;
+}
+
+/* Warning Alert */
+.alert-warning {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+.alert-warning .alert-icon {
+  color: #f59e0b;
+}
+
+body.theme-dark .alert-warning {
+  background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+  border-color: #f59e0b;
+  color: #fef3c7;
+}
+
+body.theme-dark .alert-warning .alert-icon {
+  color: #fbbf24;
+}
+
+/* Info Alert */
+.alert-info {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.alert-info .alert-icon {
+  color: #3b82f6;
+}
+
+body.theme-dark .alert-info {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+  border-color: #3b82f6;
+  color: #dbeafe;
+}
+
+body.theme-dark .alert-info .alert-icon {
+  color: #60a5fa;
+}
+
+/* Validation Error Alert */
+.alert-validation {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-color: #fca5a5;
+  color: #991b1b;
+  border-left: 4px solid #dc2626;
+}
+
+.alert-validation .alert-icon {
+  color: #dc2626;
+}
+
+body.theme-dark .alert-validation {
+  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+  border-color: #dc2626;
+  color: #fee2e2;
+}
+
+/* Confirmation Dialog Styles */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.confirm-dialog {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  animation: scaleIn 0.3s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.confirm-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #3b82f6;
+}
+
+.confirm-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.confirm-title {
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 12px;
+  color: var(--text-main);
+}
+
+.confirm-message {
+  text-align: center;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.confirm-actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* Toast Notifications */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+}
+
+.toast {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid var(--border);
+  animation: toastSlideIn 0.3s ease-out;
+  min-width: 300px;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.toast-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-title {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: var(--text-main);
+}
+
+.toast-message {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.toast-close {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.toast-close:hover {
+  background: var(--hover-bg);
+  color: var(--text-main);
+}
+
+.toast-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Progress Bar for Timed Alerts */
+.alert-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+
+.alert-progress-bar {
+  height: 100%;
+  background: currentColor;
+  opacity: 0.5;
+  animation: progressShrink 3s linear;
+}
+
+@keyframes progressShrink {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .alert {
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+
+  .confirm-dialog {
+    padding: 24px;
+    max-width: calc(100vw - 40px);
+  }
+
+  .toast-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+
+  .toast {
+    min-width: 0;
+  }
+
+  .confirm-actions {
+    flex-direction: column;
+  }
+
+  .confirm-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Accessibility */
+.alert:focus-visible,
+.toast:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+  .alert,
+  .toast-container,
+  .confirm-overlay {
+    display: none !important;
+  }
+}
