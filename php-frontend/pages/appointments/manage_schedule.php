@@ -140,7 +140,35 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
     <div class="content">
         <div class="page-shell counselor-shell">
-            <div class="manage-head">
+            <style>
+                /* Booking head (copied from book_appointment) with no top margin */
+                .booking-head {
+                    padding: 1.75rem 1.75rem 1.6rem;
+                    background: var(--primary);
+                    color: #fff;
+                    border-radius: 22px;
+                    margin-top: 0;
+                    margin-bottom: 1rem;
+                    box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
+                    padding: 30px 34px 20px;
+                }
+
+                .booking-head h1 {
+                    margin: 0 0 8px;
+                    font-size: 34px;
+                    color: #fff;
+                }
+
+                .booking-head p {
+                    margin: 0;
+                    max-width: 680px;
+                    color: rgba(255,255,255,0.9);
+                }
+
+                .slot-add-btn { background: #fff; color: var(--primary); }
+            </style>
+
+            <div class="booking-head">
                 <div>
                     <h1 class="page-title">Manage Schedule</h1>
                     <p class="page-subtitle">Set the time slots students can book with you.</p>

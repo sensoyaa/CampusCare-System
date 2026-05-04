@@ -42,10 +42,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $password = $_POST["password"] ?? "";
     $recaptchaToken = trim($_POST["g-recaptcha-response"] ?? "");
 
+    $isEmailLogin = str_contains($email, "@");
+    $studentIdColumn = "student_id";
+    $studentIdColumnResult = $conn->query("SHOW COLUMNS FROM users LIKE 'student_id'");
+    if (!$studentIdColumnResult || $studentIdColumnResult->num_rows === 0) {
+        $studentIdColumn = "student_number";
+    }
+
     if ($email === "" || $password === "") {
-        $error = "Email and password are required.";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || !campuscare_login_email_allowed($email)) {
-        $error = "Use your university email ending in @student.buksu.edu.ph or @buksu.edu.ph.";
+        $error = "Email or institution ID and password are required.";
+    } elseif ($isEmailLogin && (!filter_var($email, FILTER_VALIDATE_EMAIL) || !campuscare_login_email_allowed($email))) {
+        $error = "Use your university email ending in @student.buksu.edu.ph or @buksu.edu.ph, or sign in with your institution ID.";
     } elseif ($RECAPTCHA_SITE_KEY === "") {
         $error = "reCAPTCHA is not configured. Please contact the administrator.";
     } elseif ($recaptchaToken === "") {
@@ -56,8 +63,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if (!($recaptchaCheck["success"] ?? false)) {
             $error = $recaptchaCheck["message"] ?? "reCAPTCHA verification failed.";
         } else {
-            $stmt = $conn->prepare("SELECT id, full_name, student_id, email, password, role, status, avatar_path, college, program FROM users WHERE email = ? LIMIT 1");
-            $stmt->bind_param("s", $email);
+            if ($isEmailLogin) {
+                $stmt = $conn->prepare("SELECT id, full_name, student_id, email, password, role, status, avatar_path, college, program FROM users WHERE email = ? LIMIT 1");
+                $stmt->bind_param("s", $email);
+            } else {
+                $stmt = $conn->prepare("SELECT id, full_name, student_id, email, password, role, status, avatar_path, college, program FROM users WHERE {$studentIdColumn} = ? LIMIT 1");
+                $stmt->bind_param("s", $email);
+            }
             $stmt->execute();
             $result = $stmt->get_result();
 
@@ -90,10 +102,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
                     exit();
                 } else {
-                    $error = "Invalid email or password.";
+                    $error = "Invalid email/institution ID or password.";
                 }
             } else {
-                $error = "Invalid email or password.";
+                $error = "Invalid email/institution ID or password.";
             }
 
             $stmt->close();
@@ -144,7 +156,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     decoding="async"
                 >
             </div>
-            <p>Login with Email</p>
+            <p>Login with Email or Institution ID</p>
 
             <?php if ($error): ?>
                 <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>
@@ -156,14 +168,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             <form method="POST">
                 <div class="form-group">
-                    <label>Email</label>
+                    <label>Email or Institution ID</label>
                     <div class="input-icon-field">
                         <span class="field-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" focusable="false">
                                 <path fill="currentColor" d="M20 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 2-8 5-8-5h16Zm0 10H4V9l8 5 8-5v8Z"></path>
                             </svg>
                         </span>
-                        <input type="email" name="email" placeholder="yourname@student.buksu.edu.ph" value="<?php echo htmlspecialchars($email); ?>" required>
+                        <input type="text" name="email" placeholder="Email or Institution ID" value="<?php echo htmlspecialchars($email); ?>" required>
                     </div>
                 </div>
 

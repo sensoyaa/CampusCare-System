@@ -110,13 +110,20 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
     <div class="content">
         <div class="page-shell">
+<<<<<<< HEAD
             <div class="dashboard-head">
+=======
+            <div class="booking-head">
+>>>>>>> c52637ba83854ef6a401cbcb08e02736e463ae8e
                 <div>
                     <h1 class="page-title">Referral Management</h1>
                     <p class="page-subtitle">Review and manage student referrals</p>
                 </div>
             </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> c52637ba83854ef6a401cbcb08e02736e463ae8e
             <?php if ($error): ?>
                 <div style="padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; border-left: 3px solid #c33; background: #fee; color: #c33; font-size: 13px;">
                     <strong>Error:</strong> <?php echo htmlspecialchars($error); ?>
@@ -130,6 +137,30 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <?php endif; ?>
 
             <style>
+                /* Booking head (copied from book_appointment) with no top margin */
+                .booking-head {
+                    padding: 1.75rem 1.75rem 1.6rem;
+                    background: var(--primary);
+                    color: #fff;
+                    border-radius: 22px;
+                    margin-top: 0;
+                    margin-bottom: 1rem;
+                    box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
+                    padding: 30px 34px 20px;
+                }
+
+                .booking-head h1 {
+                    margin: 0 0 8px;
+                    font-size: 34px;
+                    color: #fff;
+                }
+
+                .booking-head p {
+                    margin: 0;
+                    max-width: 680px;
+                    color: rgba(255,255,255,0.9);
+                }
+
                 .filter-section {
                     margin-bottom: 20px;
                 }
@@ -169,6 +200,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     margin: 0;
                 }
 
+                body.theme-dark .referral-item h3 {
+                    color: #e6edf5;
+                }
+
                 .status-badge {
                     display: inline-block;
                     padding: 4px 10px;
@@ -183,9 +218,19 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     color: #856404;
                 }
 
+                body.theme-dark .status-pending {
+                    background: #3a3118;
+                    color: #f0cb74;
+                }
+
                 .status-in-review {
                     background: #cfe2ff;
                     color: #084298;
+                }
+
+                body.theme-dark .status-in-review {
+                    background: #1a3248;
+                    color: #9dc6ee;
                 }
 
                 .status-scheduling {
@@ -193,14 +238,29 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     color: #055160;
                 }
 
+                body.theme-dark .status-scheduling {
+                    background: #0f3840;
+                    color: #88d7da;
+                }
+
                 .status-completed {
                     background: #d1e7dd;
                     color: #0f5132;
                 }
 
+                body.theme-dark .status-completed {
+                    background: #143123;
+                    color: #76d39a;
+                }
+
                 .status-closed {
                     background: #e2e3e5;
                     color: #41464b;
+                }
+
+                body.theme-dark .status-closed {
+                    background: #233445;
+                    color: #a0b2c4;
                 }
 
                 .card-info {
@@ -212,6 +272,11 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     border-bottom: 1px solid #eee;
                     margin: 12px 0;
                     font-size: 13px;
+                }
+
+                body.theme-dark .card-info {
+                    border-top-color: #2b3b4f;
+                    border-bottom-color: #2b3b4f;
                 }
 
                 .info-item {
@@ -228,9 +293,17 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     letter-spacing: 0.5px;
                 }
 
+                body.theme-dark .info-label {
+                    color: #8fa4ba;
+                }
+
                 .info-value {
                     color: #333;
                     font-weight: 500;
+                }
+
+                body.theme-dark .info-value {
+                    color: #e6edf5;
                 }
 
                 .reason-tags {
@@ -249,11 +322,21 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     font-size: 11px;
                 }
 
+                body.theme-dark .reason-tag {
+                    background: #1a3248;
+                    color: #9dc6ee;
+                }
+
                 .action-form {
                     background: #f8f9fa;
                     padding: 12px;
                     border-radius: 6px;
                     margin-top: 12px;
+                }
+
+                body.theme-dark .action-form {
+                    background: #1a2637;
+                    border: 1px solid #2b3b4f;
                 }
 
                 .form-group {

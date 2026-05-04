@@ -713,6 +713,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         background: #f9faff;
     }
 
+    body.theme-dark .schedule-item.schedule-item-clean:hover {
+        background: #1a2f42;
+    }
+
     .schedule-empty-state {
         text-align: center;
         color: #5e6b75;

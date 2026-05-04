@@ -28,7 +28,7 @@ $navItems = [
         ["View Appointments", "schedule.php", "calendar"],
         ["Manage Schedule", "manage_schedule.php", "clock"],
         ["Events", "events.php", "calendar"],
-        ["Session Feedback", "session_feedback.php", "message"],
+        
     ],
     "Facilitator" => [
         ["Dashboard", "dashboard.php", "dashboard"],
@@ -67,7 +67,7 @@ function sidebarPageUrl($fileName)
         "manage_appointments.php" => "/campuscare-api/php-frontend/pages/appointments/manage_appointments.php",
         "reports.php" => "/campuscare-api/php-frontend/pages/reports/reports.php",
         "manage_schedule.php" => "/campuscare-api/php-frontend/pages/appointments/manage_schedule.php",
-        "session_feedback.php" => "/campuscare-api/php-frontend/pages/reports/session_feedback.php",
+        
         "student_status.php" => "/campuscare-api/php-frontend/pages/users/student_status.php",
     ];
 

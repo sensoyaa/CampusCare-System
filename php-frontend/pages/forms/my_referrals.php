@@ -194,6 +194,11 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         border: 1px solid #f0f2f4;
     }
 
+    body.theme-dark .empty-card {
+        background: #1a2637;
+        border: 1px solid #2b3b4f;
+    }
+
     .empty-icon { font-size: 48px; margin-bottom: 12px; display: inline-block; }
     .empty-icon img,
     .empty-icon svg {
@@ -203,7 +208,11 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         object-fit: contain;
     }
     .empty-title { color: #222; margin-bottom: 8px; font-size: 20px; }
+    body.theme-dark .empty-title { color: #e6edf5; }
+
     .empty-text { color: #666; margin-bottom: 18px; }
+    body.theme-dark .empty-text { color: #9fb0c3; }
+
     .primary-cta { box-shadow: 0 8px 24px rgba(34,139,34,0.06); }
 
     /* Referral card */
@@ -216,36 +225,73 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         transition: transform 0.12s ease, box-shadow 0.18s ease;
     }
 
+    body.theme-dark .referral-card {
+        background: #121d2b;
+        border-color: #2b3b4f;
+    }
+
     .referral-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 6px 20px rgba(13,38,59,0.06);
     }
 
+    body.theme-dark .referral-card:hover {
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+
     .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
     .card-title { font-size: 16px; font-weight: 700; color: #222; margin: 0 0 6px 0; }
+    body.theme-dark .card-title { color: #e6edf5; }
+
     .external-tag { font-size: 12px; color: #888; margin-left: 8px; font-weight: 600; }
+    body.theme-dark .external-tag { color: #9fb0c3; }
+
     .card-meta { font-size: 13px; color: #777; margin: 0; }
+    body.theme-dark .card-meta { color: #9fb0c3; }
+
     .email-sent { display: inline-block; padding: 4px 8px; background: #d1e7dd; color: #0f5132; border-radius: 4px; font-size: 11px; margin-left: 10px; }
+    body.theme-dark .email-sent { background: #143123; color: #76d39a; }
 
     .card-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 12px 0; padding: 12px 0; border-top: 1px solid #f1f3f5; border-bottom: 1px solid #f1f3f5; }
+    body.theme-dark .card-info { border-top-color: #2b3b4f; border-bottom-color: #2b3b4f; }
+
     .info-item { font-size: 13px; }
     .info-label { color: #999; text-transform: uppercase; font-weight: 700; font-size: 11px; margin-bottom: 6px; }
+    body.theme-dark .info-label { color: #8fa4ba; }
+
     .info-value { color: #333; font-weight: 500; }
+    body.theme-dark .info-value { color: #e6edf5; }
 
     .reason-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
     .reason-tag { display: inline-block; padding: 6px 10px; background: #eef6ff; color: #0066cc; border-radius: 999px; font-size: 12px; border: 1px solid #cfe3ff; }
+    body.theme-dark .reason-tag { background: #1a3248; color: #9dc6ee; border-color: #2f4458; }
 
     .card-actions { margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f3f5; display: flex; gap: 10px; }
+    body.theme-dark .card-actions { border-top-color: #2b3b4f; }
+
     .action-btn { padding: 8px 16px; border-radius: 6px; text-decoration: none; display: inline-block; border: 1px solid #ddd; background: #fff; color: #333; transition: all .15s; }
+    body.theme-dark .action-btn { background: #162534; border-color: #2f4458; color: #9dc6ee; }
+
     .action-btn:hover { border-color: #0066cc; color: #0066cc; transform: translateY(-1px); }
+    body.theme-dark .action-btn:hover { border-color: #68a8dc; color: #68a8dc; background: #1a2f42; }
 
     .muted.small { color: #777; font-size: 12px; }
+    body.theme-dark .muted.small { color: #8fa4ba; }
 
     /* Status badges (kept for accessibility) */
     .status-pending { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    body.theme-dark .status-pending { background: #3a3118; color: #f0cb74; border: 1px solid #5a4a1f; }
+
     .status-in-review { background: #cfe2ff; color: #084298; border: 1px solid #b6d4fe; }
+    body.theme-dark .status-in-review { background: #1a3248; color: #9dc6ee; border: 1px solid #2f4458; }
+
     .status-scheduling { background: #cff4fc; color: #055160; border: 1px solid #b6effb; }
+    body.theme-dark .status-scheduling { background: #0f3840; color: #88d7da; border: 1px solid #1f4a5f; }
+
     .status-completed { background: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+    body.theme-dark .status-completed { background: #143123; color: #76d39a; border: 1px solid #1f4a2f; }
+
     .status-closed { background: #e2e3e5; color: #41464b; border: 1px solid #d3d6d8; }
+    body.theme-dark .status-closed { background: #233445; color: #a0b2c4; border: 1px solid #3a4d5f; }
 </style>
 

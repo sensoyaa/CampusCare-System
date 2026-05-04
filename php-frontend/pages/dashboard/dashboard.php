@@ -795,7 +795,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <li class="announcement-item-card">
                                     <div class="announcement-body">
                                         <span>No upcoming or ongoing events yet.</span>
-                                        <a href="/campuscare-api/php-frontend/pages/events/events.php" class="text-primary">Browse Events</a>
+                                        <a href="/campuscare-api/php-frontend/pages/events/events.php" style="color: #000 !important; text-decoration: none !important;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#000'">Browse Events</a>
                                     </div>
                                 </li>
                             <?php else: ?>
@@ -1178,21 +1178,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             </div>
                         </div>
                     <?php echo dashboardCardCloseTag(); ?>
-                    <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/reports/session_feedback.php"); ?>
-                        <span class="announcement-icon-wrap announcement-tone-gold">
-                            <?php echo sidebarIconSvg("message"); ?>
-                        </span>
-                        <div class="summary-content">
-                            <p>Pending Notes</p>
-                            <div class="summary-row">
-                                <h3>
-                                    <span class="big summary-accent"><?php echo $counselorPendingNotes; ?></span>
-                                    <span class="muted">to complete</span>
-                                </h3>
-                                <span class="summary-arrow">&rarr;</span>
-                            </div>
-                        </div>
-                    <?php echo dashboardCardCloseTag(); ?>
+                    
                     <?php echo dashboardCardTag("/campuscare-api/php-frontend/pages/appointments/schedule.php"); ?>
                         <span class="announcement-icon-wrap announcement-tone-sky">
                             <?php echo sidebarIconSvg("clock"); ?>
@@ -1430,7 +1416,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 <li class="announcement-item-card">
                                     <div class="announcement-body">
                                         <span>No counselor-created events are available yet.</span>
-                                        <a href="/campuscare-api/php-frontend/pages/events/events.php" class="text-primary">Browse Events</a>
+                                        <a href="/campuscare-api/php-frontend/pages/events/events.php" style="color: #000 !important; text-decoration: none !important;" onmouseover="this.style.color='#000'" onmouseout="this.style.color='#000'">Browse Events</a>
                                     </div>
                                 </li>
                             <?php else: ?>

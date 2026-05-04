@@ -287,7 +287,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <p class="page-subtitle">Help us support students who may be struggling</p>
                 </div>
             </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> c52637ba83854ef6a401cbcb08e02736e463ae8e
             <?php if ($error): ?>
                 <div style="padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; border-left: 3px solid #c33; background: #fee; color: #c33; font-size: 13px;">
                     <strong>Error:</strong> <?php echo htmlspecialchars($error); ?>
@@ -301,12 +304,42 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <?php endif; ?>
 
             <style>
+                .booking-head {
+                    padding: 1.75rem 1.75rem 1.6rem;
+                    background: linear-gradient(135deg, var(--primary) 0%, #5f99ca 100%);
+                    border-radius: 22px 22px 0 0;
+                    padding: 30px 34px 20px;
+                    background: var(--primary);
+                    color: #fff;
+                    border-radius: 22px;
+                    margin-top: 15px;
+                    margin-bottom: 1rem;
+                    box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
+                }
+
+                .booking-head h1 {
+                    margin: 0 0 8px;
+                    font-size: 34px;
+                    color: #fff;
+                }
+
+                .booking-head p {
+                    margin: 0;
+                    max-width: 680px;
+                    color: rgba(255,255,255,0.9);
+                }
+
                 .referral-form {
                     margin-top: 20px;
                     background: #fff;
-                    padding: 20px;
+                    padding: 35px 35px;
                     border-radius: 10px;
                     border: 1px solid #e0e0e0;
+                }
+
+                body.theme-dark .referral-form {
+                    background: #121d2b;
+                    border-color: #2b3b4f;
                 }
 
                 .choice-grid {
@@ -340,15 +373,33 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     text-align: center;
                 }
 
+                body.theme-dark .choice-btn {
+                    background: #162534;
+                    border-color: #2f4458;
+                    color: #9dc6ee;
+                }
+
                 .choice-btn:hover {
                     background: #f0f7ff;
                     border-color: #0066cc;
+                }
+
+                body.theme-dark .choice-btn:hover {
+                    background: #1a3248;
+                    border-color: #68a8dc;
+                    color: #68a8dc;
                 }
 
                 .choice-input:checked + .choice-btn {
                     background: #0066cc;
                     border-color: #0066cc;
                     color: #fff;
+                }
+
+                body.theme-dark .choice-input:checked + .choice-btn {
+                    background: #68a8dc;
+                    border-color: #68a8dc;
+                    color: #0e1622;
                 }
 
                 .student-type-grid .choice-btn {
@@ -358,16 +409,34 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     
                 }
 
+                body.theme-dark .student-type-grid .choice-btn {
+                    background: #1a1a0f;
+                    border-color: #5a4a1f;
+                    color: #f0cb74;
+                }
+
                 .student-type-grid .choice-btn:hover {
                     border-color: #e0c36b;
                     background: var(--gold-soft, #c5bdab);
                     color: var(--gold-text, #d29818);
                 }
 
+                body.theme-dark .student-type-grid .choice-btn:hover {
+                    border-color: #f0cb74;
+                    background: #2a2415;
+                    color: #f0cb74;
+                }
+
                 .student-type-grid .choice-input:checked + .choice-btn {
                     background: #e0c36b;
                     border-color: #e0c36b;
                     color: #ffffff;
+                }
+
+                body.theme-dark .student-type-grid .choice-input:checked + .choice-btn {
+                    background: #5a4a1f;
+                    border-color: #f0cb74;
+                    color: #f0cb74;
                 }
 
                 .reasons-grid {

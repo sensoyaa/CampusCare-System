@@ -2,8 +2,10 @@
 require_once __DIR__ . "/../../includes/auth.php";
 requireLogin();
 require_once __DIR__ . "/../../includes/db.php";
-
 $pageTitle = "Session Feedback";
+// Session feedback page removed from navigation — redirect to dashboard
+header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
+exit();
 $role = normalizeRole($_SESSION["role"] ?? "Student");
 $userId = intval($_SESSION["user_id"] ?? 0);
 $fullName = $_SESSION["full_name"] ?? "Counselor";
