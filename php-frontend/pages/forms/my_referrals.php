@@ -68,13 +68,13 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     <div class="content">
         <div class="page-shell">
             <div class="page-header-wrapper">
-                <div class="page-header">
+                <div class="page-header dashboard-head">
                     <div>
                         <h1 class="page-title">My Referrals</h1>
                         <p class="page-subtitle">Track referrals you have submitted</p>
                     </div>
+                    <a href="/campuscare-api/php-frontend/pages/forms/student_referral_form.php" class="btn event-join-btn btn-sm new-referral-btn">+ New Referral</a>
                 </div>
-                <a href="/campuscare-api/php-frontend/pages/forms/student_referral_form.php" class="btn event-join-btn btn-sm new-referral-btn">+ New Referral</a>
             </div>
             <?php if (empty($referrals)): ?>
                 <div class="empty-card">

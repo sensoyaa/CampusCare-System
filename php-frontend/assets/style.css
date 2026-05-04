@@ -105,6 +105,45 @@ body.theme-dark .panel {
   border-color: var(--border);
 }
 
+/* Global fallback: ensure card-like containers in all roles render correctly in dark mode. */
+body.theme-dark [class$="-card"],
+body.theme-dark [class*="-card "] {
+  background: var(--card-bg);
+  color: var(--text-main);
+  border-color: var(--border);
+}
+
+body.theme-dark [class$="-container"],
+body.theme-dark [class*="-container "] {
+  color: var(--text-main);
+  border-color: var(--border);
+}
+
+body.theme-dark .appointment-detail-root .appointment-note-card {
+  background: var(--card-bg) !important;
+  border-left-color: var(--border) !important;
+}
+
+body.theme-dark .appointment-detail-root .appointment-note-card div:first-child {
+  color: var(--text-main) !important;
+}
+
+body.theme-dark .appointment-detail-root .appointment-note-card div:last-child {
+  color: var(--text-muted) !important;
+}
+
+body.theme-dark .appointment-detail-root .appointment-audit-row {
+  border-bottom-color: var(--border) !important;
+}
+
+body.theme-dark .appointment-detail-root .appointment-audit-row div:first-child {
+  color: var(--text-main) !important;
+}
+
+body.theme-dark .appointment-detail-root .appointment-audit-row div:last-child {
+  color: var(--text-muted) !important;
+}
+
 body.theme-dark .admin-users-head {
   background: #182535;
   color: var(--text-muted);
@@ -228,15 +267,87 @@ body.theme-dark small {
 body.theme-dark .announcement-head,
 body.theme-dark .announcement-item strong,
 body.theme-dark .appointment-title,
-body.theme-dark .section-head h2,
-body.theme-dark .section-link {
+body.theme-dark .section-head h2 {
   color: #e6edf5;
+}
+
+body.theme-dark .section-link {
+  color: #fff;
+}
+
+body.theme-dark .section-head {
+  background: linear-gradient(135deg, #0f5ba8 0%, #083d72 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.theme-dark .manage-head {
+  background: linear-gradient(135deg, #0f5ba8 0%, #083d72 100%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 body.theme-dark .btn-outline {
   background: #162534;
   border-color: #35506a;
   color: #d4e4f6;
+}
+
+body.theme-dark .dashboard-head {
+  background: linear-gradient(135deg, #0f5ba8 0%, #083d72 100%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+body.theme-dark .dashboard-head .btn,
+body.theme-dark .dashboard-head .btn-primary {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.25);
+}
+
+body.theme-dark .dashboard-head .btn:hover,
+body.theme-dark .dashboard-head .btn-primary:hover {
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.4);
+}
+
+body.theme-dark .dashboard-head .btn-outline {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.25);
+}
+
+body.theme-dark .facilitator-events-head {
+  background: linear-gradient(135deg, #0f5ba8 0%, #083d72 100%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+body.theme-dark .facilitator-events-title {
+  color: #fff;
+}
+
+body.theme-dark .facilitator-create-btn {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.25);
+}
+
+body.theme-dark .facilitator-create-btn:hover {
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.4);
+}
+
+body.theme-dark .instructor-events-head {
+  background: linear-gradient(135deg, #0f5ba8 0%, #083d72 100%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+body.theme-dark .instructor-events-title {
+  color: #fff;
+}
+
+body.theme-dark .events-section-head {
+  background: linear-gradient(135deg, #0f5ba8 0%, #083d72 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.theme-dark .events-section-head h3 {
+  color: #fff;
 }
 
 body.theme-dark .btn-outline:hover {
@@ -571,6 +682,11 @@ body.theme-dark .admin-status-pill.inactive {
 .appointment-detail-root .status-badge.status-cancelled { background: #f8d7da; color: #842029; }
 .appointment-detail-root .status-badge.status-completed { background: #d1e7dd; color: #0f5132; }
 
+body.theme-dark .appointment-detail-root .status-badge.status-pending { background: #663c00; color: #ffd699; }
+body.theme-dark .appointment-detail-root .status-badge.status-approved { background: #1a4d2e; color: #81e0a3; }
+body.theme-dark .appointment-detail-root .status-badge.status-cancelled { background: #5c2c33; color: #f0a8b0; }
+body.theme-dark .appointment-detail-root .status-badge.status-completed { background: #1a4d2e; color: #81e0a3; }
+
 .appointment-detail-root .event-detail-meta-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -686,6 +802,11 @@ body.theme-dark .admin-status-pill.inactive {
 .appointment-detail-root .stat-value { display: block; font-size: 16px; font-weight: 700; color: #333; }
 .appointment-detail-root .stat-label { display: block; font-size: 11px; color: #999; margin-top: 2px; }
 
+body.theme-dark .appointment-detail-root .stat-card { background: #0f3a5a; border-left-color: #4a9eff; }
+body.theme-dark .appointment-detail-root .stat-icon { color: #4a9eff; }
+body.theme-dark .appointment-detail-root .stat-value { color: #e0e8ff; }
+body.theme-dark .appointment-detail-root .stat-label { color: #8895aa; }
+
 .appointment-detail-root .event-detail-actions {
   margin: 1.25rem 0;
   display: grid;
@@ -764,6 +885,18 @@ body.theme-dark .admin-status-pill.inactive {
   color: #008800;
 }
 
+body.theme-dark .appointment-detail-root .appointment-alert-error {
+  background: #4a2626;
+  color: #ff6b6b;
+  border-left-color: #ff6b6b;
+}
+
+body.theme-dark .appointment-detail-root .appointment-alert-success {
+  background: #264a26;
+  color: #6bff6b;
+  border-left-color: #6bff6b;
+}
+
 .appointment-detail-root .appointment-section {
   margin-top: 1.25rem;
   background: var(--card-bg);
@@ -811,6 +944,28 @@ body.theme-dark .admin-status-pill.inactive {
   color: #333;
   font-size: 13px;
   line-height: 1.8;
+}
+
+body.theme-dark .appointment-detail-root .appointment-info-card {
+  background: #1a2838;
+  border-left-color: #4a9eff;
+}
+
+body.theme-dark .appointment-detail-root .appointment-info-label {
+  color: #e6edf5;
+}
+
+body.theme-dark .appointment-detail-root .appointment-info-value {
+  color: #8fa4ba;
+}
+
+body.theme-dark .appointment-detail-root .appointment-prep-card {
+  background: #0f3a5a;
+  border-left-color: #4a9eff;
+}
+
+body.theme-dark .appointment-detail-root .appointment-prep-list {
+  color: #e6edf5;
 }
 
 .appointment-detail-root .appointment-notes-form {
@@ -883,6 +1038,23 @@ body.theme-dark .admin-status-pill.inactive {
   font-size: 11px;
   color: #999;
   margin-top: 4px;
+}
+
+body.theme-dark .appointment-detail-root .appointment-referral-card {
+  background: #4a3d1a;
+  border-left-color: #d4a856;
+}
+
+body.theme-dark .appointment-detail-root .appointment-referral-title {
+  color: #f5e6d3;
+}
+
+body.theme-dark .appointment-detail-root .appointment-referral-reason {
+  color: #c9b8a3;
+}
+
+body.theme-dark .appointment-detail-root .appointment-referral-date {
+  color: #a59584;
 }
 
 .appointment-detail-root .appointment-referral-badge {
@@ -2120,7 +2292,7 @@ body.theme-dark .menu-lines {
 
 .content {
   width: 100%;
-  padding: 15px 100px; !important;
+  padding: 15px 100px !important;
 }
 
 .page-shell {
@@ -2133,11 +2305,12 @@ body.theme-dark .menu-lines {
   line-height: 1.2;
   letter-spacing: -0.4px;
   margin-bottom: 5px;
+  color: #fff;
 }
 
 .page-subtitle {
-  margin: 15px 0;
-  color: #000;
+  margin: 8px 0 0 0;
+  color: rgba(255,255,255,0.9);
   font-size: 14px;
   line-height: 1.45;
 }
@@ -2206,7 +2379,38 @@ body.theme-dark .menu-lines {
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #1278C8 0%, #0a5fa8 100%);
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(18, 120, 200, 0.15);
+}
+
+.dashboard-head .btn,
+.dashboard-head .btn-primary {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.dashboard-head .btn:hover,
+.dashboard-head .btn-primary:hover {
+  background: rgba(255,255,255,0.3);
+  border-color: rgba(255,255,255,0.5);
+  transform: translateY(-1px);
+}
+
+.dashboard-head .btn-outline {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.dashboard-head .btn-outline:hover {
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.5);
 }
 
 .summary-grid {
@@ -3400,18 +3604,50 @@ body.theme-dark .announcement-chevron {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #1278C8 0%, #0a5fa8 100%);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(18, 120, 200, 0.12);
+}
+
+.section-head h2,
+.section-head h3 {
+  color: #fff !important;
+  margin: 0;
 }
 
 .section-link {
-  color: var(--primary);
+  color: #fff;
   text-decoration: none;
   font-weight: 600;
   font-size: 15px;
+  transition: opacity 0.2s ease;
 }
 
-.appointment-list {
-  display: grid;
-  gap: 12px;
+.section-link:hover {
+  opacity: 0.85;
+}
+
+.manage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #1278C8 0%, #0a5fa8 100%);
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(18, 120, 200, 0.15);
+}
+
+.manage-head h1,
+.manage-head .page-title {
+  color: #fff !important;
+}
+
+.manage-head p,
+.manage-head .page-subtitle {
+  color: rgba(255,255,255,0.9) !important;
 }
 
 .appointment-card {
@@ -4444,6 +4680,48 @@ textarea:focus {
   width: 24px;
   height: 24px;
   font-size: 12px;
+}
+
+body.theme-dark .schedule-item {
+  background: var(--card-bg);
+  border-color: var(--border);
+}
+
+body.theme-dark .schedule-item-clean {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+body.theme-dark .schedule-summary-card {
+  background: var(--card-bg);
+  border-color: var(--border);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+body.theme-dark .schedule-summary-card-accent {
+  background: #162534;
+  border-color: #35506a;
+}
+
+body.theme-dark .schedule-meta-chip {
+  background: #1a2a3b;
+  border-color: #33495f;
+  color: #c9d7e5;
+}
+
+body.theme-dark .schedule-shell .schedule-title {
+  color: var(--text-main);
+}
+
+body.theme-dark .schedule-shell .schedule-meta {
+  color: var(--text-muted);
+}
+
+body.theme-dark .schedule-actions-clean .btn-outline.btn-sm {
+  border-color: #35506a;
+}
+
+body.theme-dark .schedule-shell .card {
+  color: var(--text-main) !important;
 }
 
 .icon-btn {
@@ -6130,25 +6408,34 @@ textarea:focus {
 }
 
 .facilitator-events-head {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 20px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #1278C8 0%, #0a5fa8 100%);
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(18, 120, 200, 0.15);
 }
 
 .facilitator-events-title {
   margin-bottom: 0;
+  color: #fff;
 }
 
 .facilitator-create-btn {
-  background: #4b8fc4;
-  border-color: #4b8fc4;
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.3);
   color: #fff;
   border-radius: 14px;
   padding: 10px 18px;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
 .facilitator-create-btn:hover {
-  background: #3f82b7;
-  border-color: #3f82b7;
+  background: rgba(255,255,255,0.3);
+  border-color: rgba(255,255,255,0.5);
 }
 
 .facilitator-create-btn svg {
@@ -6778,13 +7065,19 @@ textarea:focus {
 }
 
 .instructor-events-head {
-  max-width: 760px;
-  margin: 0 auto 20px;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #1278C8 0%, #0a5fa8 100%);
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(18, 120, 200, 0.15);
 }
 
 .instructor-events-title {
   margin-bottom: 0;
+  color: #fff;
 }
 
 .instructor-event-list {
@@ -6968,6 +7261,15 @@ textarea:focus {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #1278C8 0%, #0a5fa8 100%);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(18, 120, 200, 0.12);
+}
+
+.events-section-head h3 {
+  color: #fff;
+  margin: 0;
 }
 
 /* College Cards - Based on Quick Access Card Style */

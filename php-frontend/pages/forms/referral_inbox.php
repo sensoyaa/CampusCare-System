@@ -169,8 +169,12 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
     <div class="content">
         <div class="page-shell" style="max-width:1100px;">
-            <h1 class="page-title">Referral Inbox</h1>
-            <p class="page-subtitle">Counselor/Admin review queue for referral slips.</p>
+            <div class="dashboard-head">
+                <div>
+                    <h1 class="page-title">Referral Inbox</h1>
+                    <p class="page-subtitle">Counselor/Admin review queue for referral slips.</p>
+                </div>
+            </div>
 
             <?php if ($error !== ""): ?>
                 <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>

@@ -517,7 +517,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <?php endif; ?>
 
             <?php if (empty($appointments)): ?>
-                <div class="card" style="text-align: center; color: #5e6b75;">
+                <div class="card schedule-empty-state">
                     No appointments found.
                 </div>
             <?php else: ?>
@@ -711,6 +711,20 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         box-shadow: 0 4px 16px rgba(0, 102, 204, 0.15) !important;
         transform: translateY(-2px);
         background: #f9faff;
+    }
+
+    .schedule-empty-state {
+        text-align: center;
+        color: #5e6b75;
+    }
+
+    body.theme-dark .schedule-item.schedule-item-clean:hover {
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
+        background: #162534;
+    }
+
+    body.theme-dark .schedule-empty-state {
+        color: var(--text-muted);
     }
 </style>
 

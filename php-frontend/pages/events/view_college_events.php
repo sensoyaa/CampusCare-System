@@ -564,7 +564,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             Create Event
                         </button>
                     <?php endif; ?>
-                    <a href="/campuscare-api/php-frontend/pages/events/events.php" class="btn btn-outline">Back to Colleges</a>
+                    <a href="events.php" class="btn btn-outline">Back to Colleges</a>
                 </div>
             </div>
 

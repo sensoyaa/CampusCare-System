@@ -301,8 +301,12 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
     <div class="content">
         <div class="page-shell" style="max-width:980px;">
-            <h1 class="page-title">Referral Slip</h1>
-            <p class="page-subtitle">Fill up all required details from the paper referral slip.</p>
+            <div class="dashboard-head">
+                <div>
+                    <h1 class="page-title">Referral Slip</h1>
+                    <p class="page-subtitle">Fill up all required details from the paper referral slip.</p>
+                </div>
+            </div>
 
             <?php if ($error !== ""): ?>
                 <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>

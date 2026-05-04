@@ -15,23 +15,41 @@ if ($appointmentId <= 0) {
     exit();
 }
 
-// Get appointment details
-$appointmentStmt = $conn->prepare("
-    SELECT a.*, u.full_name as student_name, u.email as student_email, u.id as student_id, approver.full_name AS approved_by_name
-    FROM appointments a
-    JOIN users u ON a.user_id = u.id
-    LEFT JOIN users approver ON approver.id = a.approved_by_user_id
-    WHERE a.id = ?
-");
-if (!$appointmentStmt) {
-    $appointmentStmt = $conn->prepare("
-        SELECT a.*, u.full_name as student_name, u.email as student_email, u.id as student_id
-        FROM appointments a
-        JOIN users u ON a.user_id = u.id
-        WHERE a.id = ?
-    ");
+// Get appointment details with schema-safe joins (supports legacy and normalized schemas)
+$appointmentColumns = [];
+$appointmentColsRes = $conn->query("SHOW COLUMNS FROM appointments");
+if ($appointmentColsRes) {
+    while ($col = $appointmentColsRes->fetch_assoc()) {
+        $appointmentColumns[$col["Field"]] = true;
+    }
+    $appointmentColsRes->free();
 }
 
+$studentFkColumn = isset($appointmentColumns["student_user_id"]) ? "student_user_id"
+    : (isset($appointmentColumns["user_id"]) ? "user_id" : null);
+$counselorFkColumn = isset($appointmentColumns["counselor_user_id"]) ? "counselor_user_id" : null;
+$hasLegacyCounselorName = isset($appointmentColumns["counselor"]);
+
+$studentJoinCondition = $studentFkColumn !== null ? "a.`{$studentFkColumn}` = u.id" : "1 = 0";
+$studentIdSelect = $studentFkColumn !== null
+    ? "a.`{$studentFkColumn}` AS appointment_student_id"
+    : "NULL AS appointment_student_id";
+$counselorNameSelect = $counselorFkColumn !== null
+    ? "c.full_name AS counselor_name_db"
+    : ($hasLegacyCounselorName ? "a.counselor AS counselor_name_db" : "NULL AS counselor_name_db");
+$counselorJoinSql = $counselorFkColumn !== null
+    ? "LEFT JOIN users c ON a.`{$counselorFkColumn}` = c.id"
+    : "";
+
+$appointmentQuery = "
+    SELECT a.*, {$studentIdSelect}, {$counselorNameSelect}, u.full_name AS student_name, u.email AS student_email, u.id AS student_id
+    FROM appointments a
+    LEFT JOIN users u ON {$studentJoinCondition}
+    {$counselorJoinSql}
+    WHERE a.id = ?
+";
+
+$appointmentStmt = $conn->prepare($appointmentQuery);
 if (!$appointmentStmt) {
     die("Unable to load appointment details.");
 }
@@ -40,8 +58,8 @@ $appointmentStmt->execute();
 $appointment = $appointmentStmt->get_result()->fetch_assoc();
 $appointmentStmt->close();
 
-if (!isset($appointment["approved_by_name"])) {
-    $appointment["approved_by_name"] = null;
+if (!isset($appointment["counselor_name_db"])) {
+    $appointment["counselor_name_db"] = null;
 }
 
 if (!$appointment) {
@@ -50,9 +68,16 @@ if (!$appointment) {
 }
 
 // Check permissions - only student with appointment, assigned counselor, or admin can view
-$canView = ($role === "Administrator" || 
-            ($role === "Counselor" && $appointment["counselor"] === $fullName) ||
-            ($userId === $appointment["user_id"]));
+$appointmentStudentId = intval($appointment["appointment_student_id"] ?? ($appointment["user_id"] ?? ($appointment["student_user_id"] ?? 0)));
+$appointmentCounselorId = intval($appointment["counselor_user_id"] ?? 0);
+$appointmentCounselorName = trim((string) ($appointment["counselor_name_db"] ?? ($appointment["counselor"] ?? "")));
+
+$isAssignedCounselor = ($appointmentCounselorId > 0 && $appointmentCounselorId === $userId)
+    || ($appointmentCounselorName !== "" && strcasecmp($appointmentCounselorName, $fullName) === 0);
+
+$canView = ($role === "Administrator"
+            || ($role === "Counselor" && $isAssignedCounselor)
+            || ($role === "Student" && $userId === $appointmentStudentId));
 
 if (!$canView) {
     header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
@@ -64,7 +89,7 @@ $appointmentDate = new DateTime($appointment["appointment_date"]);
 $dateStr = $appointmentDate->format("F j, Y");
 $timeStr = $appointment["appointment_time"] ?? "Not specified";
 $service = htmlspecialchars($appointment["service"] ?? "Counseling");
-$counselor = htmlspecialchars($appointment["counselor"] ?? "Not assigned");
+$counselor = htmlspecialchars($appointmentCounselorName !== "" ? $appointmentCounselorName : "Not assigned");
 $status = htmlspecialchars($appointment["status"] ?? "Pending");
 $notes = htmlspecialchars($appointment["notes"] ?? "");
 
@@ -79,7 +104,7 @@ $appointmentHistory = [];
 
 // Get related referrals for this student (for counselor view)
 $relatedReferrals = [];
-if ($role === "Counselor" || $role === "Administrator") {
+if (($role === "Counselor" || $role === "Administrator") && $appointmentStudentId > 0) {
     $referralStmt = $conn->prepare("
         SELECT id, reasons_json, status, referral_datetime
         FROM referral_forms
@@ -88,7 +113,7 @@ if ($role === "Counselor" || $role === "Administrator") {
         LIMIT 3
     ");
     if ($referralStmt) {
-        $referralStmt->bind_param("i", $appointment["user_id"]);
+        $referralStmt->bind_param("i", $appointmentStudentId);
         $referralStmt->execute();
         $referralResult = $referralStmt->get_result();
         while ($row = $referralResult->fetch_assoc()) {
@@ -129,7 +154,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $action = trim((string) ($_POST["action"] ?? ""));
 
     // Cancel appointment
-    if ($action === "cancel" && (($role === "Student" && $userId === $appointment["user_id"]) || $role === "Administrator")) {
+    if ($action === "cancel" && (($role === "Student" && $userId === $appointmentStudentId) || $role === "Administrator")) {
         if (!$hasAppointmentPassed && $status !== "Cancelled") {
             $updateStmt = $conn->prepare("UPDATE appointments SET status = 'Cancelled' WHERE id = ?");
             $updateStmt->bind_param("i", $appointmentId);
@@ -285,15 +310,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                         <span class="event-meta-value"><?php echo $counselor; ?></span>
                     </div>
                 </div>
-                <?php if (!empty($appointment["approved_by_name"])): ?>
-                <div class="event-meta-card">
-                    <span class="event-meta-icon"><?php echo sidebarIconSvg("check-circle"); ?></span>
-                    <div>
-                        <span class="event-meta-label">Approved By</span>
-                        <span class="event-meta-value"><?php echo htmlspecialchars((string) $appointment["approved_by_name"]); ?></span>
-                    </div>
-                </div>
-                <?php endif; ?>
                 <div class="event-meta-card">
                     <span class="event-meta-icon"><?php echo sidebarIconSvg("briefcase"); ?></span>
                     <div>
@@ -338,7 +354,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             </section>
 
             <!-- Counselor Preparation (Student View) -->
-            <?php if ($role === "Student" && $userId === $appointment["user_id"]): ?>
+            <?php if ($role === "Student" && $userId === $appointmentStudentId): ?>
             <section class="appointment-section">
                 <div class="section-heading">
                     <span class="section-heading-icon"><?php echo sidebarIconSvg("clipboard"); ?></span>
@@ -484,7 +500,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
             <!-- Action Buttons -->
             <section class="event-detail-actions appointment-section">
-                <?php if ($role === "Student" && $userId === $appointment["user_id"]): ?>
+                <?php if ($role === "Student" && $userId === $appointmentStudentId): ?>
                     <!-- Student Actions -->
                     <?php if (!$hasAppointmentPassed && $status !== "Cancelled"): ?>
                         <form method="POST" class="appointment-inline-form">
