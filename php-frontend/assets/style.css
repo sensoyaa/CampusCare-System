@@ -7992,6 +7992,213 @@ body.theme-dark .participants-row:hover {
   padding-bottom: 0;
 }
 
+/* ===== COMPREHENSIVE DARK MODE STATUS BADGES AND COMPONENTS ===== */
+
+/* Status Badge Dark Mode Variants */
+.status-badge.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+body.theme-dark .status-badge.status-pending {
+  background: #3a3118;
+  color: #f0cb74;
+}
+
+.status-badge.status-in-review,
+.status-badge.status-in_review {
+  background: #cfe2ff;
+  color: #084298;
+}
+
+body.theme-dark .status-badge.status-in-review,
+body.theme-dark .status-badge.status-in_review {
+  background: #1a3248;
+  color: #9dc6ee;
+}
+
+.status-badge.status-scheduling {
+  background: #cff4fc;
+  color: #055160;
+}
+
+body.theme-dark .status-badge.status-scheduling {
+  background: #0f3840;
+  color: #88d7da;
+}
+
+.status-badge.status-completed {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+body.theme-dark .status-badge.status-completed {
+  background: #143123;
+  color: #76d39a;
+}
+
+.status-badge.status-closed {
+  background: #e2e3e5;
+  color: #41464b;
+}
+
+body.theme-dark .status-badge.status-closed {
+  background: #233445;
+  color: #a0b2c4;
+}
+
+/* Light background boxes with dark text */
+.referral-box,
+.info-box,
+.info-section,
+.appointment-info-card,
+.appointment-prep-card,
+.verification-box {
+  background: #f4f9fc;
+  border: 1px solid #d5e7f2;
+  color: #5d7a91;
+}
+
+body.theme-dark .referral-box,
+body.theme-dark .info-box,
+body.theme-dark .info-section,
+body.theme-dark .appointment-info-card,
+body.theme-dark .appointment-prep-card,
+body.theme-dark .verification-box {
+  background: #0f2a37;
+  border: 1px solid #1f4a5f;
+  color: #a8c5d8;
+}
+
+.referral-box label,
+.info-box label,
+.appointment-info-card label,
+.verification-box label {
+  color: #333;
+}
+
+body.theme-dark .referral-box label,
+body.theme-dark .info-box label,
+body.theme-dark .appointment-info-card label,
+body.theme-dark .verification-box label {
+  color: #e6edf5;
+}
+
+/* Warning/Alert boxes for forms */
+.warning-box,
+.alert-warning {
+  background: #fff8eb;
+  border: 1px solid #f2dfb2;
+  color: #6b5221;
+}
+
+body.theme-dark .warning-box,
+body.theme-dark .alert-warning {
+  background: #3a3118;
+  border: 1px solid #5a4a1f;
+  color: #f0cb74;
+}
+
+/* Light blue backgrounds for form sections */
+.form-section-bg,
+.form-light-bg {
+  background: #f0f7ff;
+  color: #0066cc;
+}
+
+body.theme-dark .form-section-bg,
+body.theme-dark .form-light-bg {
+  background: #0f1f35;
+  border: 1px solid #1a3248;
+  color: #9dc6ee;
+}
+
+/* Light gray backgrounds */
+.light-gray-bg,
+.form-hint-bg {
+  background: #f8f9fa;
+  color: #333;
+}
+
+body.theme-dark .light-gray-bg,
+body.theme-dark .form-hint-bg {
+  background: #1a2637;
+  color: #c9d9e8;
+}
+
+/* Reason tag styles for referrals */
+.reason-tag {
+  background: #eef6ff;
+  color: #0066cc;
+}
+
+body.theme-dark .reason-tag {
+  background: #1a3248;
+  color: #9dc6ee;
+}
+
+/* Light text on light backgrounds that need dark mode fix */
+.muted-text {
+  color: #777;
+}
+
+body.theme-dark .muted-text {
+  color: #9fb0c3;
+}
+
+.secondary-text {
+  color: #999;
+}
+
+body.theme-dark .secondary-text {
+  color: #8fa4ba;
+}
+
+/* Inline text colors that appear in light backgrounds */
+body.theme-dark [style*="color: #222"],
+body.theme-dark [style*="color: #333"],
+body.theme-dark [style*="color: #666"],
+body.theme-dark [style*="color: #777"],
+body.theme-dark [style*="color: #999"] {
+  color: #e6edf5 !important;
+}
+
+/* Dark mode for form backgrounds inside light containers */
+body.theme-dark .form-group {
+  color: #e6edf5;
+}
+
+body.theme-dark .form-group label {
+  color: #e6edf5;
+}
+
+/* Ensure all text in light backgrounds switches to light text in dark mode */
+body.theme-dark [style*="background: #f4f9fc"],
+body.theme-dark [style*="background: #f0f7ff"],
+body.theme-dark [style*="background: #f8f9fa"],
+body.theme-dark [style*="background: #fff3cd"],
+body.theme-dark [style*="background: #cfe2ff"],
+body.theme-dark [style*="background: #cff4fc"],
+body.theme-dark [style*="background: #d1e7dd"],
+body.theme-dark [style*="background: #f0f7ff"],
+body.theme-dark [style*="background: #fff8eb"],
+body.theme-dark [style*="background: #eef6ff"],
+body.theme-dark [style*="background: #f9f9f9"] {
+  color: #e6edf5;
+}
+
+/* Specific inline style overrides for common patterns */
+body.theme-dark .appointment-detail-root .stat-card {
+  background: #0f2a37;
+  border-left-color: #68a8dc;
+}
+
+body.theme-dark .appointment-detail-root .stat-card .stat-value,
+body.theme-dark .appointment-detail-root .stat-card .stat-label,
+body.theme-dark .appointment-detail-root .stat-card .stat-icon {
+  color: #e6edf5;
+}
+
 .settings-item.notification-dependent {
   opacity: 1;
   transition: opacity 150ms ease, pointer-events 150ms ease;

@@ -280,6 +280,71 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 })();
 </script>
 </body>
+<style>
+/* Dark mode styles for mental_health_test.php inline styles */
+body.theme-dark div[style*="color:#1e2f40"],
+body.theme-dark strong[style*="color:#1e2f40"] {
+    color: #e6edf5 !important;
+}
+
+body.theme-dark span[style*="color:#6f8295"],
+body.theme-dark div[style*="color:#6f8295"] {
+    color: #9fb0c3 !important;
+}
+
+body.theme-dark p[style*="color:#35536f"],
+body.theme-dark div[style*="color:#35536f"] {
+    color: #c9d9e8 !important;
+}
+
+body.theme-dark div[style*="background: rgba(255,255,255,0.7)"] {
+    background: rgba(15, 22, 34, 0.7) !important;
+}
+
+/* Result card styling */
+body.theme-dark .test-result-card {
+    background: #121d2b;
+    border-color: #2b3b4f;
+}
+
+body.theme-dark .test-result-card strong {
+    color: #e6edf5;
+}
+
+body.theme-dark .test-result-card span {
+    color: #9fb0c3;
+}
+
+/* Test head styling */
+body.theme-dark .test-head {
+    background: var(--primary);
+    color: #fff;
+}
+
+body.theme-dark .test-head h1,
+body.theme-dark .test-head .page-title {
+    color: #fff;
+}
+
+body.theme-dark .test-head p,
+body.theme-dark .test-head .page-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Question styling */
+body.theme-dark .question-text {
+    color: #e6edf5;
+}
+
+body.theme-dark .question-label {
+    color: #9fb0c3;
+}
+
+/* Button styling - already handled by global styles */
+body.theme-dark .btn {
+    color: #e6edf5;
+}
+</style>
 </html>
 
 

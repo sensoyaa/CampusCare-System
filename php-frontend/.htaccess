@@ -28,7 +28,6 @@ RewriteRule ^view_participants\.php$ pages/events/view_participants.php [L]
 
 # Reports
 RewriteRule ^reports\.php$ pages/reports/reports.php [L]
-RewriteRule ^session_feedback\.php$ pages/reports/session_feedback.php [L]
 
 # Tests
 RewriteRule ^mental_health_test\.php$ pages/tests/mental_health_test.php [L]

@@ -7,6 +7,10 @@ $pageTitle = "Edit Profile";
 $userId = intval($_SESSION["user_id"] ?? 0);
 $userRole = normalizeRole($_SESSION["role"] ?? "Student");
 
+// Roles that should not see/edit the program field
+$rolesWithoutProgram = ["Instructor", "Counselor", "Administrator"];
+$shouldShowProgram = !in_array($userRole, $rolesWithoutProgram, true);
+
 $error = "";
 $success = (string) ($_SESSION["profile_flash_success"] ?? "");
 unset($_SESSION["profile_flash_success"]);
@@ -178,7 +182,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $newFullName = trim((string) ($_POST["full_name"] ?? ""));
         $newEmail = trim((string) ($_POST["email"] ?? ""));
         $newCollege = trim((string) ($_POST["college"] ?? ""));
-        $newProgram = trim((string) ($_POST["program"] ?? ""));
+        $newProgram = $shouldShowProgram ? trim((string) ($_POST["program"] ?? "")) : "";
         $uploadedAvatarPath = $avatarPath;
 
         if (isset($_FILES["avatar"]) && is_array($_FILES["avatar"]) && (int) ($_FILES["avatar"]["error"] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
@@ -247,12 +251,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 if ($emailExists) {
                     $error = "This email is already in use.";
                 } else {
-                    if ($usersHasCollege && $usersHasProgram && $usersHasAvatarPath) {
+                    if ($usersHasCollege && $usersHasProgram && $shouldShowProgram && $usersHasAvatarPath) {
                         $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ?, program = ?, avatar_path = ? WHERE id = ?");
                         $updateMode = "with_avatar";
-                    } elseif ($usersHasCollege && $usersHasProgram) {
+                    } elseif ($usersHasCollege && $usersHasProgram && $shouldShowProgram) {
                         $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ?, program = ? WHERE id = ?");
                         $updateMode = "with_college_program";
+                    } elseif ($usersHasCollege && $usersHasAvatarPath) {
+                        $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ?, avatar_path = ? WHERE id = ?");
+                        $updateMode = "with_avatar_no_program";
+                    } elseif ($usersHasCollege) {
+                        $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ? WHERE id = ?");
+                        $updateMode = "with_college_no_program";
                     } else {
                         $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ? WHERE id = ?");
                         $updateMode = "basic";
@@ -265,6 +275,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             $updateStmt->bind_param("sssssi", $newFullName, $newEmail, $newCollege, $newProgram, $uploadedAvatarPath, $userId);
                         } elseif ($updateMode === "with_college_program") {
                             $updateStmt->bind_param("ssssi", $newFullName, $newEmail, $newCollege, $newProgram, $userId);
+                        } elseif ($updateMode === "with_avatar_no_program") {
+                            $updateStmt->bind_param("ssssi", $newFullName, $newEmail, $newCollege, $uploadedAvatarPath, $userId);
+                        } elseif ($updateMode === "with_college_no_program") {
+                            $updateStmt->bind_param("sssi", $newFullName, $newEmail, $newCollege, $userId);
                         } else {
                             $updateStmt->bind_param("ssi", $newFullName, $newEmail, $userId);
                         }
@@ -519,6 +533,7 @@ body.theme-dark .profile-summary-value {
                         </div>
                     </div>
 
+                    <?php if ($shouldShowProgram): ?>
                     <div class="profile-summary-item">
                         <svg class="profile-summary-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 6h16v2H4zm0 5h16v2H4zm0 5h10v2H4z"/></svg>
                         <div>
@@ -526,6 +541,7 @@ body.theme-dark .profile-summary-value {
                             <span class="profile-summary-value"><?php echo htmlspecialchars($program !== "" ? $program : "Not provided"); ?></span>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                     <div class="profile-summary-item">
                         <svg class="profile-summary-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 4h16v16H4zM7 7h10v2H7zm0 4h10v2H7zm0 4h6v2H7z"/></svg>
@@ -567,10 +583,12 @@ body.theme-dark .profile-summary-value {
                             </select>
                         </div>
 
+                        <?php if ($shouldShowProgram): ?>
                         <div class="form-group">
                             <label>Program</label>
                             <input type="text" name="program" value="<?php echo htmlspecialchars($formState["program"]); ?>" placeholder="e.g. BSIT">
                         </div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="form-group">
