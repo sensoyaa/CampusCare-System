@@ -8,9 +8,6 @@ $pageTitle = "Campus Events";
 $role = normalizeRole($_SESSION["role"] ?? "Student");
 $userId = intval($_SESSION["user_id"] ?? 0);
 
-<<<<<<< HEAD
-$colleges = []; // College column missing from events table
-=======
 $colleges = [
     "College of Technology",
     "College of Public Administration and Governance",
@@ -47,8 +44,7 @@ foreach ($colleges as $college) {
     $countStmt = $conn->prepare(
         "SELECT COUNT(*) AS total
          FROM events e
-         LEFT JOIN users creator ON creator.id = e.created_by_user_id
-         WHERE LOWER(TRIM(COALESCE(NULLIF(e.college, ''), creator.college, ''))) IN ({$placeholders})
+         WHERE LOWER(TRIM(COALESCE(NULLIF(e.college, ''), ''))) IN ({$placeholders})
            AND e.starts_at >= NOW()"
     );
     $countStmt->bind_param($types, ...$aliases);
@@ -89,7 +85,6 @@ function collegeIconUrl(string $college, array $collegeIconMap): ?string
 
     return "/campuscare-api/php-frontend/assets/images/colleges/" . rawurlencode($collegeIconMap[$key]);
 }
->>>>>>> bd9efdc433c32a19e43b2128fe668ed7a14320e6
 
 require_once __DIR__ . "/../../includes/header.php";
 require_once __DIR__ . "/../../includes/sidebar.php";
@@ -116,10 +111,18 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <!-- College Selection Section -->
             <section class="events-section">
                 <h2 class="events-section-title">Select a College</h2>
-    <div class="empty-state">
-    <h3>Events Page</h3>
-    <p>No college filtering (missing DB column). <a href="/campuscare-api/php-frontend/pages/events/view_college_events.php?college=All">View All Events</a></p>
-</div>
+                <div class="college-grid">
+                    <?php foreach ($colleges as $college): ?>
+                        <a href="/campuscare-api/php-frontend/pages/events/view_college_events.php?college=<?php echo urlencode($college); ?>" class="college-card">
+                            <?php $iconUrl = collegeIconUrl($college, $collegeIconMap); ?>
+                            <?php if ($iconUrl): ?>
+                                <img src="<?php echo htmlspecialchars($iconUrl); ?>" alt="<?php echo htmlspecialchars($college); ?>" class="college-icon">
+                            <?php endif; ?>
+                            <h3><?php echo htmlspecialchars($college); ?></h3>
+                            <p class="event-count"><?php echo $collegeEventCounts[$college]; ?> Events</p>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
             </section>
         </div>
     </div>
