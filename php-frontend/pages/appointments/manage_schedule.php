@@ -151,6 +151,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     margin-bottom: 1rem;
                     box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
                     padding: 30px 34px 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 20px;
                 }
 
                 .booking-head h1 {
@@ -165,7 +169,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     color: rgba(255,255,255,0.9);
                 }
 
-                .slot-add-btn { background: #fff; color: var(--primary); }
+                .slot-add-btn { background: #fff; color: var(--primary); white-space: nowrap; }
             </style>
 
             <div class="booking-head">

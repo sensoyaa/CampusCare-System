@@ -110,20 +110,12 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
     <div class="content">
         <div class="page-shell">
-<<<<<<< HEAD
-            <div class="dashboard-head">
-=======
             <div class="booking-head">
->>>>>>> c52637ba83854ef6a401cbcb08e02736e463ae8e
                 <div>
                     <h1 class="page-title">Referral Management</h1>
                     <p class="page-subtitle">Review and manage student referrals</p>
                 </div>
             </div>
-<<<<<<< HEAD
-
-=======
->>>>>>> c52637ba83854ef6a401cbcb08e02736e463ae8e
             <?php if ($error): ?>
                 <div style="padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; border-left: 3px solid #c33; background: #fee; color: #c33; font-size: 13px;">
                     <strong>Error:</strong> <?php echo htmlspecialchars($error); ?>

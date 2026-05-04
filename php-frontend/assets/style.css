@@ -1236,8 +1236,7 @@ body.theme-dark .appointment-detail-root .appointment-referral-date {
 
 .nav a:hover,
 .nav a.active {
-  background: var(--sidebar-accent);
-  background: #0066cc;
+  background: var(--primary)!important;
   color: #fff;
 }
 
@@ -1337,7 +1336,11 @@ body.theme-dark .appointment-detail-root .appointment-referral-date {
   align-items: center;
   justify-content: space-between;
   padding: 0 18px;
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 220px;
+  right: 0;
+  z-index: 50;
 }
 
 .menu-toggle {
@@ -2291,6 +2294,7 @@ body.theme-dark .menu-lines {
 }
 
 .content {
+  margin-top: 60px;
   width: 100%;
   padding: 15px 100px !important;
 }
@@ -2381,7 +2385,7 @@ body.theme-dark .menu-lines {
   gap: 20px;
   margin-bottom: 20px;
   padding: 24px 28px;
-  background: linear-gradient(135deg, #1278C8 0%, #0a5fa8 100%);
+  background: var(--primary);
   border-radius: 20px;
   box-shadow: 0 4px 16px rgba(18, 120, 200, 0.15);
 }
@@ -3605,7 +3609,7 @@ body.theme-dark .announcement-chevron {
   align-items: center;
   margin-bottom: 12px;
   padding: 18px 24px;
-  background: linear-gradient(135deg, #1278C8 0%, #0a5fa8 100%);
+  background: var(--primary);
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(18, 120, 200, 0.12);
 }
