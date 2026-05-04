@@ -239,7 +239,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if (!is_array($pendingGoogleSignup)) {
             $error = "Your Google sign-up session expired. Please try again.";
         } elseif ($student_id === "") {
-            $error = "Student ID is required.";
+            $error = "Institution ID is required.";
         } else {
             $full_name = trim((string) ($pendingGoogleSignup["full_name"] ?? ""));
             $email = trim((string) ($pendingGoogleSignup["email"] ?? ""));
@@ -269,7 +269,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $checkStudent = $conn->prepare("SELECT id FROM users WHERE " . $userStudentColumn . " = ? LIMIT 1");
 
                     if (!$checkStudent) {
-                        $error = "Unable to validate student ID.";
+                        $error = "Unable to validate institution ID.";
                     } else {
                         $checkStudent->bind_param("s", $student_id);
                         $checkStudent->execute();
@@ -277,7 +277,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         $checkStudent->close();
 
                         if ($studentIdExists) {
-                            $error = "Student ID is already in use.";
+                            $error = "Institution ID is already in use.";
                         } else {
                             $roleValue = $userRoleColumn === "role_id"
                                 ? (resolveRoleId($conn, $role) ?? 4)
@@ -304,7 +304,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                                     exit();
                                 } else {
                                     $error = intval($stmt->errno) === 1062
-                                        ? "Student ID or email is already in use."
+                                        ? "Institution ID or email is already in use."
                                         : "Failed to create account.";
                                 }
 
@@ -379,7 +379,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         exit();
                     } else {
                         $error = intval($insertStmt->errno) === 1062
-                            ? "Email or student ID is already in use."
+                            ? "Email or institution ID is already in use."
                             : "Failed to create account.";
                         $step = "verify";
                         $email = $verificationEmail;
@@ -631,8 +631,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     </div>
 
                     <div class="form-group">
-                        <label>Student ID</label>
-                        <input type="text" name="student_id" value="<?php echo htmlspecialchars($student_id); ?>" required>
+                        <label>Institution ID</label>
+                        <input type="text" name="student_id" placeholder="Enter your institution ID" value="<?php echo htmlspecialchars($student_id); ?>" required>
                     </div>
 
                     <button type="submit" class="btn" style="width:100%;">Complete Google Sign Up</button>

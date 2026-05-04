@@ -64,6 +64,8 @@ if ($columnsResult) {
     }
 }
 
+$studentColumn = $usersHasStudentId ? "student_id" : ($usersHasStudentNumber ? "student_number" : "");
+
 $fullName = trim((string) ($_SESSION["full_name"] ?? ""));
 $email = trim((string) ($_SESSION["email"] ?? ""));
 $studentId = trim((string) ($_SESSION["student_id"] ?? ""));
@@ -183,6 +185,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $newEmail = trim((string) ($_POST["email"] ?? ""));
         $newCollege = trim((string) ($_POST["college"] ?? ""));
         $newProgram = $shouldShowProgram ? trim((string) ($_POST["program"] ?? "")) : "";
+        $newStudentId = $studentColumn !== "" ? trim((string) ($_POST["student_id"] ?? "")) : "";
         $uploadedAvatarPath = $avatarPath;
 
         if (isset($_FILES["avatar"]) && is_array($_FILES["avatar"]) && (int) ($_FILES["avatar"]["error"] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
@@ -237,7 +240,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $error = "Valid email is required.";
         } elseif ($newCollege === "" || !in_array($newCollege, $allowedColleges, true)) {
             $error = "Please select a valid college.";
+        } elseif ($studentColumn !== "" && $newStudentId === "") {
+            $error = "Institution ID is required.";
         } else {
+            if ($studentColumn !== "") {
+                $checkIdStmt = $conn->prepare("SELECT id FROM users WHERE {$studentColumn} = ? AND id != ? LIMIT 1");
+                if ($checkIdStmt) {
+                    $checkIdStmt->bind_param("si", $newStudentId, $userId);
+                    $checkIdStmt->execute();
+                    $idExists = $checkIdStmt->get_result()->num_rows > 0;
+                    $checkIdStmt->close();
+                    if ($idExists) {
+                        $error = "This institution ID is already in use.";
+                    }
+                }
+            }
             $checkEmail = $conn->prepare("SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1");
 
             if (!$checkEmail) {
@@ -250,64 +267,83 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                 if ($emailExists) {
                     $error = "This email is already in use.";
-                } else {
-                    if ($usersHasCollege && $usersHasProgram && $shouldShowProgram && $usersHasAvatarPath) {
+                }
+            }
+
+            if ($error === "") {
+                if ($usersHasCollege && $usersHasProgram && $shouldShowProgram && $usersHasAvatarPath) {
+                    if ($studentColumn !== "") {
+                        $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ?, program = ?, avatar_path = ?, {$studentColumn} = ? WHERE id = ?");
+                        $updateStmt->bind_param("ssssssi", $newFullName, $newEmail, $newCollege, $newProgram, $uploadedAvatarPath, $newStudentId, $userId);
+                    } else {
                         $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ?, program = ?, avatar_path = ? WHERE id = ?");
-                        $updateMode = "with_avatar";
-                    } elseif ($usersHasCollege && $usersHasProgram && $shouldShowProgram) {
+                        $updateStmt->bind_param("sssssi", $newFullName, $newEmail, $newCollege, $newProgram, $uploadedAvatarPath, $userId);
+                    }
+                } elseif ($usersHasCollege && $usersHasProgram && $shouldShowProgram) {
+                    if ($studentColumn !== "") {
+                        $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ?, program = ?, {$studentColumn} = ? WHERE id = ?");
+                        $updateStmt->bind_param("sssssi", $newFullName, $newEmail, $newCollege, $newProgram, $newStudentId, $userId);
+                    } else {
                         $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ?, program = ? WHERE id = ?");
-                        $updateMode = "with_college_program";
-                    } elseif ($usersHasCollege && $usersHasAvatarPath) {
+                        $updateStmt->bind_param("ssssi", $newFullName, $newEmail, $newCollege, $newProgram, $userId);
+                    }
+                } elseif ($usersHasCollege && $usersHasAvatarPath) {
+                    if ($studentColumn !== "") {
+                        $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ?, avatar_path = ?, {$studentColumn} = ? WHERE id = ?");
+                        $updateStmt->bind_param("sssssi", $newFullName, $newEmail, $newCollege, $uploadedAvatarPath, $newStudentId, $userId);
+                    } else {
                         $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ?, avatar_path = ? WHERE id = ?");
-                        $updateMode = "with_avatar_no_program";
-                    } elseif ($usersHasCollege) {
+                        $updateStmt->bind_param("ssssi", $newFullName, $newEmail, $newCollege, $uploadedAvatarPath, $userId);
+                    }
+                } elseif ($usersHasCollege) {
+                    if ($studentColumn !== "") {
+                        $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ?, {$studentColumn} = ? WHERE id = ?");
+                        $updateStmt->bind_param("ssssi", $newFullName, $newEmail, $newCollege, $newStudentId, $userId);
+                    } else {
                         $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, college = ? WHERE id = ?");
-                        $updateMode = "with_college_no_program";
+                        $updateStmt->bind_param("sssi", $newFullName, $newEmail, $newCollege, $userId);
+                    }
+                } else {
+                    if ($studentColumn !== "") {
+                        $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ?, {$studentColumn} = ? WHERE id = ?");
+                        $updateStmt->bind_param("sssi", $newFullName, $newEmail, $newStudentId, $userId);
                     } else {
                         $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, email = ? WHERE id = ?");
-                        $updateMode = "basic";
+                        $updateStmt->bind_param("ssi", $newFullName, $newEmail, $userId);
                     }
+                }
 
-                    if (!$updateStmt) {
-                        $error = "Unable to update profile: " . $conn->error;
-                    } else {
-                        if ($updateMode === "with_avatar") {
-                            $updateStmt->bind_param("sssssi", $newFullName, $newEmail, $newCollege, $newProgram, $uploadedAvatarPath, $userId);
-                        } elseif ($updateMode === "with_college_program") {
-                            $updateStmt->bind_param("ssssi", $newFullName, $newEmail, $newCollege, $newProgram, $userId);
-                        } elseif ($updateMode === "with_avatar_no_program") {
-                            $updateStmt->bind_param("ssssi", $newFullName, $newEmail, $newCollege, $uploadedAvatarPath, $userId);
-                        } elseif ($updateMode === "with_college_no_program") {
-                            $updateStmt->bind_param("sssi", $newFullName, $newEmail, $newCollege, $userId);
-                        } else {
-                            $updateStmt->bind_param("ssi", $newFullName, $newEmail, $userId);
-                        }
+                if (!$updateStmt) {
+                    $error = "Unable to update profile: " . $conn->error;
+                } elseif ($updateStmt->execute()) {
+                    $_SESSION["full_name"] = $newFullName;
+                    $_SESSION["email"] = $newEmail;
+                    $_SESSION["student_id"] = $newStudentId;
+                    $_SESSION["college"] = $newCollege;
+                    $_SESSION["program"] = $newProgram;
+                    $_SESSION["avatar_path"] = $uploadedAvatarPath;
 
-                        if ($updateStmt->execute()) {
-                            $_SESSION["full_name"] = $newFullName;
-                            $_SESSION["email"] = $newEmail;
-                            $_SESSION["college"] = $newCollege;
-                            $_SESSION["program"] = $newProgram;
-                            $fullName = $newFullName;
-                            $email = $newEmail;
-                            $college = $newCollege;
-                            $program = $newProgram;
-                            $avatarPath = $uploadedAvatarPath;
-                            $avatarUrl = $avatarPath;
-                            $formState["full_name"] = $newFullName;
-                            $formState["email"] = $newEmail;
-                            $formState["college"] = $newCollege;
-                            $formState["program"] = $newProgram;
-                            $_SESSION["avatar_path"] = $avatarPath;
-                            $_SESSION["profile_flash_success"] = "Profile updated successfully.";
-                            header("Location: edit_profile.php");
-                            exit();
-                        } else {
-                            $error = "Failed to update profile.";
-                        }
+                    $fullName = $newFullName;
+                    $email = $newEmail;
+                    $studentId = $newStudentId;
+                    $college = $newCollege;
+                    $program = $newProgram;
+                    $avatarPath = $uploadedAvatarPath;
+                    $avatarUrl = $avatarPath;
+                    $formState["full_name"] = $newFullName;
+                    $formState["email"] = $newEmail;
+                    $formState["student_id"] = $newStudentId;
+                    $formState["college"] = $newCollege;
+                    $formState["program"] = $newProgram;
+                    $_SESSION["profile_flash_success"] = "Profile updated successfully.";
+                    header("Location: edit_profile.php");
+                    exit();
+                } else {
+                    $error = "Failed to update profile.";
+                }
 
-                        $updateStmt->close();
-                    }
+                if (isset($updateStmt) && $updateStmt instanceof mysqli_stmt) {
+                    $updateStmt->close();
                 }
             }
         }
@@ -603,8 +639,8 @@ body.theme-dark .profile-summary-value {
 
                     <div class="form-group">
                         <label>Student/Employee ID</label>
-                        <input type="text" value="<?php echo htmlspecialchars($formState["student_id"]); ?>" disabled>
-                        <small style="color: var(--text-muted);">This cannot be changed.</small>
+                        <input type="text" name="student_id" value="<?php echo htmlspecialchars($formState["student_id"]); ?>" required>
+                        <small style="color: var(--text-muted);">Enter your institution ID.</small>
                     </div>
 
                     <button type="submit" class="btn" style="margin-top: 16px;">Save Changes</button>
