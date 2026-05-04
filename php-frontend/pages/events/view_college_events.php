@@ -9,7 +9,7 @@ $role = normalizeRole($_SESSION["role"] ?? "Student");
 $userId = intval($_SESSION["user_id"] ?? 0);
 $fullName = $_SESSION["full_name"] ?? "User";
 
-$canJoin = in_array($role, ["Student", "Instructor", "Teacher"], true);
+$canJoin = $role === "Student";
 $canCreateEvents = in_array($role, ["Administrator", "Counselor"], true);
 
 $error = "";
@@ -21,6 +21,7 @@ $successMessages = [
 ];
 $success = $successMessages[$successAction] ?? "";
 $openCreateModal = $canCreateEvents && (trim((string) ($_GET["open"] ?? "")) === "create");
+$returnTo = $_SERVER["REQUEST_URI"] ?? "/campuscare-api/php-frontend/pages/events/events.php";
 
 // Get selected college from query params
 $selectedCollege = isset($_GET["college"]) ? trim($_GET["college"]) : null;
@@ -77,6 +78,33 @@ function eventDateTimeFromInput(string $value): ?string
     }
 
     return $dateTime->format("Y-m-d H:i:s");
+}
+
+function eventHasEnded(mysqli $conn, int $eventId): bool
+{
+    $stmt = $conn->prepare("SELECT starts_at, ends_at FROM events WHERE id = ? LIMIT 1");
+
+    if (!$stmt) {
+        return false;
+    }
+
+    $stmt->bind_param("i", $eventId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+
+    if (!$row) {
+        return false;
+    }
+
+    $startTime = !empty($row["starts_at"]) ? strtotime((string) $row["starts_at"]) : false;
+    if (!$startTime) {
+        return false;
+    }
+
+    $endTime = !empty($row["ends_at"]) ? strtotime((string) $row["ends_at"]) : ($startTime + (2 * 60 * 60));
+    return $endTime <= time();
 }
 
 function collegeAliases(string $college): array
@@ -225,6 +253,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         if ($eventId <= 0) {
             $error = "Invalid event ID.";
+        } elseif (eventHasEnded($conn, $eventId)) {
+            $error = "You cannot edit an event that has already ended.";
         } elseif ($title === "" || $category === "" || $location === "" || $startsAt === null) {
             $error = "Please fill in the event title, category, start date and location.";
         } elseif ($endsAt !== null && strtotime($endsAt) <= strtotime($startsAt)) {
@@ -587,7 +617,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                         ];
                                     ?>
                                     <article class="event-card"
-                                        onclick="window.location.href='/campuscare-api/php-frontend/pages/events/event_detail.php?id=<?php echo $eventId; ?>'"
+                                        onclick="window.location.href='/campuscare-api/php-frontend/pages/events/event_detail.php?id=<?php echo $eventId; ?>&return_to=<?php echo rawurlencode($returnTo); ?>'"
                                         data-debug="<?php echo htmlspecialchars(json_encode($debugData)); ?>"
                                         data-event-start="<?php echo htmlspecialchars(date("c", strtotime($event["starts_at"]))); ?>"
                                         data-event-end="<?php echo !empty($event["ends_at"]) ? htmlspecialchars(date("c", strtotime($event["ends_at"]))) : ""; ?>"
@@ -709,7 +739,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                         ];
                                     ?>
                                     <article class="event-card"
-                                        onclick="window.location.href='/campuscare-api/php-frontend/pages/events/event_detail.php?id=<?php echo $eventId; ?>'"
+                                        onclick="window.location.href='/campuscare-api/php-frontend/pages/events/event_detail.php?id=<?php echo $eventId; ?>&return_to=<?php echo rawurlencode($returnTo); ?>'"
                                         data-debug="<?php echo htmlspecialchars(json_encode($debugData)); ?>"
                                         data-event-start="<?php echo htmlspecialchars(date("c", strtotime($event["starts_at"]))); ?>"
                                         data-event-end="<?php echo !empty($event["ends_at"]) ? htmlspecialchars(date("c", strtotime($event["ends_at"]))) : ""; ?>"
@@ -747,18 +777,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                                     </div>
                                                 <?php elseif ($canCreateEvents): ?>
                                                     <div class="event-manage-actions">
-                                                        <button
-                                                            type="button"
-                                                            class="btn btn-outline event-manage-btn"
-                                                            data-edit-event
-                                                            data-event-id="<?php echo $eventId; ?>"
-                                                            data-title="<?php echo htmlspecialchars((string) ($event["title"] ?? ""), ENT_QUOTES); ?>"
-                                                            data-category="<?php echo htmlspecialchars($eventCategory, ENT_QUOTES); ?>"
-                                                            data-description="<?php echo htmlspecialchars($eventDescription, ENT_QUOTES); ?>"
-                                                            data-location="<?php echo htmlspecialchars((string) ($event["location"] ?? ""), ENT_QUOTES); ?>"
-                                                            data-starts-at="<?php echo htmlspecialchars(date("Y-m-d\\TH:i", strtotime((string) ($event["starts_at"] ?? ""))), ENT_QUOTES); ?>"
-                                                            data-ends-at="<?php echo !empty($event["ends_at"]) ? htmlspecialchars(date("Y-m-d\\TH:i", strtotime((string) $event["ends_at"])), ENT_QUOTES) : ""; ?>"
-                                                        >Edit</button>
                                                         <form method="POST" class="event-card-action-form" data-confirm-title="Delete event" data-confirm-message="Delete this event permanently?" data-confirm-button="Delete Event" data-confirm-variant="danger">
                                                             <input type="hidden" name="action" value="delete">
                                                             <input type="hidden" name="event_id" value="<?php echo $eventId; ?>">

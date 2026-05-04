@@ -3,46 +3,46 @@
 /* Charts Section */
 .admin-charts-grid {
   display: grid;
-  gap: 20px;
+  gap: 14px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .chart-card {
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 24px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
 }
 
 .chart-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   color: var(--text-main);
 }
 
 .chart-container {
   position: relative;
-  height: 300px;
+  height: 220px;
   width: 100%;
 }
 
 .chart-container canvas {
-  max-height: 300px;
+  max-height: 220px;
 }
 
 .admin-trend-section {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .chart-container-full {
   position: relative;
-  height: 400px;
+  height: 260px;
   width: 100%;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 /* Reporting Section */
@@ -250,11 +250,11 @@
   }
 
   .chart-container {
-    height: 250px;
+    height: 200px;
   }
 
   .chart-container-full {
-    height: 300px;
+    height: 230px;
   }
 }
 

@@ -39,7 +39,7 @@ $projectBaseUrl = "/campuscare-api";
 
         header {
             background: #ffffff;
-            padding: 14px 26px;
+            padding: 14px 200px;
             border-bottom: 1px solid #dfe6ef;
             box-shadow: 0 1px 6px rgba(16, 41, 74, 0.06);
             display: flex;
@@ -69,7 +69,11 @@ $projectBaseUrl = "/campuscare-api";
         }
 
         .logo-imgs img:nth-child(2) {
-            display: none;
+            display: block;
+            width: 46px;
+            height: 46px;
+            object-fit: cover;
+            border-radius: 100%;
         }
 
         .logo-text {
@@ -133,6 +137,17 @@ $projectBaseUrl = "/campuscare-api";
             background: linear-gradient(180deg, #205d9d 0%, #14518c 100%);
             color: #ffffff;
             transform: translateY(-1px);
+        }
+
+        .nav-links .btn-outline {
+            color: #ffffff;
+            border: 1px solid transparent;
+        }
+
+        .nav-links .btn-outline:hover {
+            background: #ffffff;
+            color: var(--primary);
+            border-color: var(--primary);
         }
 
         .btn-primary {

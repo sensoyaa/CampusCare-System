@@ -14,15 +14,20 @@ $navItems = [
     ],
     "Administrator" => [
         ["Dashboard", "dashboard.php", "dashboard"],
-        "Forms & Inbox" => [
+        "User Management" => [
+            ["Manage Users", "manage_users.php", "user-plus"],
+            ["Student Participation", "student_status.php", "users"]
+        ],
+        "Appointments" => [
+            ["Manage Appointments", "manage_appointments.php", "calendar"],
+            ["Manage Schedule", "manage_schedule.php", "clock"]
+        ],
+        ["Manage Events", "events.php", "users"],
+        "Reviews" => [
             ["Intake Reviews", "counseling_intake_reviews.php", "eye"],
             ["Referral Inbox", "referral_inbox.php", "search"],
-            ["Request Testing", "testing_request_form.php", "report"],
-            ["Testing Inbox", "testing_requests_inbox.php", "search"]
+            ["Testing Requests", "testing_requests_inbox.php", "search"]
         ],
-        ["Manage Users", "manage_users.php", "user-plus"],
-        ["Manage Appointments", "manage_appointments.php", "calendar"],
-        ["Manage Events", "events.php", "users"],
         ["View Reports", "reports.php", "report"],
     ],
     "Counselor" => [

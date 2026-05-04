@@ -8,6 +8,7 @@ $pageTitle = "Schedule";
 
 $userId = intval($_SESSION["user_id"] ?? 0);
 $role = normalizeRole($_SESSION["role"] ?? "Student");
+$fullName = $_SESSION["full_name"] ?? "";
 
 $error = "";
 $success = "";
@@ -126,14 +127,71 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if ($appointmentId <= 0 || !in_array($status, $allowedStatuses, true)) {
             $error = "Invalid appointment update request.";
         } else {
+            // Ensure counselor info is also stored when a counselor updates status (e.g., approves)
             $stmt = $conn->prepare("
                 UPDATE appointments
-                SET status = ?
+                SET status = ?, counselor_id = ?, counselor = ?
                 WHERE id = ? AND counselor_id = ?
             ");
-            $stmt->bind_param("sii", $status, $appointmentId, $userId);
+            if ($status === "Approved") {
+                $stmt = $conn->prepare("\n                UPDATE appointments\n                SET status = ?, counselor_id = ?, counselor = ?, approved_by_user_id = ?, approved_at = NOW()\n                WHERE id = ? AND counselor_id = ?\n            ");
+                $stmt->bind_param("sisiii", $status, $userId, $fullName, $userId, $appointmentId, $userId);
+            } else {
+                $stmt->bind_param("sisis", $status, $userId, $fullName, $appointmentId, $userId);
+            }
 
             if ($stmt->execute()) {
+                // Insert audit entry
+                $auditStmt = $conn->prepare("INSERT INTO appointment_audit (appointment_id, user_uid, user_id, action, metadata) VALUES (?, ?, ?, ?, ?)");
+                // Fallback if schema uses different columns: try standard insert without user_uid
+                if ($auditStmt) {
+                    // Some schemas may not have user_uid; attempt with available columns
+                    $meta = json_encode(['by' => $fullName]);
+                    // Try safe insert with appointment_id, user_id, action, metadata
+                    $safeAudit = $conn->prepare("INSERT INTO appointment_audit (appointment_id, user_id, action, metadata) VALUES (?, ?, ?, ?)");
+                    if ($safeAudit) {
+                        $safeAudit->bind_param("iiss", $appointmentId, $userId, $status, $meta);
+                        $safeAudit->execute();
+                        $safeAudit->close();
+                    }
+                    $auditStmt->close();
+                }
+
+                // Notify student/counselor depending on action
+                $p = $conn->prepare("SELECT a.user_id AS student_id, su.email AS student_email, su.full_name AS student_name, a.counselor_id, cu.email AS counselor_email, cu.full_name AS counselor_name, a.appointment_date, a.appointment_time FROM appointments a LEFT JOIN users su ON su.id = a.user_id LEFT JOIN users cu ON cu.id = a.counselor_id WHERE a.id = ? LIMIT 1");
+                if ($p) {
+                    $p->bind_param("i", $appointmentId);
+                    $p->execute();
+                    $row = $p->get_result()->fetch_assoc();
+                    $p->close();
+
+                    $studentEmail = $row['student_email'] ?? '';
+                    $studentName = $row['student_name'] ?? '';
+                    $counselorEmail = $row['counselor_email'] ?? '';
+                    $counselorName = $row['counselor_name'] ?? '';
+                    $displayDate = isset($row['appointment_date']) ? date('F j, Y', strtotime($row['appointment_date'])) : '';
+                    $displayTime = isset($row['appointment_time']) ? date('g:i A', strtotime($row['appointment_time'])) : '';
+
+                    if ($status === 'Rejected') {
+                        if ($studentEmail !== '') {
+                            $html = campuscare_email_template('Appointment Declined', 'Your appointment request was declined by the counselor.', "<p>Hello " . htmlspecialchars($studentName) . ",</p><p>Your appointment on <strong>" . htmlspecialchars($displayDate) . " at " . htmlspecialchars($displayTime) . "</strong> was declined by the counselor.</p>", []);
+                            send_smtp_mail($studentEmail, $studentName, 'Appointment Declined', $html, '');
+                        }
+                    }
+
+                    if ($status === 'Cancelled') {
+                        if ($studentEmail !== '') {
+                            $html = campuscare_email_template('Appointment Cancelled', 'Your appointment was cancelled.', "<p>Hello " . htmlspecialchars($studentName) . ",</p><p>Your appointment on <strong>" . htmlspecialchars($displayDate) . " at " . htmlspecialchars($displayTime) . "</strong> was cancelled.</p>", []);
+                            send_smtp_mail($studentEmail, $studentName, 'Appointment Cancelled', $html, '');
+                        }
+                        if ($counselorEmail !== '') {
+                            $html = campuscare_email_template('Appointment Cancelled', 'An appointment assigned to you was cancelled.', "<p>Hello " . htmlspecialchars($counselorName) . ",</p><p>The appointment on <strong>" . htmlspecialchars($displayDate) . " at " . htmlspecialchars($displayTime) . "</strong> was cancelled.</p>", []);
+                            send_smtp_mail($counselorEmail, $counselorName, 'Assigned Appointment Cancelled', $html, '');
+                        }
+                    }
+
+                }
+
                 $success = "Appointment status updated to " . $status . ".";
             } else {
                 $error = "Failed to update appointment status.";
@@ -495,7 +553,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             $dateTime = date("D, F j \a\t g:i A", strtotime($apt["appointment_date"] . " " . $apt["appointment_time"]));
                         ?>
 
-                        <article class="schedule-item schedule-item-clean" onclick="window.location.href='/campuscare-api/php-frontend/pages/appointments/appointment_detail.php?id=<?php echo intval($apt["id"]); ?>';" style="cursor: pointer;">
+                        <article class="schedule-item schedule-item-clean" onclick="window.location.href='/campuscare-api/php-frontend/pages/appointments/appointment_detail.php?id=<?php echo intval($apt["id"]); ?>&return_to=<?php echo urlencode($_SERVER['REQUEST_URI']); ?>';" style="cursor: pointer;">
                             <div class="schedule-main">
                                 <div class="schedule-left">
                                     <span class="schedule-icon"><?php echo $role === "Counselor" ? sidebarIconSvg("user") : sidebarIconSvg("calendar"); ?></span>
