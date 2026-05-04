@@ -9,6 +9,27 @@ $topbarRole = isset($_SESSION['role']) ? $_SESSION['role'] : 'User';
 $topbarAvatarPath = isset($_SESSION['avatar_path']) ? $_SESSION['avatar_path'] : '';
 $topbarAvatarInitial = !empty($topbarFullName) ? strtoupper(substr($topbarFullName, 0, 1)) : 'U';
 
+function topbarAvatarUrl(string $avatarPath): string
+{
+    $avatarPath = trim($avatarPath);
+
+    if ($avatarPath === '') {
+        return '';
+    }
+
+    $publicPath = $avatarPath;
+    if ($publicPath[0] !== '/') {
+        $publicPath = '/' . ltrim($publicPath, '/');
+    }
+
+    $localPath = rtrim((string) ($_SERVER['DOCUMENT_ROOT'] ?? ''), '/\\') . str_replace('/', DIRECTORY_SEPARATOR, $publicPath);
+    if (is_file($localPath)) {
+        return $publicPath . '?v=' . filemtime($localPath);
+    }
+
+    return $publicPath;
+}
+
 function prefEnabled($cookieName, $default = true) {
     if (!isset($_COOKIE[$cookieName])) {
         return $default;
@@ -78,7 +99,7 @@ $notificationsInApp = isset($_SESSION['notifications_in_app'])
         <button class="profile-trigger" id="profile-trigger" aria-label="Open profile menu" aria-expanded="false" aria-haspopup="menu" type="button">
             <span class="profile-avatar">
                 <?php if ($topbarAvatarPath !== ""): ?>
-                    <img src="<?php echo htmlspecialchars($topbarAvatarPath); ?>" alt="<?php echo htmlspecialchars($topbarFullName); ?>" class="avatar-image" loading="lazy">
+                    <img src="<?php echo htmlspecialchars(topbarAvatarUrl($topbarAvatarPath)); ?>" alt="<?php echo htmlspecialchars($topbarFullName !== "" ? $topbarFullName : "Profile avatar"); ?>" class="avatar-image" loading="lazy" decoding="async">
                 <?php else: ?>
                     <span class="avatar-initials"><?php echo htmlspecialchars($topbarAvatarInitial); ?></span>
                 <?php endif; ?>
@@ -97,7 +118,7 @@ $notificationsInApp = isset($_SESSION['notifications_in_app'])
             <div class="profile-header">
                 <div class="profile-header-avatar">
                     <?php if ($topbarAvatarPath !== ""): ?>
-                        <img src="<?php echo htmlspecialchars($topbarAvatarPath); ?>" alt="<?php echo htmlspecialchars($topbarFullName); ?>" class="header-avatar-image" loading="lazy">
+                        <img src="<?php echo htmlspecialchars(topbarAvatarUrl($topbarAvatarPath)); ?>" alt="<?php echo htmlspecialchars($topbarFullName !== "" ? $topbarFullName : "Profile avatar"); ?>" class="header-avatar-image" loading="lazy" decoding="async">
                     <?php else: ?>
                         <span class="header-avatar-initials"><?php echo htmlspecialchars($topbarAvatarInitial); ?></span>
                     <?php endif; ?>

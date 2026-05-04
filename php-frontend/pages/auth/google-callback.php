@@ -202,29 +202,6 @@ function google_http_get_json(string $url, array $headers = []): array
     return ["success" => true, "json" => $decoded];
 }
 
-function google_generate_student_id(mysqli $conn): string
-{
-    for ($attempt = 0; $attempt < 5; $attempt++) {
-        $candidate = "GOOG-" . strtoupper(substr(google_random_token(6), 0, 10));
-        $checkStmt = $conn->prepare("SELECT id FROM users WHERE student_id = ? LIMIT 1");
-
-        if (!$checkStmt) {
-            return $candidate;
-        }
-
-        $checkStmt->bind_param("s", $candidate);
-        $checkStmt->execute();
-        $exists = $checkStmt->get_result()->num_rows > 0;
-        $checkStmt->close();
-
-        if (!$exists) {
-            return $candidate;
-        }
-    }
-
-    return "GOOG-" . date("YmdHis");
-}
-
 $config = campuscare_google_oauth_config();
 $googleMode = trim((string) ($_SESSION["google_oauth_mode"] ?? "login"));
 
@@ -324,7 +301,7 @@ if ($fullName === "") {
 }
 
 $lookupStmt = $conn->prepare(
-    "SELECT id, full_name, student_id, email, role, status
+    "SELECT id, full_name, student_id, email, role, status, avatar_path, college, program
      FROM users
      WHERE email = ?
      LIMIT 1"
@@ -385,11 +362,17 @@ if ($result->num_rows === 1) {
     exit();
 }
 
+session_regenerate_id(true);
 $_SESSION["user_id"] = intval($user["id"] ?? 0);
 $_SESSION["full_name"] = (string) ($user["full_name"] ?? $fullName);
 $_SESSION["student_id"] = (string) ($user["student_id"] ?? "");
 $_SESSION["email"] = (string) ($user["email"] ?? $email);
 $_SESSION["role"] = (string) ($user["role"] ?? "Student");
+$_SESSION["avatar_path"] = trim((string) ($user["avatar_path"] ?? ""));
+$_SESSION["college"] = trim((string) ($user["college"] ?? ""));
+$_SESSION["program"] = trim((string) ($user["program"] ?? ""));
+$_SESSION["notifications_enabled"] = true;
+$_SESSION["notifications_in_app"] = true;
 unset($_SESSION["google_oauth_mode"], $_SESSION["pending_google_signup"]);
 
 header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");

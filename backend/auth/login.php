@@ -35,7 +35,7 @@ if (!($recaptchaCheck["success"] ?? false)) {
     exit();
 }
 
-$stmt = $conn->prepare("SELECT id, full_name, student_id, email, password, role FROM users WHERE email = ?");
+$stmt = $conn->prepare("SELECT id, full_name, student_id, email, password, role, avatar_path, college, program FROM users WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -44,6 +44,9 @@ if ($result->num_rows === 1) {
     $user = $result->fetch_assoc();
 
     if (password_verify($password, $user["password"])) {
+        $user["avatar_path"] = trim((string) ($user["avatar_path"] ?? ""));
+        $user["college"] = trim((string) ($user["college"] ?? ""));
+        $user["program"] = trim((string) ($user["program"] ?? ""));
         unset($user["password"]);
         echo json_encode([
             "success" => true,

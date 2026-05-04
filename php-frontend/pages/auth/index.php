@@ -56,7 +56,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if (!($recaptchaCheck["success"] ?? false)) {
             $error = $recaptchaCheck["message"] ?? "reCAPTCHA verification failed.";
         } else {
-            $stmt = $conn->prepare("SELECT id, full_name, student_id, email, password, role, status FROM users WHERE email = ? LIMIT 1");
+            $stmt = $conn->prepare("SELECT id, full_name, student_id, email, password, role, status, avatar_path, college, program FROM users WHERE email = ? LIMIT 1");
             $stmt->bind_param("s", $email);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -67,11 +67,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 if ($user["status"] !== "Active") {
                     $error = "Your account is not active. Please verify your email before logging in.";
                 } elseif (password_verify($password, $user["password"])) {
+                    session_regenerate_id(true);
                     $_SESSION["user_id"] = $user["id"];
                     $_SESSION["full_name"] = $user["full_name"];
                     $_SESSION["student_id"] = $user["student_id"];
                     $_SESSION["email"] = $user["email"];
                     $_SESSION["role"] = $user["role"];
+                    $_SESSION["avatar_path"] = trim((string) ($user["avatar_path"] ?? ""));
+                    $_SESSION["college"] = trim((string) ($user["college"] ?? ""));
+                    $_SESSION["program"] = trim((string) ($user["program"] ?? ""));
 
                     campuscare_notifications_upsert($conn, [
                         "user_id" => intval($user["id"]),
