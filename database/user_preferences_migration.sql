@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS `user_notifications` (
   `message` text,
   `related_id` int DEFAULT NULL,
   `related_type` varchar(50) DEFAULT NULL,
+  `event_key` varchar(190) DEFAULT NULL,
   `is_read` tinyint(1) DEFAULT 0,
   `is_archived` tinyint(1) DEFAULT 0,
   `action_url` varchar(255) DEFAULT NULL,
@@ -68,7 +69,8 @@ CREATE TABLE IF NOT EXISTS `user_notifications` (
   INDEX `idx_user_id` (`user_id`),
   INDEX `idx_type` (`type`),
   INDEX `idx_is_read` (`is_read`),
-  INDEX `idx_created_at` (`created_at`)
+  INDEX `idx_created_at` (`created_at`),
+  UNIQUE KEY `idx_user_event_key` (`user_id`, `event_key`)
 );
 
 -- User activity log table (track user actions for security and session management)

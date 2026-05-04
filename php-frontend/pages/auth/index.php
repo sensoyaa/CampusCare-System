@@ -3,6 +3,7 @@ session_start();
 require_once __DIR__ . "/../../includes/db.php";
 require_once __DIR__ . "/../../includes/recaptcha.php";
 require_once __DIR__ . "/../../includes/google_oauth.php";
+require_once __DIR__ . "/../../includes/notifications.php";
 
 $error = "";
 $email = "";
@@ -66,6 +67,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $_SESSION["student_id"] = $user["student_id"];
                     $_SESSION["email"] = $user["email"];
                     $_SESSION["role"] = $user["role"];
+
+                    campuscare_notifications_upsert($conn, [
+                        "user_id" => intval($user["id"]),
+                        "type" => "security",
+                        "title" => "Signed in successfully",
+                        "message" => "Your CampusCare account was accessed on " . date("M j, Y g:i A") . ".",
+                        "related_type" => "account",
+                        "event_key" => "security-login-" . intval($user["id"]) . "-" . date("YmdHi"),
+                        "action_url" => "/campuscare-api/php-frontend/pages/users/settings.php",
+                    ]);
 
                     header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
                     exit();

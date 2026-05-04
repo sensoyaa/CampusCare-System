@@ -370,7 +370,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                 <style>
                 <?php if ($isIframe): ?>
                 body {
-                    background: #f6fbff;
+                    background: var(--page-bg);
                 }
 
                 .sidebar,
@@ -478,12 +478,12 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     border-radius: 4px;
                     border: 1px solid #9fb4c8;
                     box-shadow: none;
-                    accent-color: #a64ccf;
+                    accent-color: var(--primary);
                 }
 
                 .intake-form-shell input[type="checkbox"]:focus,
                 .intake-form-shell input[type="radio"]:focus {
-                    box-shadow: 0 0 0 2px rgba(166, 76, 207, 0.2);
+                    box-shadow: 0 0 0 2px rgba(77, 143, 197, 0.22);
                 }
 
                 .medical-option {
@@ -515,6 +515,37 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
                 body.theme-dark .signature-card {
                     background: #132132;
+                }
+
+                body.theme-dark .intake-choice-row label,
+                body.theme-dark .medical-option,
+                body.theme-dark .agreement-check,
+                body.theme-dark .intake-section,
+                body.theme-dark .signature-card,
+                body.theme-dark .card[style*="background: var(--page-bg)"] {
+                    color: var(--text-main);
+                    border-color: var(--border);
+                }
+
+                body.theme-dark .intake-choice-row label {
+                    background: #162534;
+                }
+
+                body.theme-dark .card[style*="background: var(--page-bg)"] {
+                    background: #162534 !important;
+                }
+
+                body.theme-dark input,
+                body.theme-dark textarea,
+                body.theme-dark select {
+                    background: #0f1b29;
+                    color: var(--text-main);
+                    border-color: #33495f;
+                }
+
+                body.theme-dark input::placeholder,
+                body.theme-dark textarea::placeholder {
+                    color: #8fa4ba;
                 }
 
                 @media (max-width: 760px) {

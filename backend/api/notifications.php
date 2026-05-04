@@ -16,6 +16,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . "/../config/db.php";
 require_once __DIR__ . "/../config/cors.php";
+require_once __DIR__ . "/../../php-frontend/includes/notifications.php";
 
 header("Content-Type: application/json");
 
@@ -27,16 +28,20 @@ if (!isset($_SESSION["user_id"])) {
 }
 
 $userId = intval($_SESSION["user_id"]);
+$userRole = campuscare_notifications_normalize_role((string) ($_SESSION["role"] ?? "Student"));
 $method = $_SERVER["REQUEST_METHOD"];
 $action = isset($_GET["action"]) ? trim($_GET["action"]) : "get";
 
 try {
     if ($method === "GET" && $action === "get") {
+        campuscare_notifications_sync_user($conn, $userId, $userRole);
         getNotifications($conn, $userId);
     } elseif ($method === "POST" && $action === "mark-read") {
         markNotificationRead($conn, $userId);
     } elseif ($method === "POST" && $action === "mark-all-read") {
         markAllNotificationsRead($conn, $userId);
+    } elseif ($method === "POST" && $action === "clear") {
+        clearNotifications($conn, $userId);
     } elseif ($method === "POST" && $action === "delete") {
         deleteNotification($conn, $userId);
     } else {
@@ -53,6 +58,7 @@ try {
  */
 function getNotifications($conn, $userId)
 {
+    $preferences = campuscare_notifications_user_preferences($conn, $userId);
     $stmt = $conn->prepare("
         SELECT 
             id,
@@ -66,7 +72,7 @@ function getNotifications($conn, $userId)
         FROM user_notifications
         WHERE user_id = ? AND is_archived = 0
         ORDER BY created_at DESC
-        LIMIT 50
+        LIMIT 100
     ");
 
     if (!$stmt) {
@@ -88,9 +94,14 @@ function getNotifications($conn, $userId)
     $unreadCount = 0;
 
     while ($row = $result->fetch_assoc()) {
+        $type = (string) ($row["type"] ?? "system");
+        if (!campuscare_notifications_type_allowed($preferences, $type)) {
+            continue;
+        }
+
         $notifications[] = [
             "id" => intval($row["id"]),
-            "type" => $row["type"],
+            "type" => $type,
             "title" => $row["title"],
             "message" => $row["message"],
             "actionUrl" => $row["action_url"],
@@ -110,7 +121,9 @@ function getNotifications($conn, $userId)
         "success" => true,
         "notifications" => $notifications,
         "unreadCount" => $unreadCount,
-        "totalCount" => count($notifications)
+        "totalCount" => count($notifications),
+        "preferences" => $preferences,
+        "serverTime" => date("c")
     ]);
 }
 
@@ -175,6 +188,32 @@ function markAllNotificationsRead($conn, $userId)
     echo json_encode([
         "success" => $success,
         "message" => $success ? "All notifications marked as read" : "Failed to mark notifications",
+        "affectedRows" => $affected
+    ]);
+}
+
+function clearNotifications($conn, $userId)
+{
+    $stmt = $conn->prepare("
+        UPDATE user_notifications
+        SET is_archived = 1
+        WHERE user_id = ?
+    ");
+
+    if (!$stmt) {
+        http_response_code(500);
+        echo json_encode(["error" => "Clear error"]);
+        return;
+    }
+
+    $stmt->bind_param("i", $userId);
+    $success = $stmt->execute();
+    $affected = $stmt->affected_rows;
+    $stmt->close();
+
+    echo json_encode([
+        "success" => $success,
+        "message" => $success ? "Notifications cleared" : "Failed to clear notifications",
         "affectedRows" => $affected
     ]);
 }

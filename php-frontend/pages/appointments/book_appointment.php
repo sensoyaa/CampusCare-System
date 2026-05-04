@@ -136,6 +136,19 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             --danger: #c14949;
         }
 
+        body.theme-dark {
+            --brand-1: #8bb8df;
+            --brand-2: #68a8dc;
+            --brand-3: #1f3348;
+            --ink: #e6edf5;
+            --muted: #9fb0c3;
+            --line: #2b3b4f;
+            --paper: #121d2b;
+            --bg: linear-gradient(145deg, #101a27 0%, #0f1723 55%, #132131 100%);
+            --success: #76d39a;
+            --danger: #f0a0aa;
+        }
+
         * { box-sizing: border-box; }
 
         .booking-shell {
@@ -145,14 +158,8 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         }
 
         .booking-head {
-<<<<<<< HEAD
             padding: 1.75rem 1.75rem 1.6rem;
             background: linear-gradient(135deg, var(--primary) 0%, #5f99ca 100%);
-=======
-            border-radius: 22px 22px 0 0;
-            padding: 30px 34px 20px;
-            background: var(--primary);
->>>>>>> 4ddbe41e7dd058218afb228d232b60598ce6a767
             color: #fff;
             border-radius: 22px;
             margin-bottom: 1rem;
@@ -530,7 +537,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             border-radius: 14px;
             padding: 13px 14px;
             font-size: 15px;
-            background: #fff;
+            background: var(--paper);
             color: var(--ink);
         }
 
@@ -545,6 +552,127 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         .message-line {
             margin-top: 14px;
             color: var(--muted);
+        }
+
+        body.theme-dark .booking-body,
+        body.theme-dark .schedule-card,
+        body.theme-dark .recent-form-card,
+        body.theme-dark .availability-card,
+        body.theme-dark .availability-item,
+        body.theme-dark .embed-shell,
+        body.theme-dark .empty-state,
+        body.theme-dark .review-document,
+        body.theme-dark .review-meta-box,
+        body.theme-dark .review-document-field,
+        body.theme-dark .summary-section,
+        body.theme-dark .review-sidebar-card,
+        body.theme-dark .submit-preview-card,
+        body.theme-dark .confirm-dialog,
+        body.theme-dark .step-dot-card {
+            background: var(--paper);
+            color: var(--ink);
+            border-color: var(--line);
+        }
+
+        body.theme-dark .service-section-wrap,
+        body.theme-dark .schedule-selected-date,
+        body.theme-dark .form-edit-toolbar,
+        body.theme-dark .embed-note,
+        body.theme-dark .calendar-shell,
+        body.theme-dark .calendar-summary,
+        body.theme-dark .review-shell,
+        body.theme-dark .summary-sheet {
+            background: #162534;
+            border-color: #2f4458;
+        }
+
+        body.theme-dark .embedded-form-frame {
+            background: #0f1b29;
+        }
+
+        body.theme-dark .time-slot-btn,
+        body.theme-dark .calendar-day,
+        body.theme-dark .calendar-weekday,
+        body.theme-dark .review-chip,
+        body.theme-dark .status-badge,
+        body.theme-dark .head-back,
+        body.theme-dark .form-edit-toolbar .btn-edit {
+            background: #0f1b29;
+            color: var(--ink);
+            border-color: #33495f;
+        }
+
+        body.theme-dark .time-slot-btn.selected,
+        body.theme-dark .calendar-day.selected {
+            background: linear-gradient(135deg, #274867 0%, #335f86 100%);
+            color: #f4f8fc;
+            border-color: #68a8dc;
+        }
+
+        body.theme-dark .service-card {
+            color: #f5f9ff;
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+        }
+
+        body.theme-dark .service-card h4,
+        body.theme-dark .review-document-heading h4,
+        body.theme-dark .review-document-heading p,
+        body.theme-dark .office-title,
+        body.theme-dark .office-subtitle,
+        body.theme-dark .document-title {
+            color: #f5f9ff;
+        }
+
+        body.theme-dark .service-icon {
+            background: rgba(9, 14, 21, 0.38);
+        }
+
+        body.theme-dark .review-document,
+        body.theme-dark .submit-preview-card,
+        body.theme-dark .confirm-dialog,
+        body.theme-dark .review-document-meta,
+        body.theme-dark .review-document-footer {
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+        }
+
+        body.theme-dark .panel-subtitle,
+        body.theme-dark .recent-forms p,
+        body.theme-dark .recent-form-card span,
+        body.theme-dark .schedule-help,
+        body.theme-dark .message-line,
+        body.theme-dark .review-document-field div,
+        body.theme-dark .review-meta-box div,
+        body.theme-dark .confirm-copy p {
+            color: var(--muted);
+        }
+
+        body.theme-dark .recent-form-card small,
+        body.theme-dark .availability-item strong,
+        body.theme-dark .field-group label,
+        body.theme-dark .service-section-label,
+        body.theme-dark .review-document-field strong,
+        body.theme-dark .review-meta-box strong {
+            color: var(--brand-1);
+        }
+
+        body.theme-dark input,
+        body.theme-dark select,
+        body.theme-dark textarea,
+        body.theme-dark .field-group input,
+        body.theme-dark .field-group select {
+            background: #0f1b29;
+            color: var(--ink);
+            border-color: #33495f;
+        }
+
+        body.theme-dark input::placeholder,
+        body.theme-dark textarea::placeholder {
+            color: #8fa4ba;
+        }
+
+        body.theme-dark .review-document-seal {
+            filter: brightness(0.95) contrast(1.05);
         }
 
         .message-line.error {
