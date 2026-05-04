@@ -5,10 +5,24 @@ require_once __DIR__ . "/../../includes/db.php";
 
 $pageTitle = "Event Details";
 $role = normalizeRole($_SESSION["role"] ?? "Student");
+$isInstructorOrTeacher = in_array($role, ["Instructor", "Teacher"], true);
 $userId = intval($_SESSION["user_id"] ?? 0);
 $fullName = $_SESSION["full_name"] ?? "User";
 
 $eventId = isset($_GET["id"]) ? intval($_GET["id"]) : 0;
+$defaultBackUrl = "/campuscare-api/php-frontend/pages/events/events.php";
+$returnTo = trim((string) ($_GET["return_to"] ?? ""));
+$backUrl = $defaultBackUrl;
+
+if ($returnTo !== "" && strpos($returnTo, "/campuscare-api/") === 0) {
+    $backUrl = $returnTo;
+} elseif (!empty($_SERVER["HTTP_REFERER"])) {
+    $refererPath = parse_url((string) $_SERVER["HTTP_REFERER"], PHP_URL_PATH);
+    $refererQuery = parse_url((string) $_SERVER["HTTP_REFERER"], PHP_URL_QUERY);
+    if (is_string($refererPath) && strpos($refererPath, "/campuscare-api/") === 0) {
+        $backUrl = $refererPath . ($refererQuery ? "?" . $refererQuery : "");
+    }
+}
 
 if ($eventId <= 0) {
     header("Location: /campuscare-api/php-frontend/pages/events/events.php");
@@ -17,10 +31,11 @@ if ($eventId <= 0) {
 
 // Get event details
 $eventStmt = $conn->prepare("
-    SELECT e.*, 
+    SELECT e.*, creator.full_name AS created_by_name, creator.role AS created_by_role,
            (SELECT COUNT(*) FROM event_participants WHERE event_id = e.id) as participant_count,
            (SELECT COUNT(*) FROM event_checkins WHERE event_id = e.id) as checkin_count
     FROM events e
+    LEFT JOIN users creator ON creator.id = e.created_by_user_id
     WHERE e.id = ?
 ");
 $eventStmt->bind_param("i", $eventId);
@@ -142,7 +157,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Join/Unjoin event
     if ($action === "join") {
-        if (!$isJoined) {
+        if ($isInstructorOrTeacher) {
+            $error = "Instructors and teachers can only view and discuss events.";
+        } elseif (!$isJoined) {
             $insertStmt = $conn->prepare("
                 INSERT INTO event_participants (event_id, user_id) 
                 VALUES (?, ?)
@@ -158,7 +175,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $insertStmt->close();
         }
     } elseif ($action === "unjoin") {
-        if ($isJoined && !$hasEventStarted) {
+        if ($isInstructorOrTeacher) {
+            $error = "Instructors and teachers cannot join or unjoin events.";
+        } elseif ($isJoined && !$hasEventStarted) {
             $deleteStmt = $conn->prepare("
                 DELETE FROM event_participants 
                 WHERE event_id = ? AND user_id = ?
@@ -179,7 +198,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Check in to event
     elseif ($action === "checkin") {
-        if ($isJoined && !$isCheckedIn && $isCheckInWindow) {
+        if ($isInstructorOrTeacher) {
+            $error = "Instructors and teachers cannot check in to events.";
+        } elseif ($isJoined && !$isCheckedIn && $isCheckInWindow) {
             $insertStmt = $conn->prepare("
                 INSERT INTO event_checkins (event_id, user_id) 
                 VALUES (?, ?)
@@ -204,7 +225,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Submit feedback
     elseif ($action === "submit_feedback") {
-        if ($isJoined && $hasEventEnded) {
+        if ($isInstructorOrTeacher) {
+            $error = "Instructors and teachers can only view event discussions.";
+        } elseif ($isJoined && $hasEventEnded) {
             $rating = intval($_POST["rating"] ?? 0);
             $feedback = trim((string) ($_POST["feedback"] ?? ""));
             $isAnonymous = isset($_POST["is_anonymous"]) ? 1 : 0;
@@ -253,7 +276,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Submit comment
     elseif ($action === "submit_comment") {
-        if ($isJoined) {
+        if ($isJoined || $isInstructorOrTeacher) {
             $comment = trim((string) ($_POST["comment"] ?? ""));
             if (empty($comment)) {
                 $error = "Please enter a comment.";
@@ -292,9 +315,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
-// Get participants list for admin/facilitator/counselor
+// Get participants list for admin/facilitator/counselor/instructor/teacher
 $participants = [];
-if (in_array($role, ["Administrator", "Facilitator", "Counselor"], true)) {
+if (in_array($role, ["Administrator", "Facilitator", "Counselor", "Instructor", "Teacher"], true)) {
     $participantsStmt = $conn->prepare("
         SELECT u.id, u.full_name, u.student_id, u.email, u.role,
                ep.joined_at,
@@ -330,9 +353,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     <div class="content">
         <div class="event-detail-page">
                 <!-- Back Button -->
-                <a href="/campuscare-api/php-frontend/pages/events/events.php" class="btn btn-outline event-back-link">
+                <a href="<?php echo htmlspecialchars($backUrl); ?>" class="btn btn-outline event-back-link">
                     <?php echo sidebarIconSvg("arrow-left"); ?>
-                    Back to Events
+                    Back
                 </a>
 
                 <?php if ($error !== ""): ?>
@@ -392,6 +415,13 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                         <div>
                             <span class="event-meta-label">Attendees</span>
                             <span class="event-meta-value"><?php echo intval($event["participant_count"]); ?> joined</span>
+                        </div>
+                    </div>
+                    <div class="event-meta-card">
+                        <span class="event-meta-icon"><?php echo sidebarIconSvg("user"); ?></span>
+                        <div>
+                            <span class="event-meta-label">Hosted By</span>
+                            <span class="event-meta-value"><?php echo htmlspecialchars((string) ($event["created_by_name"] ?? "Campus Counselor")); ?></span>
                         </div>
                     </div>
                 </section>
@@ -546,7 +576,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <?php endif; ?>
 
                     <!-- Comments Section -->
-                    <?php if ($isJoined): ?>
+                    <?php if ($isJoined || $isInstructorOrTeacher): ?>
                         <section class="event-detail-comments">
                             <div class="section-heading">
                                 <span class="section-heading-icon"><?php echo sidebarIconSvg("message"); ?></span>
@@ -865,64 +895,64 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                         </div>
                     </section>
 
-                <!-- Instructor View -->
-                <?php elseif ($role === "Instructor"): ?>
-                    <!-- Similar to Student but with additional monitoring features -->
+                <!-- Instructor / Teacher View -->
+                <?php elseif ($isInstructorOrTeacher): ?>
                     <section class="event-detail-actions">
-                        <?php if (!$isJoined): ?>
-                            <?php if (!$hasEventStarted): ?>
-                                <form method="POST">
-                                    <input type="hidden" name="action" value="join">
-                                    <button type="submit" class="btn btn-primary btn-large">
-                                        <?php echo sidebarIconSvg("user-plus"); ?>
-                                        Join Event
-                                    </button>
-                                </form>
-                            <?php else: ?>
-                                <button class="btn btn-disabled btn-large" disabled>
-                                    Registration Closed
-                                </button>
-                            <?php endif; ?>
-                        <?php else: ?>
-                            <?php if (!$hasEventStarted): ?>
-                                <form method="POST">
-                                    <input type="hidden" name="action" value="unjoin">
-                                    <button type="submit" class="btn btn-outline btn-large">
-                                        <?php echo sidebarIconSvg("user-minus"); ?>
-                                        Unjoin Event
-                                    </button>
-                                </form>
-                            <?php else: ?>
-                                <button class="btn btn-disabled btn-large" disabled>
-                                    <?php echo sidebarIconSvg("user"); ?>
-                                    Joined
-                                </button>
-                            <?php endif; ?>
+                        <div class="checkin-reminder">
+                            <?php echo sidebarIconSvg("message"); ?>
+                            <span>View attendance, participants, and discuss the event below.</span>
+                        </div>
+                    </section>
 
-                            <?php if ($isCheckInWindow && !$isCheckedIn): ?>
-                                <form method="POST">
-                                    <input type="hidden" name="action" value="checkin">
-                                    <button type="submit" class="btn btn-primary btn-large">
-                                        <?php echo sidebarIconSvg("check-circle"); ?>
-                                        Check In Now
-                                    </button>
-                                </form>
-                            <?php elseif ($isCheckedIn): ?>
-                                <div class="checkin-success">
-                                    <?php echo sidebarIconSvg("check-circle"); ?>
-                                    <span>Checked In</span>
+                    <section class="event-detail-participants">
+                        <h2>Event Participants</h2>
+
+                        <?php if (empty($participants)): ?>
+                            <div class="no-participants">
+                                No participants yet.
+                            </div>
+                        <?php else: ?>
+                            <div class="participants-table">
+                                <div class="participants-header">
+                                    <span>Name</span>
+                                    <span>ID</span>
+                                    <span>Joined</span>
+                                    <span>Check-in Time</span>
+                                    <span>Status</span>
                                 </div>
-                            <?php elseif ($hasEventStarted && !$hasEventEnded): ?>
-                                <div class="checkin-reminder">
-                                    <?php echo sidebarIconSvg("bell"); ?>
-                                    <span>Remember to check in for attendance!</span>
-                                </div>
-                            <?php endif; ?>
+                                <?php foreach ($participants as $participant): ?>
+                                    <div class="participants-row">
+                                        <span class="participant-name">
+                                            <?php echo htmlspecialchars($participant["full_name"]); ?>
+                                        </span>
+                                        <span class="participant-id">
+                                            <?php echo htmlspecialchars($participant["student_id"]); ?>
+                                        </span>
+                                        <span class="participant-joined">
+                                            <?php echo date("M j, Y", strtotime($participant["joined_at"])); ?>
+                                        </span>
+                                        <span class="participant-checkin-time">
+                                            <?php if ($participant["checked_in_at"]): ?>
+                                                <?php echo date("M j, Y g:i A", strtotime($participant["checked_in_at"])); ?>
+                                            <?php else: ?>
+                                                -
+                                            <?php endif; ?>
+                                        </span>
+                                        <span class="participant-status">
+                                            <?php if ($participant["checked_in_at"]): ?>
+                                                <span class="status-badge status-checked-in">Checked In</span>
+                                            <?php else: ?>
+                                                <span class="status-badge status-not-checked-in">Not Checked In</span>
+                                            <?php endif; ?>
+                                        </span>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
                         <?php endif; ?>
                     </section>
 
                     <!-- Comments Section -->
-                    <?php if ($isJoined): ?>
+                    <?php if ($isJoined || $isInstructorOrTeacher): ?>
                         <section class="event-detail-comments">
                             <h2>Comments & Discussion</h2>
 

@@ -17,15 +17,32 @@ if ($appointmentId <= 0) {
 
 // Get appointment details
 $appointmentStmt = $conn->prepare("
-    SELECT a.*, u.full_name as student_name, u.email as student_email, u.id as student_id
+    SELECT a.*, u.full_name as student_name, u.email as student_email, u.id as student_id, approver.full_name AS approved_by_name
     FROM appointments a
     JOIN users u ON a.user_id = u.id
+    LEFT JOIN users approver ON approver.id = a.approved_by_user_id
     WHERE a.id = ?
 ");
+if (!$appointmentStmt) {
+    $appointmentStmt = $conn->prepare("
+        SELECT a.*, u.full_name as student_name, u.email as student_email, u.id as student_id
+        FROM appointments a
+        JOIN users u ON a.user_id = u.id
+        WHERE a.id = ?
+    ");
+}
+
+if (!$appointmentStmt) {
+    die("Unable to load appointment details.");
+}
 $appointmentStmt->bind_param("i", $appointmentId);
 $appointmentStmt->execute();
 $appointment = $appointmentStmt->get_result()->fetch_assoc();
 $appointmentStmt->close();
+
+if (!isset($appointment["approved_by_name"])) {
+    $appointment["approved_by_name"] = null;
+}
 
 if (!$appointment) {
     header("Location: /campuscare-api/php-frontend/pages/appointments/book_appointment.php");
@@ -70,13 +87,38 @@ if ($role === "Counselor" || $role === "Administrator") {
         ORDER BY referral_datetime DESC
         LIMIT 3
     ");
-    $referralStmt->bind_param("i", $appointment["user_id"]);
-    $referralStmt->execute();
-    $referralResult = $referralStmt->get_result();
-    while ($row = $referralResult->fetch_assoc()) {
-        $relatedReferrals[] = $row;
+    if ($referralStmt) {
+        $referralStmt->bind_param("i", $appointment["user_id"]);
+        $referralStmt->execute();
+        $referralResult = $referralStmt->get_result();
+        while ($row = $referralResult->fetch_assoc()) {
+            $relatedReferrals[] = $row;
+        }
+        $referralStmt->close();
     }
-    $referralStmt->close();
+}
+
+// Load internal notes and audit for admin/counselor
+$appointmentNotes = [];
+$appointmentAudit = [];
+if (in_array($role, ["Counselor", "Administrator"], true)) {
+    $notesStmt = $conn->prepare("SELECT an.id, an.user_id, an.note, an.is_private, an.created_at, u.full_name FROM appointment_notes an LEFT JOIN users u ON u.id = an.user_id WHERE an.appointment_id = ? ORDER BY an.created_at DESC");
+    if ($notesStmt) {
+        $notesStmt->bind_param("i", $appointmentId);
+        $notesStmt->execute();
+        $notesRes = $notesStmt->get_result();
+        while ($n = $notesRes->fetch_assoc()) { $appointmentNotes[] = $n; }
+        $notesStmt->close();
+    }
+
+    $auditStmt = $conn->prepare("SELECT aa.id, aa.user_id, aa.action, aa.metadata, aa.created_at, u.full_name FROM appointment_audit aa LEFT JOIN users u ON u.id = aa.user_id WHERE aa.appointment_id = ? ORDER BY aa.created_at DESC");
+    if ($auditStmt) {
+        $auditStmt->bind_param("i", $appointmentId);
+        $auditStmt->execute();
+        $auditRes = $auditStmt->get_result();
+        while ($a = $auditRes->fetch_assoc()) { $appointmentAudit[] = $a; }
+        $auditStmt->close();
+    }
 }
 
 // Handle form submissions
@@ -170,10 +212,23 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
     <div class="content appointment-detail-root">
         <div class="event-detail-page">
-            <!-- Back Button -->
-            <a href="/campuscare-api/php-frontend/pages/appointments/book_appointment.php" class="btn btn-outline event-back-link">
+            <!-- Back Button: prefer explicit return_to, then REFERER, else role-specific default -->
+            <?php
+                $defaultBack = ($role === 'Counselor' || $role === 'Administrator')
+                    ? '/campuscare-api/php-frontend/pages/appointments/schedule.php'
+                    : '/campuscare-api/php-frontend/pages/appointments/book_appointment.php';
+
+                $backUrl = $defaultBack;
+                if (!empty($_GET['return_to'])) {
+                    $backUrl = $_GET['return_to'];
+                } elseif (!empty($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'], '/campuscare-api/') !== false) {
+                    $backUrl = $_SERVER['HTTP_REFERER'];
+                }
+            ?>
+
+            <a href="<?php echo htmlspecialchars($backUrl); ?>" class="btn btn-outline event-back-link">
                 <?php echo sidebarIconSvg("arrow-left"); ?>
-                Back to Appointments
+                Back
             </a>
 
             <?php if ($error !== ""): ?>
@@ -230,6 +285,15 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                         <span class="event-meta-value"><?php echo $counselor; ?></span>
                     </div>
                 </div>
+                <?php if (!empty($appointment["approved_by_name"])): ?>
+                <div class="event-meta-card">
+                    <span class="event-meta-icon"><?php echo sidebarIconSvg("check-circle"); ?></span>
+                    <div>
+                        <span class="event-meta-label">Approved By</span>
+                        <span class="event-meta-value"><?php echo htmlspecialchars((string) $appointment["approved_by_name"]); ?></span>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <div class="event-meta-card">
                     <span class="event-meta-icon"><?php echo sidebarIconSvg("briefcase"); ?></span>
                     <div>
@@ -258,6 +322,12 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                         <strong class="appointment-info-label">Student Email:</strong>
                         <span class="appointment-info-value"><?php echo htmlspecialchars($appointment["student_email"]); ?></span>
                     </div>
+                    <?php if (!empty($appointment["approved_at"])): ?>
+                    <div class="appointment-info-row">
+                        <strong class="appointment-info-label">Approved At:</strong>
+                        <span class="appointment-info-value"><?php echo htmlspecialchars(date("F j, Y g:i A", strtotime((string) $appointment["approved_at"]))); ?></span>
+                    </div>
+                    <?php endif; ?>
                     <?php if (!empty($notes)): ?>
                     <div class="appointment-info-row appointment-info-row-last">
                         <strong class="appointment-info-label">Notes:</strong>
@@ -350,6 +420,61 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                         </div>
                     <?php endforeach; ?>
                 </div>
+            </section>
+            <?php endif; ?>
+
+            <!-- Internal Notes (Counselor/Admin) -->
+            <?php if ((in_array($role, ["Counselor", "Administrator"], true))): ?>
+            <section class="appointment-section">
+                <div class="section-heading">
+                    <span class="section-heading-icon"><?php echo sidebarIconSvg("note"); ?></span>
+                    <div>
+                        <h2>Internal Notes</h2>
+                        <p class="section-heading-subtext">Private notes for counselors and admins.</p>
+                    </div>
+                </div>
+
+                <form method="POST" class="appointment-note-form" style="margin-bottom:12px;">
+                    <input type="hidden" name="action" value="add_note">
+                    <input type="hidden" name="appointment_id" value="<?php echo intval($appointmentId); ?>">
+                    <textarea name="note" rows="3" style="width:100%; padding:8px;" placeholder="Add an internal note (private)"></textarea>
+                    <div style="margin-top:8px;"><button type="submit" class="btn btn-primary">Add Note</button></div>
+                </form>
+
+                <?php if (!empty($appointmentNotes)): ?>
+                    <?php foreach ($appointmentNotes as $note): ?>
+                        <div class="appointment-note-card" style="border-left:3px solid #e5e7eb; padding:12px; margin-bottom:8px;">
+                            <div style="font-size:13px; color:#374151;"><?php echo htmlspecialchars($note['note']); ?></div>
+                            <div style="font-size:12px; color:#6b7280; margin-top:6px;">By <?php echo htmlspecialchars($note['full_name'] ?? 'System'); ?> • <?php echo date('M j, g:i A', strtotime($note['created_at'])); ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="muted">No internal notes.</div>
+                <?php endif; ?>
+            </section>
+            <?php endif; ?>
+
+            <!-- Audit Trail (Counselor/Admin) -->
+            <?php if ((in_array($role, ["Counselor", "Administrator"], true))): ?>
+            <section class="appointment-section">
+                <div class="section-heading">
+                    <span class="section-heading-icon"><?php echo sidebarIconSvg("history"); ?></span>
+                    <div>
+                        <h2>Status History</h2>
+                        <p class="section-heading-subtext">Recent changes and actions for this appointment.</p>
+                    </div>
+                </div>
+
+                <?php if (!empty($appointmentAudit)): ?>
+                    <?php foreach ($appointmentAudit as $entry): ?>
+                        <div class="appointment-audit-row" style="padding:10px 0; border-bottom:1px solid #eef2f7;">
+                            <div style="font-size:13px; color:#111827;"><strong><?php echo htmlspecialchars($entry['action']); ?></strong></div>
+                            <div style="font-size:12px; color:#6b7280;">By <?php echo htmlspecialchars($entry['full_name'] ?? 'System'); ?> • <?php echo date('M j, g:i A', strtotime($entry['created_at'])); ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="muted">No audit entries.</div>
+                <?php endif; ?>
             </section>
             <?php endif; ?>
 

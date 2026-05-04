@@ -1962,6 +1962,7 @@ body.theme-dark .menu-lines {
 }
 
 .admin-shell {
+  padding: 0 75px;
   max-width: 1410px;
 }
 
