@@ -299,14 +299,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                                 if ($stmt->execute()) {
                                     unset($_SESSION["pending_google_signup"]);
-                                    $success = "Google account linked successfully. You can now log in.";
-                                    $first_name = "";
-                                    $last_name = "";
-                                    $full_name = "";
-                                    $email = "";
-                                    $student_id = "";
-                                    $role = "Student";
-                                    $isGoogleSignup = false;
+                                    $_SESSION["registration_success"] = "Google account linked successfully! You can now log in.";
+                                    header("Location: index.php");
+                                    exit();
                                 } else {
                                     $error = intval($stmt->errno) === 1062
                                         ? "Student ID or email is already in use."
@@ -379,14 +374,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         }
 
                         clearRegistrationVerificationSession();
-                        $success = "Email verified successfully. Your account is now active, and you can log in.";
-                        $first_name = "";
-                        $last_name = "";
-                        $full_name = "";
-                        $email = "";
-                        $student_id = "";
-                        $role = "Student";
-                        $step = "register";
+                        $_SESSION["registration_success"] = "Email verified successfully! Your account is now active. Please log in.";
+                        header("Location: index.php");
+                        exit();
                     } else {
                         $error = intval($insertStmt->errno) === 1062
                             ? "Email or student ID is already in use."
@@ -510,11 +500,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $stmt->bind_param($bindTypes, $full_name, $student_id, $email, $hashedPassword, $roleValue, $statusValue);
 
                     if ($stmt->execute()) {
-                        $success = "Registration completed. Email verification is disabled because SMTP is not configured. You can now log in.";
-                        $full_name = "";
-                        $email = "";
-                        $student_id = "";
-                        $role = "Student";
+                        $_SESSION["registration_success"] = "Registration completed successfully! You can now log in with your credentials.";
+                        header("Location: index.php");
+                        exit();
                     } else {
                         $error = intval($stmt->errno) === 1062
                             ? "Email must be unique. Duplicate email is not allowed."

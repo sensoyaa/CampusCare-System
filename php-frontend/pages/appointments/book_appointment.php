@@ -2301,8 +2301,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     counselor: payload.counselor,
                     date: payload.appointment_date,
                     time: payload.appointment_time,
-                    email: data.email_sent ? "sent" : "not-sent",
-                    auto_pdf: "1"
+                    email: data.email_sent ? "sent" : "not-sent"
                 });
 
                 clearBookingState();
