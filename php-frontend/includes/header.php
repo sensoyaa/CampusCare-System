@@ -27,6 +27,8 @@ $darkModeEnabled = in_array($darkModeCookie, ["true", "1", "yes", "on"], true);
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Enhanced Alert System -->
     <script src="/campuscare-api/php-frontend/assets/alerts.js" defer></script>
+    <!-- Profile Dropdown Toggle -->
+    <script src="/campuscare-api/php-frontend/assets/profile-dropdown.js" defer></script>
     <script>
     (function () {
         try {

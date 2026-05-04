@@ -427,9 +427,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </div>
 <script>
 (function () {
-    const profileMenuToggle = document.querySelector(".profile-menu-toggle");
-    const profileDropdown = document.querySelector(".profile-dropdown");
-    const profilePill = document.querySelector(".profile-pill");
     const preferencesForm = document.querySelector('form.settings-stack');
     const darkModeToggle = document.querySelector('input[name="dark_mode"]');
     const notificationsToggle = document.getElementById("enableNotificationsToggle");
@@ -447,25 +444,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             // Ignore storage errors and keep cookie-based fallback.
         }
     }
-
-    if (!profileMenuToggle || !profileDropdown || !profilePill) {
-        return;
-    }
-
-    profileMenuToggle.addEventListener("click", function (e) {
-        e.stopPropagation();
-        const isOpen = profilePill.classList.toggle("is-open");
-        profileMenuToggle.setAttribute("aria-expanded", isOpen);
-    });
-
-    document.addEventListener("click", function () {
-        profilePill.classList.remove("is-open");
-        profileMenuToggle.setAttribute("aria-expanded", "false");
-    });
-
-    profileDropdown.addEventListener("click", function (e) {
-        e.stopPropagation();
-    });
 
     function updateNotificationDependentState() {
         if (!notificationsToggle) {
