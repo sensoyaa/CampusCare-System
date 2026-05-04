@@ -126,34 +126,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <?php endif; ?>
 
             <style>
-                .referral-tabs {
-                    display: flex;
-                    gap: 8px;
-                    margin-bottom: 20px;
-                    border-bottom: 2px solid #eee;
-                }
-
-                .referral-tabs button {
-                    padding: 12px 16px;
-                    background: none;
-                    border: none;
-                    border-bottom: 3px solid transparent;
-                    cursor: pointer;
-                    font-weight: 600;
-                    font-size: 13px;
-                    color: #666;
-                    transition: all 0.2s;
-                }
-
-                .referral-tabs button.active {
-                    color: #0066cc;
-                    border-bottom-color: #0066cc;
-                }
-
-                .referral-tabs button:hover:not(.active) {
-                    color: #333;
-                }
-
                 .filter-section {
                     margin-bottom: 20px;
                 }
@@ -372,12 +344,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     }
                 }
             </style>
-
-            <div class="referral-tabs">
-                <button class="active">
-                    📌 Referrals (<?php echo count($referrals); ?>)
-                </button>
-            </div>
 
             <div class="filter-section">
                     <select onchange="location.href='?view=referrals&status=' + this.value;">

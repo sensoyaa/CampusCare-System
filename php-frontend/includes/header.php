@@ -20,7 +20,7 @@ $darkModeEnabled = in_array($darkModeCookie, ["true", "1", "yes", "on"], true);
     <link rel="stylesheet" href="/campuscare-api/php-frontend/assets/compact.css">
     <link rel="stylesheet" href="/campuscare-api/php-frontend/assets/admin-dashboard.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <?php if (basename($_SERVER["PHP_SELF"]) === "event_detail.php"): ?>
+    <?php if (in_array(basename($_SERVER["PHP_SELF"]), ["event_detail.php", "appointment_detail.php"], true)): ?>
     <link rel="stylesheet" href="/campuscare-api/php-frontend/css/event_detail.css">
     <?php endif; ?>
     <!-- SweetAlert2 -->
@@ -59,7 +59,6 @@ $darkModeEnabled = in_array($darkModeCookie, ["true", "1", "yes", "on"], true);
         document.body.classList.add("theme-dark");
     } else {
         document.body.classList.remove("theme-dark");
-    }
 })();
 </script>
 <div class="system-confirm-overlay" id="systemConfirmOverlay" aria-hidden="true">
