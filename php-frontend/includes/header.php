@@ -63,6 +63,7 @@ $darkModeEnabled = in_array($darkModeCookie, ["true", "1", "yes", "on"], true);
         document.body.classList.add("theme-dark");
     } else {
         document.body.classList.remove("theme-dark");
+    }
 })();
 </script>
 <div class="system-confirm-overlay" id="systemConfirmOverlay" aria-hidden="true">

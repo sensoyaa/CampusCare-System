@@ -9,9 +9,21 @@ $topbarRole = isset($_SESSION['role']) ? $_SESSION['role'] : 'User';
 $topbarAvatarPath = isset($_SESSION['avatar_path']) ? $_SESSION['avatar_path'] : '';
 $topbarAvatarInitial = !empty($topbarFullName) ? strtoupper(substr($topbarFullName, 0, 1)) : 'U';
 
-// Check if notifications are enabled globally
-$notificationsEnabled = true;
-$notificationsInApp = true;
+function prefEnabled($cookieName, $default = true) {
+    if (!isset($_COOKIE[$cookieName])) {
+        return $default;
+    }
+    return $_COOKIE[$cookieName] === 'true';
+}
+
+// Read notification preferences so settings are applied on every page.
+$notificationsEnabled = isset($_SESSION['notifications_enabled'])
+    ? (bool) $_SESSION['notifications_enabled']
+    : prefEnabled('campuscare_notifications', true);
+
+$notificationsInApp = isset($_SESSION['notifications_in_app'])
+    ? (bool) $_SESSION['notifications_in_app']
+    : prefEnabled('campuscare_notifications_in_app', true);
 
 // Note: Actual notifications are fetched via /backend/api/notifications.php by JavaScript
 ?>
@@ -20,17 +32,17 @@ $notificationsInApp = true;
     <!-- Notifications Menu -->
     <?php if ($notificationsEnabled && $notificationsInApp): ?>
     <details class="notify-menu" aria-label="Notifications">
-        <summary class="notify-summary" aria-label="Toggle notifications menu">
+        <summary class="notify-summary notify-toggle" aria-label="Toggle notifications menu">
             <svg class="notify-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
             </svg>
             <span class="notify-badge" style="display: none;" data-count="0"></span>
         </summary>
 
-        <div class="notify-panel">
+        <div class="notify-panel notify-dropdown">
             <!-- Notifications header and clear button -->
-            <div class="notify-header" style="display: none;">
-                <h3>Notifications</h3>
+            <div class="notify-header notify-head" style="display: none;">
+                <h3 class="notify-title">Notifications</h3>
                 <button class="notify-clear-btn" aria-label="Clear all notifications" type="button">Clear</button>
             </div>
 

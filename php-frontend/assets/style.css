@@ -1363,6 +1363,40 @@ body.theme-dark .menu-lines {
   color: var(--text-muted);
 }
 
+.notify-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.notify-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.notify-item-time {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #7f8ea0;
+}
+
+.notify-clear-btn {
+  border: 1px solid #d7e2ec;
+  background: #fff;
+  color: #425a70;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.notify-clear-btn:hover {
+  background: #f8fbfe;
+}
+
 .notify-item {
   display: flex;
   gap: 10px;

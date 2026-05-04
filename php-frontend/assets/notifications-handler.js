@@ -20,7 +20,7 @@
         notifyEmptySelector: '.notify-empty',
         notifyItemSelector: '.notify-item',
         notifyClearBtnSelector: '.notify-clear-btn',
-        apiEndpoint: '/backend/api/notifications.php',
+        apiEndpoint: '/campuscare-api/backend/api/notifications.php',
         refreshInterval: 30000 // 30 seconds
     };
 
@@ -150,12 +150,12 @@
         const timeAgo = formatTimeAgo(notif.createdAt);
 
         item.innerHTML = `
-            <div class="notify-item-icon">
+            <div class="notify-item-icon notify-icon">
                 ${iconSvg}
             </div>
-            <div class="notify-item-content">
+            <div class="notify-item-content notify-copy">
                 <p class="notify-item-title">${escapeHtml(notif.title)}</p>
-                ${notif.message ? `<p class="notify-item-message">${escapeHtml(notif.message)}</p>` : ''}
+                ${notif.message ? `<p class="notify-item-message notify-item-body">${escapeHtml(notif.message)}</p>` : ''}
                 <span class="notify-item-time">${timeAgo}</span>
             </div>
             ${notif.actionUrl ? `<a href="${escapeHtml(notif.actionUrl)}" class="notify-item-action" aria-label="Open ${escapeHtml(notif.title)}">Open</a>` : ''}

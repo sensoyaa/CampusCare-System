@@ -17,8 +17,7 @@
         notificationDependentClass: '.notification-dependent',
         notificationDependentInputs: '.notification-dependent input, .notification-dependent select',
         successAlertClass: '.alert-success',
-        errorAlertClass: '.alert-error',
-        apiEndpoint: '/backend/api/user-preferences.php'
+        errorAlertClass: '.alert-error'
     };
 
     let isSubmitting = false;
@@ -48,8 +47,12 @@
             updateNotificationDependentFields();
         }
 
-        // Form submission via AJAX
-        preferencesForm.addEventListener('submit', handleFormSubmit);
+        // Keep native form submit so PHP can persist cookies/session reliably.
+        preferencesForm.addEventListener('submit', () => {
+            if (darkModeToggle) {
+                handleDarkModeToggle({ target: darkModeToggle });
+            }
+        });
 
         // Auto-apply dark mode on page load
         applyDarkModeFromCookie();
@@ -102,59 +105,7 @@
         });
     }
 
-    /**
-     * Handle form submission via AJAX
-     */
-    async function handleFormSubmit(event) {
-        event.preventDefault();
-
-        if (isSubmitting) return;
-        isSubmitting = true;
-
-        const form = event.target;
-        const formData = new FormData(form);
-        
-        // Show loading state
-        const submitButton = form.querySelector('button[type="submit"]');
-        const originalText = submitButton?.textContent;
-        if (submitButton) {
-            submitButton.disabled = true;
-            submitButton.textContent = 'Saving...';
-        }
-
-        try {
-            // For password changes, allow normal form submission
-            const action = formData.get('action');
-            if (action === 'change_password') {
-                form.submit();
-                return;
-            }
-
-            // For preferences, submit via AJAX
-            const response = await fetch(form.action || CONFIG.apiEndpoint, {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                showAlert('Preferences updated successfully!', 'success');
-                // Form already updated the page, just show confirmation
-            } else {
-                showAlert(data.error || 'Failed to save preferences', 'error');
-            }
-        } catch (error) {
-            console.error('Form submission error:', error);
-            showAlert('Error saving preferences: ' + error.message, 'error');
-        } finally {
-            isSubmitting = false;
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.textContent = originalText;
-            }
-        }
-    }
+    // Note: native PHP form submit is used for persistence.
 
     /**
      * Show alert message
