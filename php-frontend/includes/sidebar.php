@@ -14,20 +14,12 @@ $navItems = [
     ],
     "Administrator" => [
         ["Dashboard", "dashboard.php", "dashboard"],
+        ["Manage Appointments", "manage_appointments.php", "calendar-plus"],
         "User Management" => [
             ["Manage Users", "manage_users.php", "user-plus"],
             ["Student Participation", "student_status.php", "users"]
         ],
-        "Appointments" => [
-            ["Manage Appointments", "manage_appointments.php", "calendar"],
-            ["Manage Schedule", "manage_schedule.php", "clock"]
-        ],
         ["Manage Events", "events.php", "users"],
-        "Reviews" => [
-            ["Intake Reviews", "counseling_intake_reviews.php", "eye"],
-            ["Referral Inbox", "referral_inbox.php", "search"],
-            ["Testing Requests", "testing_requests_inbox.php", "search"]
-        ],
         ["View Reports", "reports.php", "report"],
     ],
     "Counselor" => [
@@ -60,7 +52,6 @@ function sidebarPageUrl($fileName)
         "dashboard.php" => "/campuscare-api/php-frontend/pages/dashboard/dashboard.php",
         "book_appointment.php" => "/campuscare-api/php-frontend/pages/appointments/book_appointment.php",
         "counseling_intake_form.php" => "/campuscare-api/php-frontend/pages/appointments/counseling_intake_form.php",
-        "counseling_intake_reviews.php" => "/campuscare-api/php-frontend/pages/appointments/counseling_intake_reviews.php",
         "referral_form.php" => "/campuscare-api/php-frontend/pages/forms/referral_form.php",
         "referral_inbox.php" => "/campuscare-api/php-frontend/pages/forms/referral_inbox.php",
         "student_referral_form.php" => "/campuscare-api/php-frontend/pages/forms/student_referral_form.php",

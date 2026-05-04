@@ -81,10 +81,10 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
     <div class="content">
         <div class="page-shell instructor-status-shell">
-            <h1 class="page-title">Student Participation</h1>
-            <p class="page-subtitle" style="margin-bottom: 18px;">
-                Check student counseling participation and event attendance
-            </p>
+            <div class="status-booking-head">
+                <h1 class="page-title">Student Participation</h1>
+                <p class="page-subtitle">Check student counseling participation and event attendance</p>
+            </div>
 
             <form method="GET" class="admin-search-wrap instructor-status-search">
                 <span class="admin-search-icon"><?php echo sidebarIconSvg("search"); ?></span>
@@ -141,6 +141,29 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         <a href="#" class="chat-fab chat-fab-icon" aria-label="Open chat"><?php echo sidebarIconSvg("message"); ?></a>
     </div>
 </main>
+
+<style>
+    .status-booking-head {
+        padding: 30px 34px 20px;
+        background: var(--primary);
+        color: #fff;
+        border-radius: 22px;
+        margin-bottom: 1rem;
+        box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
+    }
+
+    .status-booking-head h1 {
+        margin: 0 0 8px;
+        font-size: 34px;
+        color: #fff;
+    }
+
+    .status-booking-head p {
+        margin: 0;
+        max-width: 680px;
+        color: rgba(255, 255, 255, 0.9);
+    }
+</style>
 
 </div>
 <script>

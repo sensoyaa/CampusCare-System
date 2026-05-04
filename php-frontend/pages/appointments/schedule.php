@@ -2,6 +2,7 @@
 require_once __DIR__ . "/../../includes/auth.php";
 requireLogin();
 require_once __DIR__ . "/../../includes/db.php";
+require_once __DIR__ . "/../../../backend/config/appointment_audit.php";
 require_once __DIR__ . "/../../../backend/config/mail.php";
 
 $pageTitle = "Schedule";
@@ -142,20 +143,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             if ($stmt->execute()) {
                 // Insert audit entry
-                $auditStmt = $conn->prepare("INSERT INTO appointment_audit (appointment_id, user_uid, user_id, action, metadata) VALUES (?, ?, ?, ?, ?)");
-                // Fallback if schema uses different columns: try standard insert without user_uid
-                if ($auditStmt) {
-                    // Some schemas may not have user_uid; attempt with available columns
-                    $meta = json_encode(['by' => $fullName]);
-                    // Try safe insert with appointment_id, user_id, action, metadata
-                    $safeAudit = $conn->prepare("INSERT INTO appointment_audit (appointment_id, user_id, action, metadata) VALUES (?, ?, ?, ?)");
-                    if ($safeAudit) {
-                        $safeAudit->bind_param("iiss", $appointmentId, $userId, $status, $meta);
-                        $safeAudit->execute();
-                        $safeAudit->close();
-                    }
-                    $auditStmt->close();
-                }
+                appointment_audit_insert($conn, $appointmentId, $userId, $status, ['by' => $fullName]);
 
                 // Notify student/counselor depending on action
                 $p = $conn->prepare("SELECT a.user_id AS student_id, su.email AS student_email, su.full_name AS student_name, a.counselor_id, cu.email AS counselor_email, cu.full_name AS counselor_name, a.appointment_date, a.appointment_time FROM appointments a LEFT JOIN users su ON su.id = a.user_id LEFT JOIN users cu ON cu.id = a.counselor_id WHERE a.id = ? LIMIT 1");
@@ -489,13 +477,15 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
     <div class="content">
         <div class="page-shell schedule-shell">
+            <div class="schedule-head">
             <h1 class="page-title">
                 <?php echo $role === "Counselor" ? "View Appointments" : "My Schedule"; ?>
             </h1>
 
-            <p class="page-subtitle" style="margin-bottom: 24px;">
+            <p class="page-subtitle">
                 <?php echo $role === "Counselor" ? "Appointments assigned to you" : "Your upcoming appointments"; ?>
             </p>
+            </div>
 
             <div class="schedule-summary-grid">
                 <article class="schedule-summary-card">
@@ -692,6 +682,27 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </main>
 
 <style>
+    .schedule-head {
+        padding: 30px 34px 20px;
+        background: var(--primary);
+        color: #fff;
+        border-radius: 22px;
+        margin-bottom: 1rem;
+        box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
+    }
+
+    .schedule-head .page-title {
+        margin: 0 0 8px;
+        font-size: 34px;
+        color: #fff;
+    }
+
+    .schedule-head .page-subtitle {
+        margin: 0;
+        max-width: 680px;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
     .schedule-item.schedule-item-clean {
         transition: all 0.2s ease;
     }

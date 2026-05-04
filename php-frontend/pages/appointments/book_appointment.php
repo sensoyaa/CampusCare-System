@@ -141,20 +141,17 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         .booking-shell {
             max-width: 1160px;
             margin: 0 auto 40px;
-            padding: 0 16px;
         }
 
         .booking-head {
-<<<<<<< HEAD
             padding: 1.75rem 1.75rem 1.6rem;
             background: linear-gradient(135deg, var(--primary) 0%, #5f99ca 100%);
-=======
             border-radius: 22px 22px 0 0;
             padding: 30px 34px 20px;
             background: var(--primary);
->>>>>>> 4ddbe41e7dd058218afb228d232b60598ce6a767
             color: #fff;
             border-radius: 22px;
+            margin-top: 15px;
             margin-bottom: 1rem;
             box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
         }
@@ -162,6 +159,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         .booking-head h1 {
             margin: 0 0 8px;
             font-size: 34px;
+            color: #fff;
         }
 
         .booking-head p {
@@ -1323,7 +1321,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     </div>
 
     <div class="content" style="background: var(--bg); padding-top: 1px; padding-bottom: 28px;">
-    <div class="booking-shell">
+    <div class="page-shell booking-shell">
         <header class="booking-head">
             <h1>Book Your Appointment</h1>
             <p>Select a service below, fill up the form, pick your schedule, then review and submit.</p>

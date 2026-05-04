@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . "/../config/cors.php";
 require_once __DIR__ . "/../config/db.php";
+require_once __DIR__ . "/../config/appointment_audit.php";
 require_once __DIR__ . "/../config/mail.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -87,14 +88,7 @@ if ($status === "Approved") {
 if ($stmt->execute()) {
     if ($stmt->affected_rows > 0) {
         // Insert audit entry
-        $action = $status;
-        $meta = json_encode(["by_user_id" => $sessionUserId]);
-        $auditStmt = $conn->prepare("INSERT INTO appointment_audit (appointment_id, user_id, action, metadata) VALUES (?, ?, ?, ?)");
-        if ($auditStmt) {
-            $auditStmt->bind_param("iiss", $id, $sessionUserId, $action, $meta);
-            $auditStmt->execute();
-            $auditStmt->close();
-        }
+        appointment_audit_insert($conn, $id, $sessionUserId, $status, ["by_user_id" => $sessionUserId]);
 
         // Load appointment + user data for notifications
         $uStmt = $conn->prepare("SELECT a.user_id AS student_id, su.email AS student_email, su.full_name AS student_name, a.counselor_id, cu.email AS counselor_email, cu.full_name AS counselor_name, a.appointment_date, a.appointment_time FROM appointments a LEFT JOIN users su ON su.id = a.user_id LEFT JOIN users cu ON cu.id = a.counselor_id WHERE a.id = ? LIMIT 1");

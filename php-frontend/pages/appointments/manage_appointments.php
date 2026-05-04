@@ -2,6 +2,7 @@
 require_once __DIR__ . "/../../includes/auth.php";
 requireLogin();
 require_once __DIR__ . "/../../includes/db.php";
+require_once __DIR__ . "/../../../backend/config/appointment_audit.php";
 require_once __DIR__ . "/../../../backend/config/mail.php";
 
 $pageTitle = "Manage Appointments";
@@ -45,9 +46,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $error = "Invalid bulk action.";
             } else {
                 // prepare statements
-                $updateStmt = $conn->prepare("UPDATE appointments SET status = ? WHERE id = ?");
                 $assignStmt = $conn->prepare("UPDATE appointments SET counselor_id = ?, counselor = ? WHERE id = ?");
-                $auditStmt = $conn->prepare("INSERT INTO appointment_audit (appointment_id, user_id, action, metadata) VALUES (?, ?, ?, ?)");
 
                     foreach ($ids as $aid) {
                         $aid = intval($aid);
@@ -57,15 +56,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             $cName = $activeCounselorMap[$targetCounselorId]['full_name'] ?? '';
                             $assignStmt->bind_param("isi", $targetCounselorId, $cName, $aid);
                             $assignStmt->execute();
-                            $meta = json_encode(['assigned_to' => $targetCounselorId]);
-                            $auditStmt->bind_param("iiss", $aid, $_SESSION['user_id'], 'assigned', $meta);
-                            $auditStmt->execute();
+                            appointment_audit_insert($conn, $aid, intval($_SESSION['user_id'] ?? 0), 'assigned', ['assigned_to' => $targetCounselorId]);
                         }
                     }
 
-                if ($updateStmt) $updateStmt->close();
                 if ($assignStmt) $assignStmt->close();
-                if ($auditStmt) $auditStmt->close();
 
                 $success = "Bulk action completed.";
             }
@@ -113,11 +108,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $uStmt->bind_param("isi", $targetCounselorId, $cName, $appointmentId);
                 if ($uStmt->execute()) {
                     $success = 'Counselor assigned successfully.';
-                    $auditStmt = $conn->prepare("INSERT INTO appointment_audit (appointment_id, user_id, action, metadata) VALUES (?, ?, ?, ?)");
-                    $meta = json_encode(['assigned_to' => $targetCounselorId]);
-                    $auditStmt->bind_param("iiss", $appointmentId, $_SESSION['user_id'], $action, $meta);
-                    $auditStmt->execute();
-                    $auditStmt->close();
+                    appointment_audit_insert($conn, $appointmentId, intval($_SESSION['user_id'] ?? 0), $action, ['assigned_to' => $targetCounselorId]);
 
                     // send notification email to counselor if email present
                     if (!empty($cEmail)) {
@@ -288,9 +279,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
     <div class="content">
         <div class="page-shell admin-shell">
-            <div>
+            <div class="booking-head admin-booking-head">
                 <h1 class="page-title">Manage Appointments</h1>
-                <p class="page-subtitle" style="margin-bottom: 18px;">View and control all bookings</p>
+                <p class="page-subtitle">View and control all bookings</p>
             </div>
 
             <section class="admin-appointment-stats">
@@ -415,6 +406,29 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     </div>
                 </main>
 
+                <style>
+                    .admin-booking-head {
+                        padding: 30px 34px 20px;
+                        background: var(--primary);
+                        color: #fff;
+                        border-radius: 22px;
+                        margin-bottom: 1rem;
+                        box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
+                    }
+
+                    .admin-booking-head h1 {
+                        margin: 0 0 8px;
+                        font-size: 34px;
+                        color: #fff;
+                    }
+
+                    .admin-booking-head p {
+                        margin: 0;
+                        max-width: 680px;
+                        color: rgba(255, 255, 255, 0.9);
+                    }
+                </style>
+
                 </div>
                 <script>
                     /* Appointment card styling */
@@ -432,7 +446,7 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                             border: 1px solid #e6edf5;
                             border-radius: 16px;
                             padding: 14px 16px;
-                            box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+                            box-shadow: 0 16px 32px rgba(61, 108, 150, 0.09);
                         }
 
                         .admin-appointment-stat-card strong {

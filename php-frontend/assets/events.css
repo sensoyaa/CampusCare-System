@@ -1,0 +1,105 @@
+/* Campus Events page styles */
+
+.page-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard-head {
+  padding: 30px 34px 20px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 22px;
+  margin-bottom: 1rem;
+  box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
+}
+
+.dashboard-head h1 {
+  margin: 0 0 8px;
+  font-size: 34px;
+  color: #fff;
+}
+
+.dashboard-head p {
+  margin: 0;
+  max-width: 680px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+
+.events-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 18px;
+}
+
+.college-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.college-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 30px 18px 24px;
+  border-radius: 18px;
+  text-decoration: none;
+  color: var(--text-main);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfe 100%);
+  border: 1px solid rgba(77, 143, 197, 0.14);
+  box-shadow: 0 6px 16px rgba(27, 57, 80, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.college-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(77, 143, 197, 0.35);
+  box-shadow: 0 14px 28px rgba(27, 57, 80, 0.12);
+}
+
+.college-icon {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
+.college-card h3 {
+  font-size: 16px;
+  line-height: 1.35;
+  text-align: center;
+  margin: 0;
+}
+
+.event-count {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #d92d20;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .events-section {
+    padding: 18px;
+  }
+
+  .college-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-head {
+    margin-top: 15px;
+  }
+}

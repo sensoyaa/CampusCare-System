@@ -34,17 +34,6 @@
   max-height: 220px;
 }
 
-.admin-trend-section {
-  margin-bottom: 16px;
-}
-
-.chart-container-full {
-  position: relative;
-  height: 260px;
-  width: 100%;
-  margin-top: 8px;
-}
-
 /* Reporting Section */
 .admin-reporting-section {
   margin-bottom: 24px;
@@ -253,10 +242,6 @@
     height: 200px;
   }
 
-  .chart-container-full {
-    height: 230px;
-  }
-}
 
 /* Dark mode support */
 body.theme-dark .chart-card,

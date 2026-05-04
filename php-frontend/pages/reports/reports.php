@@ -158,9 +158,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
     <div class="content">
         <div class="page-shell admin-shell">
-            <div>
+            <div class="reports-booking-head">
                 <h1 class="page-title">System Reports</h1>
-                <p class="page-subtitle" style="margin-bottom: 18px;">Overview of system activity and metrics</p>
+                <p class="page-subtitle">Overview of system activity and metrics</p>
             </div>
 
             <section class="admin-stats">
@@ -226,6 +226,30 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         </div>
     </div>
 </main>
+
+<style>
+    .reports-booking-head {
+        padding: 30px 34px 20px;
+        background: var(--primary);
+        color: #fff;
+        border-radius: 22px;
+        margin-top: 15px;
+        margin-bottom: 1rem;
+        box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
+    }
+
+    .reports-booking-head h1 {
+        margin: 0 0 8px;
+        font-size: 34px;
+        color: #fff;
+    }
+
+    .reports-booking-head p {
+        margin: 0;
+        max-width: 680px;
+        color: rgba(255, 255, 255, 0.9);
+    }
+</style>
 
 </div>
 <script>

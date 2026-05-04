@@ -971,6 +971,23 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <?php echo dashboardCardCloseTag(); ?>
                 </section>
 
+                <section class="admin-quick-layout">
+                    <div class="announcement-card">
+                        <h2 class="quick-title">Quick Access</h2>
+
+                        <div class="admin-quick-card-grid">
+                            <?php foreach ($adminQuickActions as $action): ?>
+                                <a href="<?php echo htmlspecialchars($action["path"]); ?>" class="admin-quick-card-modern">
+                                    <span class="admin-quick-icon <?php echo htmlspecialchars($action["iconClass"]); ?>">
+                                        <?php echo sidebarIconSvg($action["icon"]); ?>
+                                    </span>
+                                    <h4><?php echo htmlspecialchars($action["title"]); ?></h4>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Charts Section -->
                 <section class="admin-charts-grid">
                     <div class="chart-card announcement-card">
@@ -984,14 +1001,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                         <div class="chart-container">
                             <canvas id="userRoleChart"></canvas>
                         </div>
-                    </div>
-                </section>
-
-                <!-- Appointments Trend Chart -->
-                <section class="announcement-card admin-trend-section">
-                    <h3 class="chart-title">Appointments Trend (Last 7 Days)</h3>
-                    <div class="chart-container-full">
-                        <canvas id="appointmentsTrendChart"></canvas>
                     </div>
                 </section>
 
@@ -1072,23 +1081,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     </div>
                 </section>
 
-                <section class="admin-quick-layout">
-                    <div class="announcement-card">
-                        <h2 class="quick-title">Quick Access</h2>
-
-                        <div class="admin-quick-card-grid">
-                            <?php foreach ($adminQuickActions as $action): ?>
-                                <a href="<?php echo htmlspecialchars($action["path"]); ?>" class="admin-quick-card-modern">
-                                    <span class="admin-quick-icon <?php echo htmlspecialchars($action["iconClass"]); ?>">
-                                        <?php echo sidebarIconSvg($action["icon"]); ?>
-                                    </span>
-                                    <h4><?php echo htmlspecialchars($action["title"]); ?></h4>
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                </section>
-
                 <script>
                     // Appointments by Status Chart
                     const statusCtx = document.getElementById('appointmentStatusChart')?.getContext('2d');
@@ -1158,47 +1150,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 },
                                 scales: {
                                     x: { beginAtZero: true }
-                                }
-                            }
-                        });
-                    }
-
-                    // Appointments Trend Chart
-                    const trendCtx = document.getElementById('appointmentsTrendChart')?.getContext('2d');
-                    if (trendCtx) {
-                        const trendData = <?php echo json_encode($appointmentsTrend); ?>;
-                        const trendDates = trendData.map(t => t.date);
-                        const trendCounts = trendData.map(t => t.count);
-                        
-                        new Chart(trendCtx, {
-                            type: 'line',
-                            data: {
-                                labels: trendDates,
-                                datasets: [{
-                                    label: 'Appointments',
-                                    data: trendCounts,
-                                    borderColor: '#4d8fc5',
-                                    backgroundColor: 'rgba(77, 143, 197, 0.1)',
-                                    fill: true,
-                                    tension: 0.4,
-                                    pointBackgroundColor: '#4d8fc5',
-                                    pointBorderColor: '#fff',
-                                    pointBorderWidth: 2,
-                                    pointRadius: 5
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        labels: {
-                                            font: { size: 12, family: "'Segoe UI', sans-serif" }
-                                        }
-                                    }
-                                },
-                                scales: {
-                                    y: { beginAtZero: true }
                                 }
                             }
                         });

@@ -211,7 +211,9 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                     <h1 class="page-title">Manage Users</h1>
                     <p class="page-subtitle">Add, edit, or remove system users</p>
                 </div>
+            </div>
 
+            <div class="manage-head-actions">
                 <button type="button" class="btn slot-add-btn" id="openUserModal">
                     <?php echo sidebarIconSvg("user-plus"); ?>
                     Add User
@@ -391,6 +393,35 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         </div>
     </div>
 </main>
+
+<style>
+    .admin-shell .manage-head {
+        padding: 30px 34px 20px;
+        background: var(--primary);
+        color: #fff;
+        border-radius: 22px;
+        margin-bottom: 1rem;
+        box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
+    }
+
+    .admin-shell .manage-head h1 {
+        margin: 0 0 8px;
+        font-size: 34px;
+        color: #fff;
+    }
+
+    .admin-shell .manage-head p {
+        margin: 0;
+        max-width: 680px;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .admin-shell .manage-head-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 1rem;
+    }
+</style>
 
 <script>
 (function () {

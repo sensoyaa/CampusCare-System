@@ -1552,7 +1552,7 @@ body.theme-dark .menu-lines {
 
 .content {
   width: 100%;
-  padding: 18px 18px 28px;
+  padding: 15px 100px; !important;
 }
 
 .page-shell {
@@ -1962,7 +1962,6 @@ body.theme-dark .menu-lines {
 }
 
 .admin-shell {
-  padding: 0 75px;
   max-width: 1410px;
 }
 
@@ -6369,6 +6368,7 @@ textarea:focus {
 /* Events Page Styles */
 .events-section {
   margin-bottom: 40px;
+  padding: 10px 34px 34px 34px;
 }
 
 .events-section-title {

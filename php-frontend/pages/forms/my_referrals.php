@@ -67,14 +67,15 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
     <div class="content">
         <div class="page-shell">
-            <div class="page-header">
-                <div>
-                    <h1 class="page-title">My Referrals</h1>
-                    <p class="page-subtitle">Track referrals you have submitted</p>
+            <div class="page-header-wrapper">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">My Referrals</h1>
+                        <p class="page-subtitle">Track referrals you have submitted</p>
+                    </div>
                 </div>
                 <a href="/campuscare-api/php-frontend/pages/forms/student_referral_form.php" class="btn event-join-btn btn-sm new-referral-btn">+ New Referral</a>
             </div>
-
             <?php if (empty($referrals)): ?>
                 <div class="empty-card">
                     <div class="empty-icon">
@@ -152,19 +153,40 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
 <style>
     /* Header */
-    .page-header {
+    .page-header-wrapper {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
+        align-items: flex-end;
         gap: 16px;
-        margin-bottom: 24px;
+        margin-bottom: 1rem;
     }
 
-    .page-header .page-title { margin: 0; }
+    .page-header {
+        width: 100%;
+        padding: 30px 34px 20px;
+        background: var(--primary);
+        color: #fff;
+        border-radius: 22px;
+        box-shadow: 0 16px 32px rgba(61, 108, 150, 0.18);
+    }
+
+    .page-header .page-title {
+        margin: 0 0 8px;
+        font-size: 34px;
+        color: #fff;
+    }
+
+    .page-header .page-subtitle {
+        margin: 0;
+        max-width: 680px;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
     .new-referral-btn { box-shadow: 0 6px 18px rgba(0,120,60,0.06); }
 
     /* Empty state */
     .empty-card {
+        margin-top: 16px;
         text-align: center;
         padding: 48px 24px;
         background: #f8f9fa;

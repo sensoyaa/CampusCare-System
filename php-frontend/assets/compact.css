@@ -1,0 +1,12 @@
+/* Compact theme helpers loaded globally by header.php. */
+
+.page-shell {
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
+.admin-toolbar,
+.events-section,
+.dashboard-head {
+    box-sizing: border-box;
+}
