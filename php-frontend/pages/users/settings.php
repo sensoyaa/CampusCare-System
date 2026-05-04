@@ -540,6 +540,47 @@ require_once __DIR__ . "/../../includes/sidebar.php";
     }
 })();
 </script>
+<!-- Settings and Notifications Handlers -->
+<script src="/campuscare-api/php-frontend/assets/settings.js"></script>
+<script src="/campuscare-api/php-frontend/assets/notifications-handler.js"></script>
+<script>
+// Password strength indicator
+(function() {
+    const newPasswordInput = document.getElementById("newPassword");
+    const passwordStrengthBar = document.getElementById("passwordStrengthBar");
+    const passwordStrengthText = document.getElementById("passwordStrengthText");
+
+    if (!newPasswordInput) return;
+
+    function scorePassword(password) {
+        let score = 0;
+        if (password.length >= 8) score += 1;
+        if (password.length >= 12) score += 1;
+        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1;
+        if (/[0-9]/.test(password)) score += 1;
+        if (/[^A-Za-z0-9]/.test(password)) score += 1;
+        return score;
+    }
+
+    function updatePasswordStrength() {
+        const password = newPasswordInput.value || "";
+        const score = scorePassword(password);
+        let width = "8%", label = "Strength: Too weak", color = "#ef4444";
+
+        if (score === 1) { width = "24%"; label = "Strength: Weak"; color = "#f97316"; }
+        else if (score === 2) { width = "42%"; label = "Strength: Fair"; color = "#f59e0b"; }
+        else if (score === 3) { width = "64%"; label = "Strength: Good"; color = "#22c55e"; }
+        else if (score >= 4) { width = "100%"; label = "Strength: Strong"; color = "#16a34a"; }
+
+        if (passwordStrengthBar) passwordStrengthBar.style.width = width;
+        if (passwordStrengthBar) passwordStrengthBar.style.background = color;
+        if (passwordStrengthText) passwordStrengthText.textContent = label;
+    }
+
+    newPasswordInput.addEventListener("input", updatePasswordStrength);
+    updatePasswordStrength();
+})();
+</script>
 </body>
 </html>
 

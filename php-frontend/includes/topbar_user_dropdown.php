@@ -1,6 +1,6 @@
 <?php
 // Refactored Profile Dropdown Component
-// Enhanced with better semantics, accessibility, and modern UI/UX
+// Notifications are fetched and rendered via JavaScript from the API
 
 // Extract user data from session
 $topbarFullName = isset($_SESSION['full_name']) ? $_SESSION['full_name'] : '';
@@ -9,103 +9,41 @@ $topbarRole = isset($_SESSION['role']) ? $_SESSION['role'] : 'User';
 $topbarAvatarPath = isset($_SESSION['avatar_path']) ? $_SESSION['avatar_path'] : '';
 $topbarAvatarInitial = !empty($topbarFullName) ? strtoupper(substr($topbarFullName, 0, 1)) : 'U';
 
-// Handle notifications
-$notificationsEnabled = isset($_SESSION['notifications_enabled']) ? $_SESSION['notifications_enabled'] : true;
-$notificationsInApp = isset($_SESSION['notifications_in_app']) ? $_SESSION['notifications_in_app'] : true;
-$notifyAppointments = isset($_SESSION['notify_appointments']) ? $_SESSION['notify_appointments'] : true;
-$notifyEvents = isset($_SESSION['notify_events']) ? $_SESSION['notify_events'] : true;
-$notifySystem = isset($_SESSION['notify_system']) ? $_SESSION['notify_system'] : true;
+// Check if notifications are enabled globally
+$notificationsEnabled = true;
+$notificationsInApp = true;
 
-// Build notification items array
-$notificationItems = [];
-if (isset($_SESSION['appointments']) && $notifyAppointments) {
-    foreach ($_SESSION['appointments'] as $appt) {
-        $notificationItems[] = [
-            'type' => 'appointment',
-            'title' => 'Appointment: ' . htmlspecialchars($appt['title'] ?? 'Upcoming Appointment'),
-            'message' => htmlspecialchars($appt['description'] ?? ''),
-            'time' => htmlspecialchars($appt['date'] ?? 'Scheduled'),
-            'icon' => 'calendar'
-        ];
-    }
-}
-
-if (isset($_SESSION['events']) && $notifyEvents) {
-    foreach ($_SESSION['events'] as $event) {
-        $notificationItems[] = [
-            'type' => 'event',
-            'title' => 'Event: ' . htmlspecialchars($event['title'] ?? 'Upcoming Event'),
-            'message' => htmlspecialchars($event['description'] ?? ''),
-            'time' => htmlspecialchars($event['date'] ?? 'Scheduled'),
-            'icon' => 'event'
-        ];
-    }
-}
-
-if (isset($_SESSION['system_notifications']) && $notifySystem) {
-    foreach ($_SESSION['system_notifications'] as $notif) {
-        $notificationItems[] = [
-            'type' => 'system',
-            'title' => htmlspecialchars($notif['title'] ?? 'System Notification'),
-            'message' => htmlspecialchars($notif['message'] ?? ''),
-            'time' => htmlspecialchars($notif['timestamp'] ?? 'Now'),
-            'icon' => 'info'
-        ];
-    }
-}
-
-$notificationCount = count($notificationItems);
+// Note: Actual notifications are fetched via /backend/api/notifications.php by JavaScript
 ?>
 
 <div class="topbar-user topbar-user-refactored">
-    <!-- Notifications Menu (if enabled) -->
+    <!-- Notifications Menu -->
     <?php if ($notificationsEnabled && $notificationsInApp): ?>
     <details class="notify-menu" aria-label="Notifications">
         <summary class="notify-summary" aria-label="Toggle notifications menu">
             <svg class="notify-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
             </svg>
-            <?php if ($notificationCount > 0): ?>
-            <span class="notify-badge" data-count="<?php echo $notificationCount; ?>"><?php echo $notificationCount > 9 ? '9+' : $notificationCount; ?></span>
-            <?php endif; ?>
+            <span class="notify-badge" style="display: none;" data-count="0"></span>
         </summary>
 
         <div class="notify-panel">
-            <?php if ($notificationCount > 0): ?>
-                <div class="notify-header">
-                    <h3>Notifications</h3>
-                    <button class="notify-clear-btn" aria-label="Clear all notifications" type="button">Clear</button>
-                </div>
-                <div class="notify-list">
-                    <?php foreach ($notificationItems as $notif): ?>
-                    <div class="notify-item" data-type="<?php echo $notif['type']; ?>">
-                        <div class="notify-item-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                <?php if ($notif['icon'] === 'calendar'): ?>
-                                    <path fill="currentColor" d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16H5V8h14v11z"/>
-                                <?php elseif ($notif['icon'] === 'event'): ?>
-                                    <path fill="currentColor" d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
-                                <?php else: ?>
-                                    <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                                <?php endif; ?>
-                            </svg>
-                        </div>
-                        <div class="notify-item-content">
-                            <p class="notify-item-title"><?php echo $notif['title']; ?></p>
-                            <p class="notify-item-message"><?php echo $notif['message']; ?></p>
-                            <span class="notify-item-time"><?php echo $notif['time']; ?></span>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php else: ?>
-                <div class="notify-empty">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                        <path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
-                    </svg>
-                    <p>No notifications</p>
-                </div>
-            <?php endif; ?>
+            <!-- Notifications header and clear button -->
+            <div class="notify-header" style="display: none;">
+                <h3>Notifications</h3>
+                <button class="notify-clear-btn" aria-label="Clear all notifications" type="button">Clear</button>
+            </div>
+
+            <!-- Notification items list - populated by JavaScript -->
+            <div class="notify-list"></div>
+
+            <!-- Empty state - shown when no notifications -->
+            <div class="notify-empty">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                </svg>
+                <p>No notifications</p>
+            </div>
         </div>
     </details>
     <?php endif; ?>
