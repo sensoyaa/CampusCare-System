@@ -108,20 +108,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <link rel="icon" type="image/png" href="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/logo.png">
     <link rel="stylesheet" href="<?php echo htmlspecialchars($frontendBaseUrl); ?>/assets/style.css">
 </head>
-<body>
-<div class="form-page">
-    <div class="form-left">
-        <div>
-            <img src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/logo.png" alt="CampusCare">
-            <h1>CampusCare</h1>
+<body class="login-page">
+<div class="form-page login-form-page">
+    <div class="form-left login-hero">
+        <img
+            class="login-hero-image"
+            src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/forgot_cover.png"
+            alt="CampusCare password reset cover"
+            loading="eager"
+            decoding="async"
+        >
+        <div class="login-hero-content">
+            <h1>Reset</h1>
             <p>Create a new password to continue using your account</p>
         </div>
     </div>
 
-    <div class="form-right">
-        <div class="form-box">
-            <h2>Reset Password</h2>
-            <p>Choose a new secure password</p>
+    <div class="form-right login-panel">
+        <div class="form-box login-box">
+            <div class="login-brand-row">
+                <h2>Campus<span class="brand-second-c">C</span>are</h2>
+            </div>
+            <p>Reset your password</p>
 
             <?php if ($error !== ""): ?>
                 <div class="alert alert-error"><?php echo htmlspecialchars($error); ?></div>

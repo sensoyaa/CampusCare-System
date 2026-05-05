@@ -89,16 +89,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $_SESSION["college"] = trim((string) ($user["college"] ?? ""));
                     $_SESSION["program"] = trim((string) ($user["program"] ?? ""));
 
-                    campuscare_notifications_upsert($conn, [
-                        "user_id" => intval($user["id"]),
-                        "type" => "security",
-                        "title" => "Signed in successfully",
-                        "message" => "Your CampusCare account was accessed on " . date("M j, Y g:i A") . ".",
-                        "related_type" => "account",
-                        "event_key" => "security-login-" . intval($user["id"]) . "-" . date("YmdHi"),
-                        "action_url" => "/campuscare-api/php-frontend/pages/users/settings.php",
-                    ]);
-
                     header("Location: /campuscare-api/php-frontend/pages/dashboard/dashboard.php");
                     exit();
                 } else {
@@ -148,13 +138,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <div class="form-box login-box">
             <div class="login-brand-row">
                 <h2>Campus<span class="brand-second-c">C</span>are</h2>
-                <img
-                    class="login-heartbeat"
-                    src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/Heartbeat.png"
-                    alt="Heartbeat icon"
-                    loading="eager"
-                    decoding="async"
-                >
             </div>
             <p>Login with Email or Institution ID</p>
 

@@ -81,29 +81,40 @@ if ($status === "Approved") {
         }
     }
 
-    $stmt = $conn->prepare("UPDATE appointments SET status = ? WHERE id = ?");
-    $stmt->bind_param("si", $status, $id);
+    // Fetch appointment data BEFORE deletion so we can send notifications
+    $dataStmt = $conn->prepare("SELECT a.user_id AS student_id, su.email AS student_email, su.full_name AS student_name, a.counselor_id, cu.email AS counselor_email, cu.full_name AS counselor_name, a.appointment_date, a.appointment_time FROM appointments a LEFT JOIN users su ON su.id = a.user_id LEFT JOIN users cu ON cu.id = a.counselor_id WHERE a.id = ? LIMIT 1");
+    $appointmentData = null;
+    if ($dataStmt) {
+        $dataStmt->bind_param("i", $id);
+        $dataStmt->execute();
+        $appointmentData = $dataStmt->get_result()->fetch_assoc();
+        $dataStmt->close();
+    }
+
+    // If rejecting, delete the appointment instead of updating status
+    if ($status === 'Rejected') {
+        $stmt = $conn->prepare("DELETE FROM appointments WHERE id = ?");
+        $stmt->bind_param("i", $id);
+    } else {
+        $stmt = $conn->prepare("UPDATE appointments SET status = ? WHERE id = ?");
+        $stmt->bind_param("si", $status, $id);
+    }
 }
 
 if ($stmt->execute()) {
     if ($stmt->affected_rows > 0) {
-        // Insert audit entry
-        appointment_audit_insert($conn, $id, $sessionUserId, $status, ["by_user_id" => $sessionUserId]);
+        // Insert audit entry - use "Deleted" action for rejected appointments
+        $auditAction = ($status === 'Rejected') ? 'Deleted' : $status;
+        appointment_audit_insert($conn, $id, $sessionUserId, $auditAction, ["by_user_id" => $sessionUserId, "reason" => ($status === 'Rejected' ? "Appointment rejected by counselor" : "")]);
 
-        // Load appointment + user data for notifications
-        $uStmt = $conn->prepare("SELECT a.user_id AS student_id, su.email AS student_email, su.full_name AS student_name, a.counselor_id, cu.email AS counselor_email, cu.full_name AS counselor_name, a.appointment_date, a.appointment_time FROM appointments a LEFT JOIN users su ON su.id = a.user_id LEFT JOIN users cu ON cu.id = a.counselor_id WHERE a.id = ? LIMIT 1");
-        if ($uStmt) {
-            $uStmt->bind_param("i", $id);
-            $uStmt->execute();
-            $row = $uStmt->get_result()->fetch_assoc();
-            $uStmt->close();
-
-            $studentEmail = $row['student_email'] ?? '';
-            $studentName = $row['student_name'] ?? '';
-            $counselorEmail = $row['counselor_email'] ?? '';
-            $counselorName = $row['counselor_name'] ?? '';
-            $displayDate = isset($row['appointment_date']) ? date('F j, Y', strtotime($row['appointment_date'])) : '';
-            $displayTime = isset($row['appointment_time']) ? date('g:i A', strtotime($row['appointment_time'])) : '';
+        // Send notifications using pre-fetched data
+        if ($appointmentData) {
+            $studentEmail = $appointmentData['student_email'] ?? '';
+            $studentName = $appointmentData['student_name'] ?? '';
+            $counselorEmail = $appointmentData['counselor_email'] ?? '';
+            $counselorName = $appointmentData['counselor_name'] ?? '';
+            $displayDate = isset($appointmentData['appointment_date']) ? date('F j, Y', strtotime($appointmentData['appointment_date'])) : '';
+            $displayTime = isset($appointmentData['appointment_time']) ? date('g:i A', strtotime($appointmentData['appointment_time'])) : '';
 
             if ($status === 'Rejected') {
                 if ($studentEmail !== '') {

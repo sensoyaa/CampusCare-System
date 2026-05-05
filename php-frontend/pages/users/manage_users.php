@@ -25,6 +25,12 @@ $error = "";
 $success = "";
 $showModal = false;
 $modalMode = "add";
+$showDeleteSuccess = false;
+
+// Check for delete success from redirect
+if (isset($_GET["deleted"]) && $_GET["deleted"] === "1") {
+    $showDeleteSuccess = true;
+}
 
 $formState = [
     "user_id" => 0,
@@ -149,16 +155,127 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if ($userId <= 0) {
             $error = "Invalid user selected.";
         } else {
-            $deleteStmt = $conn->prepare("DELETE FROM users WHERE id = ?");
-            $deleteStmt->bind_param("i", $userId);
+            // Start a transaction to ensure all deletes succeed together
+            $conn->begin_transaction();
 
-            if ($deleteStmt->execute()) {
-                $success = "User removed successfully.";
-            } else {
-                $error = "Failed to remove user.";
+            try {
+                // Delete from various tables only if they exist
+                // We use conditional checks to avoid errors if tables don't exist
+                
+                // Check and delete from mental_health_test_answers if table exists
+                $checkTable = $conn->query("SHOW TABLES LIKE 'mental_health_test_answers'");
+                if ($checkTable && $checkTable->num_rows > 0) {
+                    $stmt = $conn->prepare(
+                        "DELETE FROM mental_health_test_answers 
+                         WHERE attempt_id IN (
+                            SELECT id FROM mental_health_test_attempts WHERE user_id = ?
+                         )"
+                    );
+                    if ($stmt) {
+                        $stmt->bind_param("i", $userId);
+                        $stmt->execute();
+                        $stmt->close();
+                    }
+                }
+
+                // Check and delete from mental_health_test_attempts if table exists
+                $checkTable = $conn->query("SHOW TABLES LIKE 'mental_health_test_attempts'");
+                if ($checkTable && $checkTable->num_rows > 0) {
+                    $stmt = $conn->prepare("DELETE FROM mental_health_test_attempts WHERE user_id = ?");
+                    if ($stmt) {
+                        $stmt->bind_param("i", $userId);
+                        $stmt->execute();
+                        $stmt->close();
+                    }
+                }
+
+                // Check and delete from mental_health_tests if table has user_id
+                $checkTable = $conn->query("SHOW TABLES LIKE 'mental_health_tests'");
+                if ($checkTable && $checkTable->num_rows > 0) {
+                    $checkColumn = $conn->query("SHOW COLUMNS FROM mental_health_tests LIKE 'user_id'");
+                    if ($checkColumn && $checkColumn->num_rows > 0) {
+                        $stmt = $conn->prepare("DELETE FROM mental_health_tests WHERE user_id = ?");
+                        if ($stmt) {
+                            $stmt->bind_param("i", $userId);
+                            $stmt->execute();
+                            $stmt->close();
+                        }
+                    }
+                }
+
+                // Delete appointments
+                $stmt = $conn->prepare("DELETE FROM appointments WHERE user_id = ?");
+                if ($stmt) {
+                    $stmt->bind_param("i", $userId);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+
+                // Check and delete from event_participants if table exists
+                $checkTable = $conn->query("SHOW TABLES LIKE 'event_participants'");
+                if ($checkTable && $checkTable->num_rows > 0) {
+                    $stmt = $conn->prepare("DELETE FROM event_participants WHERE user_id = ?");
+                    if ($stmt) {
+                        $stmt->bind_param("i", $userId);
+                        $stmt->execute();
+                        $stmt->close();
+                    }
+                }
+
+                // Check and delete from user_notifications if table exists
+                $checkTable = $conn->query("SHOW TABLES LIKE 'user_notifications'");
+                if ($checkTable && $checkTable->num_rows > 0) {
+                    $stmt = $conn->prepare("DELETE FROM user_notifications WHERE user_id = ?");
+                    if ($stmt) {
+                        $stmt->bind_param("i", $userId);
+                        $stmt->execute();
+                        $stmt->close();
+                    }
+                }
+
+                // Check and delete from user_sessions if table exists
+                $checkTable = $conn->query("SHOW TABLES LIKE 'user_sessions'");
+                if ($checkTable && $checkTable->num_rows > 0) {
+                    $stmt = $conn->prepare("DELETE FROM user_sessions WHERE user_id = ?");
+                    if ($stmt) {
+                        $stmt->bind_param("i", $userId);
+                        $stmt->execute();
+                        $stmt->close();
+                    }
+                }
+
+                // Check and delete from user_preferences if table exists
+                $checkTable = $conn->query("SHOW TABLES LIKE 'user_preferences'");
+                if ($checkTable && $checkTable->num_rows > 0) {
+                    $stmt = $conn->prepare("DELETE FROM user_preferences WHERE user_id = ?");
+                    if ($stmt) {
+                        $stmt->bind_param("i", $userId);
+                        $stmt->execute();
+                        $stmt->close();
+                    }
+                }
+
+                // Finally, delete the user
+                $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
+                if ($stmt) {
+                    $stmt->bind_param("i", $userId);
+                    $stmt->execute();
+                    $stmt->close();
+                } else {
+                    throw new Exception("Failed to prepare delete statement for users table");
+                }
+
+                // Commit the transaction
+                $conn->commit();
+                
+                // Redirect to avoid form resubmission on refresh (Post-Redirect-Get pattern)
+                header("Location: /campuscare-api/php-frontend/pages/users/manage_users.php?deleted=1");
+                exit();
+            } catch (Exception $e) {
+                // Rollback on error
+                $conn->rollback();
+                $error = "Failed to remove user: " . $e->getMessage();
             }
-
-            $deleteStmt->close();
         }
     }
 }
@@ -226,6 +343,23 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
             <?php if ($success !== ""): ?>
                 <div class="alert alert-success"><?php echo htmlspecialchars($success); ?></div>
+            <?php endif; ?>
+
+            <?php if ($showDeleteSuccess): ?>
+                <div class="success-modal-overlay" id="successOverlay">
+                    <div class="success-modal-card">
+                        <div class="success-modal-icon">
+                            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="32" cy="32" r="32" fill="#10b981" opacity="0.1"/>
+                                <circle cx="32" cy="32" r="28" fill="none" stroke="#10b981" stroke-width="2"/>
+                                <path d="M20 32L28 40L44 24" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h3 class="success-modal-title">User Removed Successfully</h3>
+                        <p class="success-modal-message">The user account has been deleted from CampusCare.</p>
+                        <button type="button" class="btn btn-primary" onclick="document.getElementById('successOverlay').style.display='none'">Close</button>
+                    </div>
+                </div>
             <?php endif; ?>
 
             <form method="GET" class="admin-toolbar">
@@ -421,6 +555,106 @@ require_once __DIR__ . "/../../includes/sidebar.php";
         justify-content: flex-end;
         margin-bottom: 1rem;
     }
+
+    /* Success Modal Styles */
+    .success-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .success-modal-card {
+        background: white;
+        border-radius: 20px;
+        padding: 48px 40px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        max-width: 420px;
+        width: 90%;
+        animation: slideUp 0.4s ease-out;
+    }
+
+    body.theme-dark .success-modal-card {
+        background: #1a2d42;
+        color: #e6edf5;
+    }
+
+    .success-modal-icon {
+        margin-bottom: 24px;
+        animation: bounceIn 0.6s ease-out;
+    }
+
+    .success-modal-title {
+        margin: 0 0 12px;
+        font-size: 24px;
+        font-weight: 700;
+        color: #10b981;
+        font-family: "Poppins", sans-serif;
+    }
+
+    body.theme-dark .success-modal-title {
+        color: #6ee7b7;
+    }
+
+    .success-modal-message {
+        margin: 0 0 28px;
+        font-size: 15px;
+        color: #6b7280;
+        line-height: 1.6;
+    }
+
+    body.theme-dark .success-modal-message {
+        color: #b7c7d8;
+    }
+
+    .success-modal-card .btn {
+        min-width: 140px;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes bounceIn {
+        0% {
+            transform: scale(0.3);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1.05);
+        }
+        70% {
+            transform: scale(0.9);
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
 </style>
 
 <script>
@@ -528,9 +762,30 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 </div>
 <script>
 (function () {
+    // Auto-close success modal after 3 seconds and clear URL parameter
+    const successOverlay = document.getElementById("successOverlay");
+    if (successOverlay) {
+        setTimeout(function () {
+            successOverlay.style.display = "none";
+            // Clean up the URL by removing the ?deleted=1 parameter
+            if (window.history.replaceState) {
+                window.history.replaceState({}, document.title, "/campuscare-api/php-frontend/pages/users/manage_users.php");
+            }
+        }, 3000);
+    }
 
+    // Handle delete form confirmation
+    const deleteForms = document.querySelectorAll("form[data-confirm-title]");
+    deleteForms.forEach(function (form) {
+        form.addEventListener("submit", function (e) {
+            const confirmMessage = form.getAttribute("data-confirm-message") || "Are you sure?";
+
+            if (!confirm(confirmMessage)) {
+                e.preventDefault();
+            }
+        });
+    });
 })();
-</script>
 </body>
 </html>
 

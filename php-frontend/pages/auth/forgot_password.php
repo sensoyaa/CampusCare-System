@@ -219,23 +219,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             decoding="async"
         >
         <div class="login-hero-content">
-            <h1>CampusCare</h1>
-            <p>Your university mental health and wellness companion</p>
+            <h1>Take a Breath, We've Got You</h1>
+            <p>No rush. Just enter your email below.</p>
         </div>
     </div>
 
-    <div class="form-right">
-        <div class="form-box-forgot">
-            <div class="login-brand-row">
-                <p> Campus<span class="brand-second-c">C</span>are</p>
-                <img
-                    class="login-heartbeat"
-                    src="<?php echo htmlspecialchars($projectBaseUrl); ?>/php-frontend/assets/images/Heartbeat.png"
-                    alt="Heartbeat icon"
-                    loading="eager"
-                    decoding="async"
-                >
-            </div>
+    <div class="form-right login-panel">
+        <div class="form-box login-box form-box-forgot">
             <h2>Forgot Password</h2>
             <p>
                 <?php echo $step === "verify" ? "Enter the 6-digit code we sent to your email" : "Enter your email to receive a reset code"; ?>

@@ -1,0 +1,54 @@
+# System files
+.DS_Store
+Thumbs.db
+.env
+.env.local
+.env.*.local
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# Dependencies
+node_modules/
+vendor/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Cache
+cache/
+.cache/
+*.tmp
+
+# Uploads (keep directory, ignore contents)
+php-frontend/uploads/*
+!php-frontend/uploads/.gitkeep
+
+# Demo files
+*demo*.html
+*DEMO*.html
+*.example.*
+
+# Temporary files
+temp/
+tmp/
+*.bak
+*.backup
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db

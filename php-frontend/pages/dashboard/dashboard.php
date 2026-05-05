@@ -857,7 +857,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
 
                                     <article class="appointment-card">
                                         <div class="appointment-left">
-                                            <img src="/campuscare-api/php-frontend/assets/images/icons/Book-now.png" alt="Appointment" class="appointment-icon">
                                             <div>
                                                 <p class="appointment-title">
                                                     <?php echo htmlspecialchars($apt["service"] . " with " . $apt["counselor"]); ?>
@@ -1491,7 +1490,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
                                 ?>
                                 <article class="appointment-card">
                                     <div class="appointment-left">
-                                        <img src="/campuscare-api/php-frontend/assets/images/icons/workshop.png" alt="Event" class="appointment-icon">
                                         <div>
                                             <p class="appointment-title"><?php echo htmlspecialchars((string) ($event["title"] ?? "Campus Event")); ?></p>
                                             <p class="appointment-meta"><?php echo htmlspecialchars(implode(" • ", $metaBits)); ?></p>
@@ -1527,7 +1525,6 @@ require_once __DIR__ . "/../../includes/sidebar.php";
             <?php endif; ?>
         </div>
 
-        <a href="#" class="chat-fab chat-fab-icon" aria-label="Open chat"><?php echo sidebarIconSvg("message"); ?></a>
     </div>
 </main>
 

@@ -128,64 +128,88 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if ($appointmentId <= 0 || !in_array($status, $allowedStatuses, true)) {
             $error = "Invalid appointment update request.";
         } else {
-            // Ensure counselor info is also stored when a counselor updates status (e.g., approves)
-            $stmt = $conn->prepare("
-                UPDATE appointments
-                SET status = ?, counselor_id = ?, counselor = ?
-                WHERE id = ? AND counselor_id = ?
-            ");
-            if ($status === "Approved") {
-                $stmt = $conn->prepare("\n                UPDATE appointments\n                SET status = ?, counselor_id = ?, counselor = ?, approved_by_user_id = ?, approved_at = NOW()\n                WHERE id = ? AND counselor_id = ?\n            ");
-                $stmt->bind_param("sisiii", $status, $userId, $fullName, $userId, $appointmentId, $userId);
-            } else {
-                $stmt->bind_param("sisis", $status, $userId, $fullName, $appointmentId, $userId);
+            // Fetch appointment data BEFORE any deletion/update so we can send notifications
+            $p = $conn->prepare("SELECT a.user_id AS student_id, su.email AS student_email, su.full_name AS student_name, a.counselor_id, cu.email AS counselor_email, cu.full_name AS counselor_name, a.appointment_date, a.appointment_time FROM appointments a LEFT JOIN users su ON su.id = a.user_id LEFT JOIN users cu ON cu.id = a.counselor_id WHERE a.id = ? LIMIT 1");
+            $appointmentData = null;
+            if ($p) {
+                $p->bind_param("i", $appointmentId);
+                $p->execute();
+                $appointmentData = $p->get_result()->fetch_assoc();
+                $p->close();
             }
 
-            if ($stmt->execute()) {
-                // Insert audit entry
-                appointment_audit_insert($conn, $appointmentId, $userId, $status, ['by' => $fullName]);
-
-                // Notify student/counselor depending on action
-                $p = $conn->prepare("SELECT a.user_id AS student_id, su.email AS student_email, su.full_name AS student_name, a.counselor_id, cu.email AS counselor_email, cu.full_name AS counselor_name, a.appointment_date, a.appointment_time FROM appointments a LEFT JOIN users su ON su.id = a.user_id LEFT JOIN users cu ON cu.id = a.counselor_id WHERE a.id = ? LIMIT 1");
-                if ($p) {
-                    $p->bind_param("i", $appointmentId);
-                    $p->execute();
-                    $row = $p->get_result()->fetch_assoc();
-                    $p->close();
-
-                    $studentEmail = $row['student_email'] ?? '';
-                    $studentName = $row['student_name'] ?? '';
-                    $counselorEmail = $row['counselor_email'] ?? '';
-                    $counselorName = $row['counselor_name'] ?? '';
-                    $displayDate = isset($row['appointment_date']) ? date('F j, Y', strtotime($row['appointment_date'])) : '';
-                    $displayTime = isset($row['appointment_time']) ? date('g:i A', strtotime($row['appointment_time'])) : '';
-
-                    if ($status === 'Rejected') {
+            // If rejecting, delete the appointment instead of updating status
+            if ($status === "Rejected") {
+                $stmt = $conn->prepare("DELETE FROM appointments WHERE id = ? AND counselor_id = ?");
+                $stmt->bind_param("ii", $appointmentId, $userId);
+                
+                if ($stmt->execute() && $stmt->affected_rows > 0) {
+                    // Insert audit entry with "Deleted" action
+                    appointment_audit_insert($conn, $appointmentId, $userId, 'Deleted', ['by' => $fullName, 'reason' => 'Appointment rejected by counselor']);
+                    
+                    // Send rejection email
+                    if ($appointmentData) {
+                        $studentEmail = $appointmentData['student_email'] ?? '';
+                        $studentName = $appointmentData['student_name'] ?? '';
+                        $displayDate = isset($appointmentData['appointment_date']) ? date('F j, Y', strtotime($appointmentData['appointment_date'])) : '';
+                        $displayTime = isset($appointmentData['appointment_time']) ? date('g:i A', strtotime($appointmentData['appointment_time'])) : '';
+                        
                         if ($studentEmail !== '') {
                             $html = campuscare_email_template('Appointment Declined', 'Your appointment request was declined by the counselor.', "<p>Hello " . htmlspecialchars($studentName) . ",</p><p>Your appointment on <strong>" . htmlspecialchars($displayDate) . " at " . htmlspecialchars($displayTime) . "</strong> was declined by the counselor.</p>", []);
                             send_smtp_mail($studentEmail, $studentName, 'Appointment Declined', $html, '');
                         }
                     }
+                    
+                    $success = "Appointment rejected and removed.";
+                } else {
+                    $error = "Failed to reject appointment.";
+                }
+            } else {
+                // For Approved and Cancelled: update the appointment
+                $stmt = $conn->prepare("
+                    UPDATE appointments
+                    SET status = ?, counselor_id = ?, counselor = ?
+                    WHERE id = ? AND counselor_id = ?
+                ");
+                if ($status === "Approved") {
+                    $stmt = $conn->prepare("\n                    UPDATE appointments\n                    SET status = ?, counselor_id = ?, counselor = ?, approved_by_user_id = ?, approved_at = NOW()\n                    WHERE id = ? AND counselor_id = ?\n                ");
+                    $stmt->bind_param("sisiii", $status, $userId, $fullName, $userId, $appointmentId, $userId);
+                } else {
+                    $stmt->bind_param("sisis", $status, $userId, $fullName, $appointmentId, $userId);
+                }
 
-                    if ($status === 'Cancelled') {
-                        if ($studentEmail !== '') {
-                            $html = campuscare_email_template('Appointment Cancelled', 'Your appointment was cancelled.', "<p>Hello " . htmlspecialchars($studentName) . ",</p><p>Your appointment on <strong>" . htmlspecialchars($displayDate) . " at " . htmlspecialchars($displayTime) . "</strong> was cancelled.</p>", []);
-                            send_smtp_mail($studentEmail, $studentName, 'Appointment Cancelled', $html, '');
-                        }
-                        if ($counselorEmail !== '') {
-                            $html = campuscare_email_template('Appointment Cancelled', 'An appointment assigned to you was cancelled.', "<p>Hello " . htmlspecialchars($counselorName) . ",</p><p>The appointment on <strong>" . htmlspecialchars($displayDate) . " at " . htmlspecialchars($displayTime) . "</strong> was cancelled.</p>", []);
-                            send_smtp_mail($counselorEmail, $counselorName, 'Assigned Appointment Cancelled', $html, '');
+                if ($stmt->execute()) {
+                    // Insert audit entry
+                    appointment_audit_insert($conn, $appointmentId, $userId, $status, ['by' => $fullName]);
+
+                    // Notify student/counselor depending on action
+                    if ($appointmentData) {
+                        $studentEmail = $appointmentData['student_email'] ?? '';
+                        $studentName = $appointmentData['student_name'] ?? '';
+                        $counselorEmail = $appointmentData['counselor_email'] ?? '';
+                        $counselorName = $appointmentData['counselor_name'] ?? '';
+                        $displayDate = isset($appointmentData['appointment_date']) ? date('F j, Y', strtotime($appointmentData['appointment_date'])) : '';
+                        $displayTime = isset($appointmentData['appointment_time']) ? date('g:i A', strtotime($appointmentData['appointment_time'])) : '';
+
+                        if ($status === 'Cancelled') {
+                            if ($studentEmail !== '') {
+                                $html = campuscare_email_template('Appointment Cancelled', 'Your appointment was cancelled.', "<p>Hello " . htmlspecialchars($studentName) . ",</p><p>Your appointment on <strong>" . htmlspecialchars($displayDate) . " at " . htmlspecialchars($displayTime) . "</strong> was cancelled.</p>", []);
+                                send_smtp_mail($studentEmail, $studentName, 'Appointment Cancelled', $html, '');
+                            }
+                            if ($counselorEmail !== '') {
+                                $html = campuscare_email_template('Appointment Cancelled', 'An appointment assigned to you was cancelled.', "<p>Hello " . htmlspecialchars($counselorName) . ",</p><p>The appointment on <strong>" . htmlspecialchars($displayDate) . " at " . htmlspecialchars($displayTime) . "</strong> was cancelled.</p>", []);
+                                send_smtp_mail($counselorEmail, $counselorName, 'Assigned Appointment Cancelled', $html, '');
+                            }
                         }
                     }
 
+                    $success = "Appointment status updated to " . $status . ".";
+                } else {
+                    $error = "Failed to update appointment status.";
                 }
-
-                $success = "Appointment status updated to " . $status . ".";
-            } else {
-                $error = "Failed to update appointment status.";
             }
 
-            $stmt->close();
+            if ($stmt) $stmt->close();
         }
     } elseif ($role === "Counselor" && $action === "reassign_or_reschedule") {
         $newCounselorId = intval($_POST["new_counselor_id"] ?? 0);
